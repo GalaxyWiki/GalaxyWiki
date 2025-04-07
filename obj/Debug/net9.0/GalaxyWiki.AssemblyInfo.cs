@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("GalaxyWiki")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+0c3feb5f59feb49e02ff59b390ed720952256992")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+5c95538e5c567f2160eb625758a8ca50755f9dba")]
 [assembly: System.Reflection.AssemblyProductAttribute("GalaxyWiki")]
 [assembly: System.Reflection.AssemblyTitleAttribute("GalaxyWiki")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

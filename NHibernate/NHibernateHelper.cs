@@ -35,6 +35,8 @@ using NHibernate.Tool.hbm2ddl;
 using System;
 using System.IO;
 using GalaxyWiki.Mappings;
+using NHibernate.Driver;
+using NHibernate.Dialect;
 
 namespace GalaxyWiki.NHibernate
 {
@@ -47,7 +49,10 @@ namespace GalaxyWiki.NHibernate
                 .Database(PostgreSQLConfiguration
                     .Standard
                     .ConnectionString("Host=localhost;Port=5432;Database=testdb;Username=postgres;Password=postgres")
-                    .ShowSql())
+                    .ShowSql()
+                    .DefaultSchema("public")
+                    .Driver<NpgsqlDriver>()
+                    .Dialect<PostgreSQL83Dialect>())
                 .Mappings(m => m.FluentMappings.AddFromAssemblyOf<UserMap>())
                 .ExposeConfiguration(cfg =>
                 {

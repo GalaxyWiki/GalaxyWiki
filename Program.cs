@@ -36,59 +36,59 @@ class Program
             session.Save(user2);
 
             // Body Types
-            // var starType = new BodyType { Type = "Star" };
-            // var planetType = new BodyType { Type = "Planet" };
-            // session.Save(starType);
-            // session.Save(planetType);
+            var starType = new BodyType { Type = "Star" };
+            var planetType = new BodyType { Type = "Planet" };
+            session.Save(starType);
+            session.Save(planetType);
 
             // Celestial Bodies
-            // var sun = new CelestialBody
-            // {
-            //     CelestialBodyId = Guid.NewGuid(),
-            //     Name = "Sun",
-            //     BodyType = starType
-            // };
-            // var earth = new CelestialBody
-            // {
-            //     CelestialBodyId = Guid.NewGuid(),
-            //     Name = "Earth",
-            //     BodyType = planetType,
-            //     Orbits = sun
-            // };
-            // session.Save(sun);
-            // session.Save(earth);
+            var sun = new CelestialBody
+            {
+                CelestialBodyId = Guid.NewGuid(),
+                Name = "Sun",
+                BodyType = starType
+            };
+            var earth = new CelestialBody
+            {
+                CelestialBodyId = Guid.NewGuid(),
+                Name = "Earth",
+                BodyType = planetType,
+                Orbits = sun
+            };
+            session.Save(sun);
+            session.Save(earth);
 
             // Star System
-            // var solarSystem = new StarSystem
-            // {
-            //     SystemId = Guid.NewGuid(),
-            //     Name = "Solar System",
-            //     CenterCb = sun
-            // };
-            // session.Save(solarSystem);
+            var solarSystem = new StarSystem
+            {
+                SystemId = Guid.NewGuid(),
+                Name = "Solar System",
+                CenterCb = sun
+            };
+            session.Save(solarSystem);
 
             // Comment
-            // var comment = new Comment
-            // {
-            //     CommentId = Guid.NewGuid(),
-            //     CelestialBody = earth,
-            //     User = user2,
-            //     CommentText = "Earth is amazing!",
-            //     CreatedAt = DateTime.UtcNow
-            // };
-            // session.Save(comment);
+            var comment = new Comment
+            {
+                CommentId = Guid.NewGuid(),
+                CelestialBody = earth,
+                User = user2,
+                CommentText = "Earth is amazing!",
+                CreatedAt = DateTime.UtcNow
+            };
+            session.Save(comment);
 
             // Content Revision
-            // var revision = new ContentRevision
-            // {
-            //     Content = "The Earth is the third planet from the Sun.",
-            //     CreatedAt = DateTime.UtcNow,
-            //     CelestialBody = earth,
-            //     Author = user1
-            // };
-            // session.Save(revision);
+            var revision = new ContentRevision
+            {
+                Content = "The Earth is the third planet from the Sun.",
+                CreatedAt = DateTime.UtcNow,
+                CelestialBody = earth,
+                Author = user1
+            };
+            session.Save(revision);
 
-            // tx.Commit();
+            tx.Commit();
         }
 
         Console.WriteLine("Database seeded successfully.");
