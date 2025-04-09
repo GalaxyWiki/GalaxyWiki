@@ -1,0 +1,23 @@
+-- Exoplanets around nearby stars
+INSERT INTO celestial_bodies (body_name, orbits, body_type_id) VALUES
+('Proxima Centauri b', 65, 3),
+('Proxima Centauri c', 65, 3),
+('Tau Ceti e', 95, 3),
+('Tau Ceti f', 95, 3),
+('Epsilon Eridani b', 77, 3),
+('TRAPPIST-1b', 117, 3),
+('TRAPPIST-1c', 117, 3),
+('TRAPPIST-1d', 117, 3),
+('TRAPPIST-1e', 117, 3),
+('TRAPPIST-1f', 117, 3),
+('TRAPPIST-1g', 117, 3),
+('TRAPPIST-1h', 117, 3),
+('Kepler-186f', 115, 3),
+('Kepler-22b', 116, 3),
+('Gliese 581d', 112, 3),
+('Gliese 581g', 112, 3),
+('Gliese 667 Cc', 108, 3),
+('Gliese 832c', 110, 3),
+('HD 219134 b', 114, 3),
+('Ross 128 b', 79, 3),
+('Wolf 1061c', 105, 3);
