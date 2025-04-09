@@ -10,24 +10,16 @@ namespace GalaxyWiki.Cli
         public static void Main(string[] args)
         {
             //==================== Layout definition ====================//
-            Layout layout = new Layout("Root")
-                .SplitColumns(
-                    new Layout("Left"),
-                    new Layout("Middle").SplitRows( new Layout("Header"),   new Layout("Terminal")                          ),
-                    new Layout("Right").SplitRows(  new Layout("Top"),      new Layout("Mid"),      new Layout("Bottom")    )
-                );
+            // REMOVED: Old approach
 
+            // Layout layout = new Layout("Root")
+            //     .SplitColumns(
+            //         new Layout("Left"),
+            //         new Layout("Middle").SplitRows( new Layout("Header"),   new Layout("Terminal")                          ),
+            //         new Layout("Right").SplitRows(  new Layout("Top"),      new Layout("Mid"),      new Layout("Bottom")    )
+            //     );
 
-            // layout["Left"].Update(
-            //     new Panel(universe)
-            //     .RoundedBorder()
-            //     .Header("[cyan] Universe Tree :deciduous_tree: [/]")
-            //     .Expand()
-            // );
-
-            //==================== Middle panel ====================//
-
-            //---------- Add prompt ----------//
+            // //---------- Add prompt ----------//
             // var command = AnsiConsole.Prompt(
             //     new SelectionPrompt<string>()
             //         .Title("Choose your command:")
@@ -36,31 +28,9 @@ namespace GalaxyWiki.Cli
             //         .AddChoices([ "info", "comment", "cd" ])
             // );
 
-            // layout["Middle"]["Terminal"].Update(
-            //     new Panel(command)
-            //     .RoundedBorder()
-            //     .Header("[cyan] Terminal [/]")
-            //     .Expand()
-            // )
-            // .Ratio(2);
-
-            layout["Middle"].Ratio(2);
 
 
-            //==================== Right panel ====================//
-
-            //---------- Add chatbot ----------//
-            layout["Right"]["Bottom"].Update(
-                new Panel(
-                    Align.Center(new Markup("This is where the chatbot will be"), VerticalAlignment.Middle)
-                )
-                .RoundedBorder()
-                .Header("[cyan] Galaxy Bot :robot::sparkles: [/]")
-                .Expand()
-            );
-
-
-            //==================== Output ====================//
+            //==================== Main command loop ====================//
 
             // AnsiConsole.Live(layout);
             ShowBanner();
@@ -97,17 +67,11 @@ namespace GalaxyWiki.Cli
 
                     case "render": AnsiConsole.Write(GetRenderedCelestialBody()); break;
 
-                    case "chat":
-                        bool chatMode = true;
-                        while(chatMode) {
-                            var msg = AnsiConsole.Ask<string>("[lightcyan1]Enter a message[/] [orange1]❯❯[/]");
-                            if (msg.ToLower() == "quit" || msg.ToLower() == "exit") { chatMode = false; }
-                            else { AnsiConsole.WriteLine("TODO: Bot response"); }
-                        }
-                        break;
+                    case "chat": LaunchChatbot(); break;
                 }
             }
         }
+
 
         //==================== Commands ====================//
 
@@ -181,6 +145,18 @@ namespace GalaxyWiki.Cli
             var pluto = sun.AddNode("Pluto");               pluto.AddNodes("Charon", "Hydra", "Nix", "Kerberos", "Styx");            
 
             return universe;
+        }
+
+        static void LaunchChatbot() {
+            var header = new Spectre.Console.Rule("[cyan] Galaxy Bot :robot: :sparkles: [/]");
+            AnsiConsole.Write(header);
+
+            bool chatMode = true;
+            while(chatMode) {
+                var msg = AnsiConsole.Ask<string>("[lightcyan1]Enter a message[/] [orange1]❯❯[/]");
+                if (msg.ToLower() == "quit" || msg.ToLower() == "exit") { chatMode = false; }
+                else { AnsiConsole.WriteLine("TODO: Bot response"); }
+            }
         }
 
     }
