@@ -2,3 +2,6 @@ obj/
 bin/
 *.cache
 flyway.conf
+.terraform*
+*.tfstate*
+.env
