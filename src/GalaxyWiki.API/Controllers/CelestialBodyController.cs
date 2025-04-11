@@ -15,17 +15,6 @@ namespace GalaxyWiki.Api.Controllers
         public async Task<IActionResult> GetAll()
         {
             var celestialBodies = await _session.Query<CelestialBodies>().ToListAsync();
-
-            // var celestialBodies = await _session.Query<CelestialBody>()
-            //     .Select(cb => new
-            //     {
-            //         cb.Id,
-            //         cb.Name,
-            //         cb.Orbits,
-            //         cb.BodyType
-            //     })
-            //     .ToListAsync();
-
             return Ok(celestialBodies);
         }
 
@@ -34,14 +23,13 @@ namespace GalaxyWiki.Api.Controllers
         public async Task<IActionResult> GetById(int id)
         {
             var celestialBody = await _session.Query<CelestialBodies>()
-                .Where(cb => cb.CelestialBodyId == id)
+                .Where(cb => cb.Id == id)
                 .Select(cb => new
                 {
-                    cb.CelestialBodyId,
+                    cb.Id,
                     cb.BodyName,
-                    OrbitId = cb.Orbits,
-                    BodyType = cb.BodyType,
-                    // Children = cb.Comments.Count,
+                    Orbits = cb.Orbits,
+                    cb.BodyType,
                 })
                 .FirstOrDefaultAsync();
 
@@ -56,8 +44,8 @@ namespace GalaxyWiki.Api.Controllers
         public async Task<IActionResult> GetOrbits(int id)
         {
             var celestialBody = await _session.Query<CelestialBodies>()
-                .Where(cb => cb.CelestialBodyId == id)
-                .Select(cb => new { OrbitId = cb.Orbits != null ? cb.Orbits : (int?)null })
+                .Where(cb => cb.Id == id)
+                .Select(cb => new { Orbits = cb.Orbits })
                 .FirstOrDefaultAsync();
 
             if (celestialBody == null)
@@ -82,14 +70,14 @@ namespace GalaxyWiki.Api.Controllers
                 var celestialBody = new CelestialBodies
                 {
                     BodyName = request.Name,
-                    Orbits = request.OrbitsId,
+                    Orbits = request.Orbits,
                     BodyType = bodyType.Id
                 };
 
                 await _session.SaveAsync(celestialBody);
                 await transaction.CommitAsync();
 
-                return CreatedAtAction(nameof(GetById), new { id = celestialBody.CelestialBodyId }, celestialBody);
+                return CreatedAtAction(nameof(GetById), new { id = celestialBody.Id }, celestialBody);
             }
             catch (Exception)
             {
@@ -116,7 +104,7 @@ namespace GalaxyWiki.Api.Controllers
                     return BadRequest(new { error = "Invalid body type ID." });
 
                 celestialBody.BodyName = request.Name;
-                celestialBody.Orbits = request.OrbitsId;
+                celestialBody.Orbits = request.Orbits;
                 celestialBody.BodyType = bodyType.Id;
 
                 await _session.UpdateAsync(celestialBody);
@@ -140,7 +128,7 @@ namespace GalaxyWiki.Api.Controllers
             {
                 // Get the celestial body and its children
                 var celestialBody = await _session.Query<CelestialBodies>()
-                    .Where(cb => cb.CelestialBodyId == id)
+                    .Where(cb => cb.Id == id)
                     .FirstOrDefaultAsync();
 
                 if (celestialBody == null)
@@ -148,7 +136,7 @@ namespace GalaxyWiki.Api.Controllers
 
                 // Get all celestial bodies that orbit this one
                 var children = await _session.Query<CelestialBodies>()
-                    .Where(cb => cb.Orbits != null && cb.Orbits == id)
+                    .Where(cb => cb.Orbits != null && cb.Orbits.Id == id)
                     .ToListAsync();
 
                 // Delete all children first
@@ -175,13 +163,13 @@ namespace GalaxyWiki.Api.Controllers
     {
         public string Name { get; set; } = string.Empty;
         public int Id { get; set; }
-        public int? OrbitsId { get; set; }
+        public CelestialBodies? Orbits { get; set; }
     }
 
     public class CelestialBodyUpdateRequest
     {
         public string Name { get; set; } = string.Empty;
         public int Id { get; set; }
-        public int? OrbitsId { get; set; }
+        public CelestialBodies? Orbits { get; set; }
     }
 } 
