@@ -6,4 +6,10 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="FluentNHibernate" Version="3.3.0" />
+    <PackageReference Include="NHibernate" Version="5.5.0" />
+    <PackageReference Include="Npgsql" Version="8.0.2" />
+  </ItemGroup>
+
 </Project>

@@ -1,8 +1,11 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using GalaxyWiki.Core.Entities;
+using System.Linq;
+using GalaxyWiki.Models;
 using GalaxyWiki.Core.Exceptions;
 using NHibernate;
+using NHibernate.Linq;
+using GalaxyWiki.Application.DTO;
 
 namespace GalaxyWiki.Application.Services
 {
@@ -23,10 +26,10 @@ namespace GalaxyWiki.Application.Services
 		public async Task<IEnumerable<ContentRevision>> GetRevisionsByCelestialBodyAsync(string celestialBodyPath)
 		{
 			var celestialBody = await _session.Query<CelestialBody>()
-											   .FirstOrDefaultAsync(cb => cb.Path == celestialBodyPath);
+											   .FirstOrDefaultAsync(cb => cb.Name == celestialBodyPath);
 
 			if (celestialBody == null)
-				return null;
+				return new List<ContentRevision>();
 
 			return await _session.Query<ContentRevision>()
 								 .Where(r => r.CelestialBody == celestialBody)
@@ -36,7 +39,7 @@ namespace GalaxyWiki.Application.Services
 		public async Task<ContentRevision> CreateRevisionAsync(CreateRevisionRequest request, string authorId)
 		{
 			var celestialBody = await _session.Query<CelestialBody>()
-				.FirstOrDefaultAsync(cb => cb.Path == request.CelestialBodyPath);
+				.FirstOrDefaultAsync(cb => cb.Name == request.CelestialBodyPath);
 
 			if (celestialBody == null)
 				throw new NotFoundException("Celestial body not found.");
@@ -47,11 +50,13 @@ namespace GalaxyWiki.Application.Services
 			if (author == null)
 				throw new NotFoundException("Author not found.");
 
-			var revision = new ContentRevision(
-				content: request.Content,
-				celestialBody: celestialBody,
-				author: author
-			);
+			var revision = new ContentRevision
+			{
+				Content = request.Content,
+				CelestialBody = celestialBody,
+				Author = author,
+				CreatedAt = DateTime.UtcNow
+			};
 
 			await _session.SaveAsync(revision);
 			return revision;
