@@ -1,23 +1,12 @@
-namespace GalaxyWiki.Core.Entities
+namespace GalaxyWiki.Models
 {
     public class CelestialBody
     {
-        public virtual Guid CelestialBodyId { get; protected set; }
-        public virtual string Name { get; set; } = string.Empty;
+        public virtual Guid CelestialBodyId { get; set; }
+        public virtual string Name { get; set; }
         public virtual CelestialBody Orbits { get; set; }
         public virtual BodyType BodyType { get; set; }
-
-        protected CelestialBody() { }
-
-        public CelestialBody(string name, CelestialBody orbits, BodyType bodyType)
-        {
-            if (string.IsNullOrWhiteSpace(name))
-                throw new ArgumentException("Celestial body name cannot be empty", nameof(name));
-            
-            CelestialBodyId = Guid.NewGuid();
-            Name = name;
-            Orbits = orbits;
-            BodyType = bodyType;
-        }
+        public virtual IList<Comment> Comments { get; set; } = new List<Comment>();
+        public virtual IList<ContentRevision> ContentRevisions { get; set; } = new List<ContentRevision>();
     }
-} 
+}

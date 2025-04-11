@@ -1,17 +1,9 @@
-using GalaxyWiki.Core.Enums;
-
-namespace GalaxyWiki.Core.Entities
+namespace GalaxyWiki.Models
 {
     public class BodyType
     {
-        public virtual int BodyTypeId { get; protected set; }
+        public virtual int BodyTypeId { get; set; }
         public virtual string Type { get; set; }
-        
-        protected BodyType() { }
-
-        public BodyType(string type)
-        {
-            Type = type;
-        }
+        public virtual IList<CelestialBody> CelestialBodies { get; set; } = new List<CelestialBody>();
     }
-} 
+}
