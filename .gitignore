@@ -5,4 +5,8 @@ flyway.conf
 .terraform*
 *.tfstate*
 .env
+
 src/GalaxyWiki.CLI/token.json/Google.Apis.Auth.OAuth2.Responses.TokenResponse-user
+.env.vs/
+.vs/
+

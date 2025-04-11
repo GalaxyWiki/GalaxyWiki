@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using GalaxyWiki.Application.Services;
 using dotenv.net;
 
 DotEnv.Load();
@@ -6,6 +7,8 @@ DotEnv.Load();
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
+
+builder.Services.AddScoped<ContentRevisionService>();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
