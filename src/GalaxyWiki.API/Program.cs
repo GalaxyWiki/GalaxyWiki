@@ -5,8 +5,9 @@ using FluentNHibernate.Cfg;
 using FluentNHibernate.Cfg.Db;
 using NHibernate;
 using NHibernate.Tool.hbm2ddl;
-using GalaxyWiki.Models;
-using GalaxyWiki.Mappings;
+using FluentNHibernate.Automapping;
+using System.Net.Security;
+using GalaxyWiki.Core.Entities;
 
 DotEnv.Load();
 
@@ -18,12 +19,20 @@ builder.Services.AddControllers();
 builder.Services.AddSingleton<ISessionFactory>(provider =>
 {
     var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
     return Fluently.Configure()
         .Database(PostgreSQLConfiguration.Standard
             .ConnectionString(connectionString)
             .ShowSql())
-        .Mappings(m => m.FluentMappings
-            .AddFromAssemblyOf<CelestialBodyMap>())
+        .Mappings(m => m.AutoMappings
+            .Add(AutoMap.AssemblyOf<BodyType>())                        // body_types
+            .Add(AutoMap.AssemblyOf<CelestialBody>())                   // celestial_bodies
+            .Add(AutoMap.AssemblyOf<Comment>())                         // comments
+            .Add(AutoMap.AssemblyOf<ContentRevision>())                 // content_revisions
+            .Add(AutoMap.AssemblyOf<Role>())                            // roles
+            .Add(AutoMap.AssemblyOf<StarSystem>())                      // star_systems
+            .Add(AutoMap.AssemblyOf<User>())                            // users
+        )
         .ExposeConfiguration(cfg => new SchemaUpdate(cfg).Execute(false, true))
         .BuildSessionFactory();
 });
@@ -56,3 +65,12 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 app.Run();
+
+
+class AutomappingConfiguration : DefaultAutomappingConfiguration {
+
+    public override bool ShouldMap(Type type)
+    {
+        return type.Namespace == "GalaxyWiki.Core.Entities.Mappings";
+    }
+}

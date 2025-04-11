@@ -15,6 +15,7 @@ CREATE TABLE celestial_bodies (
   celestial_body_id SERIAL PRIMARY KEY NOT NULL,
   body_name VARCHAR(255) UNIQUE NOT NULL,
   orbits INT,
+  active_revision INT DEFAULT NULL,
   body_type_id INT NOT NULL
 );
 

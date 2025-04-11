@@ -1,11 +1,10 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Linq;
-using GalaxyWiki.Models;
-using GalaxyWiki.Core.Exceptions;
 using NHibernate;
 using NHibernate.Linq;
 using GalaxyWiki.Application.DTO;
+using GalaxyWiki.Core.Entities;
 
 namespace GalaxyWiki.Application.Services
 {
@@ -42,13 +41,13 @@ namespace GalaxyWiki.Application.Services
 				.FirstOrDefaultAsync(cb => cb.Name == request.CelestialBodyPath);
 
 			if (celestialBody == null)
-				throw new NotFoundException("Celestial body not found.");
+				throw new Exception("Celestial body not found.");
 
 			var author = await _session.Query<User>()
-				.FirstOrDefaultAsync(u => u.GoogleSub == authorId);
+				.FirstOrDefaultAsync(u => u.Id == authorId);
 
 			if (author == null)
-				throw new NotFoundException("Author not found.");
+				throw new Exception("Author not found.");
 
 			var revision = new ContentRevision
 			{

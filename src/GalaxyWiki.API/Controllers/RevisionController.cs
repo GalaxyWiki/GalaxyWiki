@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 using GalaxyWiki.Application.DTO;
 using GalaxyWiki.Application.Services;
-using GalaxyWiki.Core.Exceptions;
 
 namespace GalaxyWiki.Api.Controllers
 {
@@ -26,7 +25,7 @@ namespace GalaxyWiki.Api.Controllers
 
             return Ok(new
             {
-                revision.RevisionId,
+                revision.Id,
                 revision.Content,
                 revision.CreatedAt,
                 AuthorDisplayName = revision.Author.DisplayName
@@ -43,7 +42,7 @@ namespace GalaxyWiki.Api.Controllers
 
             return Ok(revisions.Select(r => new
             {
-                r.RevisionId,
+                r.Id,
                 r.Content,
                 r.CreatedAt,
                 AuthorDisplayName = r.Author.DisplayName
@@ -64,16 +63,16 @@ namespace GalaxyWiki.Api.Controllers
 
                 var revision = await _revisionService.CreateRevisionAsync(request, authorId);
 
-                return CreatedAtAction(nameof(GetById), new { id = revision.RevisionId }, new
+                return CreatedAtAction(nameof(GetById), new { id = revision.Id }, new
                 {
-                    revision.RevisionId,
+                    revision.Id,
                     revision.CreatedAt,
                     revision.Content
                 });
             }
-            catch (NotFoundException ex)
+            catch (Exception e)
             {
-                return NotFound(new { error = ex.Message });
+                return NotFound(new { error = e.Message });
             }
         }
     }

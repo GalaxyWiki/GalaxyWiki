@@ -1,4 +1,4 @@
-namespace GalaxyWiki.Models
+namespace GalaxyWiki.Core.Entities
 {
     public class Person
     {
