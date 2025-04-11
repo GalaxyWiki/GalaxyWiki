@@ -1,0 +1,12 @@
+System.ArgumentException: Dialect does not support DbType.Guid (Parameter 'typecode')
+   at NHibernate.Dialect.TypeNames.Get(DbType typecode)
+   at NHibernate.Dialect.Dialect.GetTypeName(SqlType sqlType)
+   at NHibernate.Mapping.Column.GetDialectTypeName(Dialect dialect, IMapping mapping)
+   at NHibernate.Mapping.Column.GetSqlType(Dialect dialect, IMapping mapping)
+   at NHibernate.Mapping.Table.SqlCreateString(Dialect dialect, IMapping p, String defaultCatalog, String defaultSchema)
+   at NHibernate.Cfg.Configuration.GenerateSchemaCreationScript(Dialect dialect)
+   at NHibernate.Tool.hbm2ddl.SchemaExport.Initialize()
+   at NHibernate.Tool.hbm2ddl.SchemaExport.InitConnectionAndExecute(Action`1 scriptAction, Boolean execute, Boolean justDrop, DbConnection connection, TextWriter exportOutput)
+   at NHibernate.Tool.hbm2ddl.SchemaExport.Create(Boolean useStdOut, Boolean execute, DbConnection connection)
+   at NHibernate.Tool.hbm2ddl.SchemaExport.Create(Boolean useStdOut, Boolean execute)
+   at GalaxyWiki.NHibernate.NHibernateHelper.<>c.<get_SessionFactory>b__2_1(Configuration cfg) in C:\Users\bbdnet3181\Documents\GradProgram\WikiProject\GalaxyWiki\NHibernate\NHibernateHelper.cs:line 60
