@@ -1,9 +1,9 @@
 namespace GalaxyWiki.Core.Entities
 {
-    public class Role
+    public class Roles
     {
         public virtual int Id { get; set; }
         public virtual required string RoleName { get; set; }
-        public virtual IList<User> Users { get; set; } = new List<User>();
+        public virtual IList<Users> Users { get; set; } = new List<Users>();
     }
 }

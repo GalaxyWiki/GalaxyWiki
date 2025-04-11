@@ -1,6 +1,6 @@
 namespace GalaxyWiki.Core.Entities
 {
-    public class Comment
+    public class Comments
     {
         public virtual int Id { get; set; }
         public virtual int CelestialBody { get; set; }

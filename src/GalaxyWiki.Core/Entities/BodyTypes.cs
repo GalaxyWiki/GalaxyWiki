@@ -1,6 +1,6 @@
 namespace GalaxyWiki.Core.Entities
 {
-    public class BodyType
+    public class BodyTypes
     {
         public virtual int Id { get; set; }
         public virtual required string TypeName { get; set; }

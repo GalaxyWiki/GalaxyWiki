@@ -17,39 +17,39 @@ namespace GalaxyWiki.Application.Services
 			_session = session;
 		}
 
-		public async Task<ContentRevision?> GetRevisionByIdAsync(int id)
+		public async Task<ContentRevisions?> GetRevisionByIdAsync(int id)
 		{
-			return await _session.GetAsync<ContentRevision>(id);
+			return await _session.GetAsync<ContentRevisions>(id);
 		}
 
-		public async Task<IEnumerable<ContentRevision>> GetRevisionsByCelestialBodyAsync(string celestialBodyPath)
+		public async Task<IEnumerable<ContentRevisions>> GetRevisionsByCelestialBodyAsync(string celestialBodyPath)
 		{
-			var celestialBody = await _session.Query<CelestialBody>()
-											   .FirstOrDefaultAsync(cb => cb.Name == celestialBodyPath);
+			var celestialBody = await _session.Query<CelestialBodies>()
+											   .FirstOrDefaultAsync(cb => cb.BodyName == celestialBodyPath);
 
 			if (celestialBody == null)
-				return new List<ContentRevision>();
+				return new List<ContentRevisions>();
 
-			return await _session.Query<ContentRevision>()
+			return await _session.Query<ContentRevisions>()
 								 .Where(r => r.CelestialBody == celestialBody)
 								 .ToListAsync();
 		}
 
-		public async Task<ContentRevision> CreateRevisionAsync(CreateRevisionRequest request, string authorId)
+		public async Task<ContentRevisions> CreateRevisionAsync(CreateRevisionRequest request, string authorId)
 		{
-			var celestialBody = await _session.Query<CelestialBody>()
-				.FirstOrDefaultAsync(cb => cb.Name == request.CelestialBodyPath);
+			var celestialBody = await _session.Query<CelestialBodies>()
+				.FirstOrDefaultAsync(cb => cb.BodyName == request.CelestialBodyPath);
 
 			if (celestialBody == null)
 				throw new Exception("Celestial body not found.");
 
-			var author = await _session.Query<User>()
+			var author = await _session.Query<Users>()
 				.FirstOrDefaultAsync(u => u.Id == authorId);
 
 			if (author == null)
 				throw new Exception("Author not found.");
 
-			var revision = new ContentRevision
+			var revision = new ContentRevisions
 			{
 				Content = request.Content,
 				CelestialBody = celestialBody,
