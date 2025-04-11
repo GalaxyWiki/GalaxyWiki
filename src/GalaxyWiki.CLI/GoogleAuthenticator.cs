@@ -1,11 +1,11 @@
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Util.Store;
 
-public class GoogleAuthenticator
+public static class GoogleAuthenticator
 {
     private static readonly string[] Scopes = { "openid", "email", "profile" };
-
-    public async Task<string> GetIdTokenAsync()
+    public static string JWT = "";
+    public static async Task GetIdTokenAsync()
     {
         var clientSecrets = new ClientSecrets
         {
@@ -21,6 +21,6 @@ public class GoogleAuthenticator
             new FileDataStore("token.json", true)
         );
 
-        return credential.Token.IdToken;
+        JWT = credential.Token.IdToken;
     }
 }
