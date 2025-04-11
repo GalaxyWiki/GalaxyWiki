@@ -4,4 +4,6 @@ bin/
 flyway.conf
 .terraform*
 *.tfstate*
-.env
+.env.vs/
+.vs/
+
