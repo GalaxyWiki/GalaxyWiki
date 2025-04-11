@@ -14,7 +14,7 @@ public class AuthController : ControllerBase
             return Ok(new
             {
                 message = "Login successful",
-                email = payload.Email
+                name = payload.Name
             });
         }
         catch (Exception)
@@ -26,5 +26,5 @@ public class AuthController : ControllerBase
 
 public class LoginRequest
 {
-    public string IdToken { get; set; }
+    public required string IdToken { get; set; }
 }
