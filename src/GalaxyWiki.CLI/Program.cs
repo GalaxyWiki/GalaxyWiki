@@ -2,12 +2,14 @@
 using Spectre.Console;
 using Spectre.Console.Cli;
 using Spectre.Console.Rendering;
+using dotenv.net;
+using System.Threading.Tasks;
 
 namespace GalaxyWiki.Cli
 {
     public static class Program
     {
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
             //==================== Layout definition ====================//
             // REMOVED: Old approach
@@ -33,6 +35,7 @@ namespace GalaxyWiki.Cli
             //==================== Main command loop ====================//
 
             // AnsiConsole.Live(layout);
+            DotEnv.Load();
             ShowBanner();
 
             bool running = true;
@@ -68,6 +71,8 @@ namespace GalaxyWiki.Cli
                     case "render": AnsiConsole.Write(GetRenderedCelestialBody()); break;
 
                     case "chat": LaunchChatbot(); break;
+
+                    case "login": await Login(); break;
                 }
             }
         }
@@ -159,6 +164,16 @@ namespace GalaxyWiki.Cli
             }
         }
 
+        static async Task Login() {
+            Console.WriteLine("Obtaining JWT");
+            await GoogleAuthenticator.GetIdTokenAsync();
+
+            Console.WriteLine("JWT Obtained.");
+            Console.WriteLine(GoogleAuthenticator.JWT);
+
+            Console.WriteLine("Logging in with API");
+            await ApiClient.LoginAsync(GoogleAuthenticator.JWT);
+        }
     }
 }
 
