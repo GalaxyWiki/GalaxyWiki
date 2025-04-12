@@ -61,16 +61,27 @@ namespace GalaxyWiki.Api.Controllers
             using var transaction = _session.BeginTransaction();
             try
             {
+                if (!request.BodyTypeId.HasValue)
+                    return BadRequest(new { error = "Body type ID is required." });
+
                 var bodyType = await _session.Query<BodyTypes>()
-                    .FirstOrDefaultAsync(bt => bt.Id == request.Id);
+                    .FirstOrDefaultAsync(bt => bt.Id == request.BodyTypeId.Value);
 
                 if (bodyType == null)
                     return BadRequest(new { error = "Invalid body type ID." });
 
+                CelestialBodies? orbits = null;
+                if (request.OrbitsId.HasValue)
+                {
+                    orbits = await _session.GetAsync<CelestialBodies>(request.OrbitsId.Value);
+                    if (orbits == null)
+                        return BadRequest(new { error = "Invalid orbits ID." });
+                }
+
                 var celestialBody = new CelestialBodies
                 {
-                    BodyName = request.Name,
-                    Orbits = request.Orbits,
+                    BodyName = request.BodyName,
+                    Orbits = orbits,
                     BodyType = bodyType.Id
                 };
 
@@ -97,14 +108,25 @@ namespace GalaxyWiki.Api.Controllers
                 if (celestialBody == null)
                     return NotFound(new { error = "Celestial body not found." });
 
+                if (!request.BodyTypeId.HasValue)
+                    return BadRequest(new { error = "Body type ID is required." });
+
                 var bodyType = await _session.Query<BodyTypes>()
-                    .FirstOrDefaultAsync(bt => bt.Id == request.Id);
+                    .FirstOrDefaultAsync(bt => bt.Id == request.BodyTypeId.Value);
 
                 if (bodyType == null)
                     return BadRequest(new { error = "Invalid body type ID." });
 
-                celestialBody.BodyName = request.Name;
-                celestialBody.Orbits = request.Orbits;
+                CelestialBodies? orbits = null;
+                if (request.OrbitsId.HasValue)
+                {
+                    orbits = await _session.GetAsync<CelestialBodies>(request.OrbitsId.Value);
+                    if (orbits == null)
+                        return BadRequest(new { error = "Invalid orbits ID." });
+                }
+
+                celestialBody.BodyName = request.BodyName;
+                celestialBody.Orbits = orbits;
                 celestialBody.BodyType = bodyType.Id;
 
                 await _session.UpdateAsync(celestialBody);
@@ -161,15 +183,15 @@ namespace GalaxyWiki.Api.Controllers
 
     public class CelestialBodyCreateRequest
     {
-        public string Name { get; set; } = string.Empty;
-        public int Id { get; set; }
-        public CelestialBodies? Orbits { get; set; }
+        public string BodyName { get; set; } = string.Empty;
+        public int? BodyTypeId { get; set; }
+        public int? OrbitsId { get; set; }
     }
 
     public class CelestialBodyUpdateRequest
     {
-        public string Name { get; set; } = string.Empty;
-        public int Id { get; set; }
-        public CelestialBodies? Orbits { get; set; }
+        public string BodyName { get; set; } = string.Empty;
+        public int? BodyTypeId { get; set; }
+        public int? OrbitsId { get; set; }
     }
 } 
