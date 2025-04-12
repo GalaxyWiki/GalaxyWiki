@@ -1,19 +1,16 @@
 using Microsoft.AspNetCore.Mvc;
 using GalaxyWiki.API.DTO;
 using GalaxyWiki.API.Services;
+using Microsoft.AspNetCore.Authorization;
 
 namespace GalaxyWiki.Api.Controllers
 {
     [Route("api/revision")]
     [ApiController]
-    public class RevisionsController : ControllerBase
+    public class RevisionsController(ContentRevisionService revisionService, NHibernate.ISession session) : ControllerBase
     {
-        private readonly ContentRevisionService _revisionService;
-
-        public RevisionsController(ContentRevisionService revisionService)
-        {
-            _revisionService = revisionService;
-        }
+        private readonly ContentRevisionService _revisionService = revisionService;
+        private readonly NHibernate.ISession _session = session;
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
@@ -49,8 +46,10 @@ namespace GalaxyWiki.Api.Controllers
         }
 
         [HttpPost]
+        [Authorize]
         public async Task<IActionResult> Create([FromBody] CreateRevisionRequest request)
         {
+            using var transaction = _session.BeginTransaction();
             try
             {
                 var authorId = User.FindFirst("sub")?.Value;
@@ -62,6 +61,8 @@ namespace GalaxyWiki.Api.Controllers
 
                 var revision = await _revisionService.CreateRevisionAsync(request, authorId);
 
+                await transaction.CommitAsync();
+
                 return CreatedAtAction(nameof(GetById), new { id = revision.Id }, new
                 {
                     revision.Id,
@@ -71,7 +72,8 @@ namespace GalaxyWiki.Api.Controllers
             }
             catch (Exception e)
             {
-                return NotFound(new { error = e.Message });
+                await transaction.RollbackAsync();
+                return BadRequest(new { error = e.Message });
             }
         }
     }
