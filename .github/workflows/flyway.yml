@@ -39,7 +39,7 @@ jobs:
           -password=${{ secrets.DB_PASSWORD }} \
           -connectRetries=3 \
           -connectRetriesInterval=10 \
-          -cleanDisabled=False
+          -cleanDisabled=false
           clean
           
           echo "Running migrations..."
