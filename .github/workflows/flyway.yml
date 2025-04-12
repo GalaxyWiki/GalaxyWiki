@@ -33,7 +33,13 @@ jobs:
 
           echo "Cleaning..."
           docker run --rm \
-          flyway/flyway:latest clean
+          flyway/flyway:latest \
+          -url=${{ secrets.DB_URL }} \
+          -user=${{ secrets.DB_USERNAME }} \
+          -password=${{ secrets.DB_PASSWORD }} \
+          -connectRetries=3 \
+          -connectRetriesInterval=10 \
+          clean
           
           echo "Running migrations..."
           docker run --rm \
