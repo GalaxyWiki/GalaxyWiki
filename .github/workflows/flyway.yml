@@ -1,0 +1,23 @@
+name: Migrations
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Flyway migrations
+        run: |
+          echo "Running Flyway migrations..."
+          docker run --rm flyway/flyway:latest \
+          -url=${{ secrets.DB_URL }} \
+          -user=${{ secrets.DB_USER }} \
+          -password=${{ secrets.DB_PASSWORD }} \
+          -locations=filesystem:src/GalaxyWiki.Infrastructure/Migrations \
+          migrate
