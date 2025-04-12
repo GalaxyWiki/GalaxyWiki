@@ -16,9 +16,11 @@ jobs:
       - name: Run Flyway migrations
         run: |
           echo "Running Flyway migrations..."
-          docker run --rm flyway/flyway:latest \
+          docker run --rm \
+          -v $(pwd):/flyway/sql \
+          flyway/flyway:latest \
           -url=${{ secrets.DB_URL }} \
           -user=${{ secrets.DB_USER }} \
           -password=${{ secrets.DB_PASSWORD }} \
-          -locations=filesystem:/src/GalaxyWiki.Infrastructure/Migrations/ \
+          -locations=filesystem:/flyway/sql/src/GalaxyWiki.Infrastructure/Migrations \
           migrate
