@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - tevlen-migrations
+      - tevlen-api-fixes
 
 jobs:
   migrate:
@@ -29,6 +30,17 @@ jobs:
           -connectRetries=3 \
           -connectRetriesInterval=10 \
           info
+
+          echo "Cleaning..."
+          docker run --rm \
+          flyway/flyway:latest \
+          -url=${{ secrets.DB_URL }} \
+          -user=${{ secrets.DB_USERNAME }} \
+          -password=${{ secrets.DB_PASSWORD }} \
+          -connectRetries=3 \
+          -connectRetriesInterval=10 \
+          -cleanDisabled=false \
+          clean
           
           echo "Running migrations..."
           docker run --rm \

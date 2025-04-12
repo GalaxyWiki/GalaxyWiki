@@ -6,7 +6,9 @@ public class CelestialBodiesMap : ClassMap<CelestialBodies>
     public CelestialBodiesMap()
     {
         Table("celestial_bodies");
-        Id(x => x.Id).Column("celestial_body_id").GeneratedBy.Identity();
+        Id(x => x.Id)
+            .Column("celestial_body_id")
+            .GeneratedBy.Sequence("celestial_bodies_celestial_body_id_seq");
         Map(x => x.BodyName).Column("body_name").Not.Nullable().Unique();
         Map(x => x.ActiveRevision).Column("active_revision").Nullable();
 
