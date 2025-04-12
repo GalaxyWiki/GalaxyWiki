@@ -1,0 +1,41 @@
+name: Flyway Database Migration
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/GalaxyWiki.Infrastructure/Migrations/**'
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up JDK
+      uses: actions/setup-java@v3
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+    
+    - name: Install Flyway CLI
+      run: |
+        wget -qO- https://repo1.maven.org/maven2/org/flywaydb/flyway-commandline/9.22.3/flyway-commandline-9.22.3-linux-x64.tar.gz | tar xvz
+        sudo ln -s `pwd`/flyway-9.22.3/flyway /usr/local/bin
+    
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_REGION }}
+    
+    - name: Run Flyway Migration
+      env:
+        FLYWAY_URL: ${{ secrets.DB_URL }}
+        FLYWAY_USER: ${{ secrets.DB_USERNAME }}
+        FLYWAY_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      run: |
+        flyway -locations=filesystem:src/GalaxyWiki.Infrastructure/Migrations migrate 
