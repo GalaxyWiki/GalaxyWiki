@@ -6,4 +6,9 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="FluentNHibernate" Version="2.2.1" />
+    <PackageReference Include="NHibernate" Version="5.4.7" />
+  </ItemGroup>
+
 </Project>
