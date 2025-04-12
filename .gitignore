@@ -6,3 +6,6 @@ flyway.conf
 *.tfstate*
 .env
 src/GalaxyWiki.CLI/token.json/Google.Apis.Auth.OAuth2.Responses.TokenResponse-user
+.env.vs/
+.vs/
+appsettings*

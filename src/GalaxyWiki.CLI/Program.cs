@@ -5,6 +5,17 @@ using Spectre.Console.Rendering;
 using dotenv.net;
 using System.Threading.Tasks;
 
+using System;
+using System.Collections.Generic;
+using System.Net.Http;
+using System.Text.Json;
+using System.Threading.Tasks;
+
+using System.Net.Http;
+using System.Threading.Tasks;
+using GalaxyWiki.Core.Entities;
+using FluentNHibernate.Testing.Values;
+
 namespace GalaxyWiki.Cli
 {
     public static class Program
@@ -56,7 +67,7 @@ namespace GalaxyWiki.Cli
 
                     case "comment": AnsiConsole.WriteLine($"TODO: Comment\n{dat}"); break;
 
-                    case "tree": AnsiConsole.Write(GetUniverseTree()); break;
+                    case "tree": AnsiConsole.Write(await GetUniverseTree()); break;
 
                     case "cal": AnsiConsole.Write(GetCalendar()); break;
 
@@ -134,20 +145,36 @@ namespace GalaxyWiki.Cli
             .Expand();
         }
 
-        static IRenderable GetUniverseTree() {
+        static async Task<List<CelestialBodies>> GetAllCelestialBodies() {
+            string apiUrl = "http://localhost:5216/api/celestial-body";
+
+            try
+            {
+                return await ApiClient.GetCelestialBodiesAsync(apiUrl);
+            }
+            catch (Exception ex) { AnsiConsole.WriteLine("[red]An error occurred[/]: " + ex.Message); }
+
+            return new List<CelestialBodies>();
+        }
+
+        static async Task<IRenderable> GetUniverseTree() {
             // TODO: Populate via API fetch
+            List<CelestialBodies> bodies = await GetAllCelestialBodies();
             var universe = new Tree("Universe");
+            foreach (var body in bodies) {
+                universe.AddNode($"({body.Id}) {body.BodyName}");
+            }
 
-            var sagA = universe.AddNode("Sagittarius A*");
+            // var sagA = universe.AddNode("Sagittarius A*");
 
-            var sun = sagA.AddNode("Sun");                  sun.AddNodes("Mercury", "Venus");
-            var earth = sun.AddNode("Earth");               earth.AddNodes("Moon", "ISS");
-            var mars = sun.AddNode("Mars");                 mars.AddNodes("Phobos", "Deimos");
-            var jupiter = sun.AddNode("Jupiter");           jupiter.AddNodes("Io", "Europa", "Ganymede", "Callisto", "Amalthea", "Thebe", "Himalia", "Elara", "Lysithea");
-            var saturn = sun.AddNode("Saturn");             saturn.AddNodes("[red]Titan[/]", "Enceladus", "Iapetus", "Rhea", "Dione", "Tethys", "Mimas", "Hyperion", "Phoebe", "Janus", "Epimetheus");
-            var uranus = sun.AddNode("Uranus");             uranus.AddNodes("Miranda", "Ariel", "Umbriel", "Titania", "Oberon");
-            var neptune = sun.AddNode("Neptune");           neptune.AddNodes("Triton", "Nereid", "Proteus", "Larissa");
-            var pluto = sun.AddNode("Pluto");               pluto.AddNodes("Charon", "Hydra", "Nix", "Kerberos", "Styx");            
+            // var sun = sagA.AddNode("Sun");                  sun.AddNodes("Mercury", "Venus");
+            // var earth = sun.AddNode("Earth");               earth.AddNodes("Moon", "ISS");
+            // var mars = sun.AddNode("Mars");                 mars.AddNodes("Phobos", "Deimos");
+            // var jupiter = sun.AddNode("Jupiter");           jupiter.AddNodes("Io", "Europa", "Ganymede", "Callisto", "Amalthea", "Thebe", "Himalia", "Elara", "Lysithea");
+            // var saturn = sun.AddNode("Saturn");             saturn.AddNodes("[red]Titan[/]", "Enceladus", "Iapetus", "Rhea", "Dione", "Tethys", "Mimas", "Hyperion", "Phoebe", "Janus", "Epimetheus");
+            // var uranus = sun.AddNode("Uranus");             uranus.AddNodes("Miranda", "Ariel", "Umbriel", "Titania", "Oberon");
+            // var neptune = sun.AddNode("Neptune");           neptune.AddNodes("Triton", "Nereid", "Proteus", "Larissa");
+            // var pluto = sun.AddNode("Pluto");               pluto.AddNodes("Charon", "Hydra", "Nix", "Kerberos", "Styx");            
 
             return universe;
         }
