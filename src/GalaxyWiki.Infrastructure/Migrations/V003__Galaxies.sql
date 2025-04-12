@@ -1,4 +1,5 @@
 INSERT INTO celestial_bodies (body_name, orbits, body_type_id) VALUES
+('Universe', NULL, 11),
 ('Milky Way', NULL, 1),
 ('Andromeda Galaxy', NULL, 1),
 ('Triangulum Galaxy', NULL, 1),

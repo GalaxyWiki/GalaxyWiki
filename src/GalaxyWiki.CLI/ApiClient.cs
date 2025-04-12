@@ -1,7 +1,9 @@
 using System;
 using System.Net.Http;
 using System.Net.Http.Json;
+using System.Text.Json;
 using System.Threading.Tasks;
+using GalaxyWiki.Core.Entities;
 
 public static class ApiClient
 {
@@ -21,5 +23,22 @@ public static class ApiClient
         var loginResult = await loginResponse.Content.ReadAsStringAsync();
 
         Console.WriteLine($"Login response: {loginResult}");
+    }
+
+    public static async Task<List<CelestialBodies>> GetCelestialBodiesAsync(string apiUrl)
+    {
+        // Perform the HTTP GET request.
+        HttpResponseMessage response = await httpClient.GetAsync(apiUrl);
+        response.EnsureSuccessStatusCode();
+
+        // Read the JSON response string.
+        string jsonString = await response.Content.ReadAsStringAsync();
+
+        // Deserialize the JSON into a List of CelestialBody objects.
+        List<CelestialBodies> bodies = JsonSerializer
+            .Deserialize<List<CelestialBodies>>(jsonString, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
+            ?? new List<CelestialBodies>();
+
+        return bodies;
     }
 }

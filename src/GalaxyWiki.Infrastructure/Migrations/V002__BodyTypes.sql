@@ -8,4 +8,5 @@ INSERT INTO body_types (type_name, description) VALUES
   ('Dwarf Planet', 'I shall deal with you later'),
   ('Asteroid', 'A minor planet composed primarily of rock and metal'),
   ('Comet', 'An icy body that releases gas and dust when near the Sun'),
-  ('Nebula', 'From Guardians of the Galaxy: Volume 2');
+  ('Nebula', 'From Guardians of the Galaxy: Volume 2'),
+  ('Universe', 'The center of the universe.');

@@ -1,0 +1,43 @@
+name: Migrations
+
+on:
+  push:
+    branches:
+      - main
+      - tevlen-migrations
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Flyway migrations
+        run: |
+          echo "Running Flyway migrations..."
+          # Print Flyway version
+          docker run --rm flyway/flyway:latest -v
+          
+          echo "Attempting database connection..."
+          docker run --rm \
+          -v $(pwd):/flyway/sql \
+          flyway/flyway:latest \
+          -url=${{ secrets.DB_URL }} \
+          -user=${{ secrets.DB_USERNAME }} \
+          -password=${{ secrets.DB_PASSWORD }} \
+          -connectRetries=3 \
+          -connectRetriesInterval=10 \
+          info
+          
+          echo "Running migrations..."
+          docker run --rm \
+          -v $(pwd):/flyway/sql \
+          flyway/flyway:latest \
+          -url=${{ secrets.DB_URL }} \
+          -user=${{ secrets.DB_USERNAME }} \
+          -password=${{ secrets.DB_PASSWORD }} \
+          -connectRetries=3 \
+          -connectRetriesInterval=10 \
+          -locations=filesystem:/flyway/sql/src/GalaxyWiki.Infrastructure/Migrations \
+          migrate
