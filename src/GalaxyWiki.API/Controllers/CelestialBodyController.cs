@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using NHibernate.Linq;
 using GalaxyWiki.Core.Entities;
+using Microsoft.AspNetCore.Authorization;
 
 namespace GalaxyWiki.Api.Controllers
 {
@@ -56,6 +57,7 @@ namespace GalaxyWiki.Api.Controllers
 
         // POST: api/celestial-body
         [HttpPost]
+        [Authorize]
         public async Task<IActionResult> Create([FromBody] CelestialBodyCreateRequest request)
         {
             using var transaction = _session.BeginTransaction();
@@ -99,6 +101,7 @@ namespace GalaxyWiki.Api.Controllers
 
         // PUT: api/celestial-body/{id}
         [HttpPut("{id}")]
+        [Authorize]
         public async Task<IActionResult> Update(int id, [FromBody] CelestialBodyUpdateRequest request)
         {
             using var transaction = _session.BeginTransaction();
@@ -143,6 +146,7 @@ namespace GalaxyWiki.Api.Controllers
 
         // DELETE: api/celestial-body/{id}
         [HttpDelete("{id}")]
+        [Authorize]
         public async Task<IActionResult> Delete(int id)
         {
             using var transaction = _session.BeginTransaction();
