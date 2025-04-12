@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - tevlen-migrations
 
 jobs:
   migrate:
@@ -15,9 +16,28 @@ jobs:
       - name: Run Flyway migrations
         run: |
           echo "Running Flyway migrations..."
-          docker run --rm flyway/flyway:latest \
+          # Print Flyway version
+          docker run --rm flyway/flyway:latest -v
+          
+          echo "Attempting database connection..."
+          docker run --rm \
+          -v $(pwd):/flyway/sql \
+          flyway/flyway:latest \
           -url=${{ secrets.DB_URL }} \
-          -user=${{ secrets.DB_USER }} \
+          -user=${{ secrets.DB_USERNAME }} \
           -password=${{ secrets.DB_PASSWORD }} \
-          -locations=filesystem:src/GalaxyWiki.Infrastructure/Migrations/ \
+          -connectRetries=3 \
+          -connectRetriesInterval=10 \
+          info
+          
+          echo "Running migrations..."
+          docker run --rm \
+          -v $(pwd):/flyway/sql \
+          flyway/flyway:latest \
+          -url=${{ secrets.DB_URL }} \
+          -user=${{ secrets.DB_USERNAME }} \
+          -password=${{ secrets.DB_PASSWORD }} \
+          -connectRetries=3 \
+          -connectRetriesInterval=10 \
+          -locations=filesystem:/flyway/sql/src/GalaxyWiki.Infrastructure/Migrations \
           migrate

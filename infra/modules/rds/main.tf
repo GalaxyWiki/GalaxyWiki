@@ -1,15 +1,19 @@
 resource "aws_vpc" "db_vpc" {
   cidr_block = "10.0.0.0/16"
   
+  enable_dns_support = true
+  enable_dns_hostnames = true
+  
   tags = {
     Name = "db-vpc"
   }
 }
 
 resource "aws_subnet" "db_subnet_1" {
-  vpc_id            = aws_vpc.db_vpc.id
-  cidr_block        = "10.0.1.0/24"
-  availability_zone = "eu-west-1a"
+  vpc_id                  = aws_vpc.db_vpc.id
+  cidr_block              = "10.0.1.0/24"
+  availability_zone       = "eu-west-1a"
+  map_public_ip_on_launch = true
   
   tags = {
     Name = "db-subnet-1"
@@ -17,9 +21,10 @@ resource "aws_subnet" "db_subnet_1" {
 }
 
 resource "aws_subnet" "db_subnet_2" {
-  vpc_id            = aws_vpc.db_vpc.id
-  cidr_block        = "10.0.2.0/24"
-  availability_zone = "eu-west-1b"
+  vpc_id                  = aws_vpc.db_vpc.id
+  cidr_block              = "10.0.2.0/24"
+  availability_zone       = "eu-west-1b"
+  map_public_ip_on_launch = true
   
   tags = {
     Name = "db-subnet-2"
@@ -44,7 +49,7 @@ resource "aws_security_group" "db_sg" {
     from_port   = var.db_port
     to_port     = var.db_port
     protocol    = "tcp"
-    cidr_blocks = ["10.0.0.0/16"]  # Only allow connections from within the VPC
+    cidr_blocks = ["0.0.0.0/0"]  # Allow connections from anywhere
   }
   
   egress {
@@ -76,7 +81,7 @@ resource "aws_db_instance" "galaxy_db" {
   vpc_security_group_ids = [aws_security_group.db_sg.id]
   
   multi_az               = false
-  publicly_accessible    = false
+  publicly_accessible    = true
   
   tags = {
     Name = "galaxy-db"
@@ -102,4 +107,14 @@ resource "aws_route_table" "db_rt" {
   tags = {
     Name = "db-rt"
   }
+}
+
+resource "aws_route_table_association" "db_rta_1" {
+  subnet_id      = aws_subnet.db_subnet_1.id
+  route_table_id = aws_route_table.db_rt.id
+}
+
+resource "aws_route_table_association" "db_rta_2" {
+  subnet_id      = aws_subnet.db_subnet_2.id
+  route_table_id = aws_route_table.db_rt.id
 } 
