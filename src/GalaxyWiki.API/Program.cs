@@ -6,6 +6,8 @@ using NHibernate;
 using FluentNHibernate.Automapping;
 using GalaxyWiki.Core.Entities;
 using GalaxyWiki.API.Services;
+using GalaxyWiki.Api.Repositories;
+using GalaxyWiki.Api.Services;
 
 DotEnv.Load();
 
@@ -46,6 +48,8 @@ builder.Services.AddScoped<NHibernate.ISession>(provider =>
     provider.GetRequiredService<ISessionFactory>().OpenSession());
 
 builder.Services.AddScoped<ContentRevisionService>();
+builder.Services.AddScoped<ICommentRepository, CommentRepository>();
+builder.Services.AddScoped<ICommentService, CommentService>();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
