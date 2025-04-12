@@ -33,9 +33,7 @@ jobs:
 
           echo "Cleaning..."
           docker run --rm \
-          flyway/flyway:latest \
-          -cleanDisabled=False
-          clean
+          flyway/flyway:latest clean
           
           echo "Running migrations..."
           docker run --rm \
