@@ -22,7 +22,7 @@ jobs:
           
           echo "Attempting database connection..."
           docker run --rm \
-          -v $(pwd):/flyway \
+          -v $(pwd):/flyway/sql \
           flyway/flyway:latest \
           -url=${{ secrets.DB_URL }} \
           -user=${{ secrets.DB_USERNAME }} \
@@ -39,12 +39,12 @@ jobs:
           
           echo "Running migrations..."
           docker run --rm \
-          -v $(pwd):/flyway \
+          -v $(pwd):/flyway/sql \
           flyway/flyway:latest \
           -url=${{ secrets.DB_URL }} \
           -user=${{ secrets.DB_USERNAME }} \
           -password=${{ secrets.DB_PASSWORD }} \
           -connectRetries=3 \
           -connectRetriesInterval=10 \
-          -locations=filesystem:/flyway/src/GalaxyWiki.Infrastructure/Migrations \
+          -locations=filesystem:/flyway/sql/src/GalaxyWiki.Infrastructure/Migrations \
           migrate
