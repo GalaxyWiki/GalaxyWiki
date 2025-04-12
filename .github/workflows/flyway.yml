@@ -22,7 +22,7 @@ jobs:
           
           echo "Attempting database connection..."
           docker run --rm \
-          -v $(pwd):/flyway/ \
+          -v $(pwd):/flyway \
           flyway/flyway:latest \
           -url=${{ secrets.DB_URL }} \
           -user=${{ secrets.DB_USERNAME }} \
@@ -39,7 +39,7 @@ jobs:
           
           echo "Running migrations..."
           docker run --rm \
-          -v $(pwd):/flyway/ \
+          -v $(pwd):/flyway \
           flyway/flyway:latest \
           -url=${{ secrets.DB_URL }} \
           -user=${{ secrets.DB_USERNAME }} \
