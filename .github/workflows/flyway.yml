@@ -24,7 +24,7 @@ jobs:
           -v $(pwd):/flyway/sql \
           flyway/flyway:latest \
           -url=${{ secrets.DB_URL }} \
-          -user=${{ secrets.DB_USER }} \
+          -user=${{ secrets.DB_USERNAME }} \
           -password=${{ secrets.DB_PASSWORD }} \
           -connectRetries=3 \
           -connectRetriesInterval=10 \
@@ -35,7 +35,7 @@ jobs:
           -v $(pwd):/flyway/sql \
           flyway/flyway:latest \
           -url=${{ secrets.DB_URL }} \
-          -user=${{ secrets.DB_USER }} \
+          -user=${{ secrets.DB_USERNAME }} \
           -password=${{ secrets.DB_PASSWORD }} \
           -connectRetries=3 \
           -connectRetriesInterval=10 \
