@@ -1,11 +1,11 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using GalaxyWiki.Application.Services;
 using dotenv.net;
 using FluentNHibernate.Cfg;
 using FluentNHibernate.Cfg.Db;
 using NHibernate;
 using FluentNHibernate.Automapping;
 using GalaxyWiki.Core.Entities;
+using GalaxyWiki.API.Services;
 
 DotEnv.Load();
 

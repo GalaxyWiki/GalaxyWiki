@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using System.Threading.Tasks;
-using GalaxyWiki.Application.DTO;
-using GalaxyWiki.Application.Services;
+using GalaxyWiki.API.DTO;
+using GalaxyWiki.API.Services;
 
 namespace GalaxyWiki.Api.Controllers
 {
@@ -25,9 +24,9 @@ namespace GalaxyWiki.Api.Controllers
 
             return Ok(new
             {
-                revision.Id,
                 revision.Content,
                 revision.CreatedAt,
+                CelestialBodyName = revision.CelestialBody.BodyName,
                 AuthorDisplayName = revision.Author.DisplayName
             });
         }

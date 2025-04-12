@@ -1,8 +1,8 @@
-namespace GalaxyWiki.Application.DTO
+namespace GalaxyWiki.API.DTO
 {
     public class CreateRevisionRequest
     {
-        public string CelestialBodyPath { get; set; }
+        public required string CelestialBodyPath { get; set; }
         public string Content { get; set; } = string.Empty;
     }
 }
