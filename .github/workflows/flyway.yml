@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - tevlen-migrations
+      - tevlen-api-fixes
 
 jobs:
   migrate:
@@ -21,7 +22,7 @@ jobs:
           
           echo "Attempting database connection..."
           docker run --rm \
-          -v $(pwd):/flyway/sql \
+          -v $(pwd):/flyway/ \
           flyway/flyway:latest \
           -url=${{ secrets.DB_URL }} \
           -user=${{ secrets.DB_USERNAME }} \
@@ -29,15 +30,21 @@ jobs:
           -connectRetries=3 \
           -connectRetriesInterval=10 \
           info
+
+          echo "Cleaning..."
+          docker run --rm \
+          flyway/flyway:latest \
+          -cleanDisabled=False
+          clean
           
           echo "Running migrations..."
           docker run --rm \
-          -v $(pwd):/flyway/sql \
+          -v $(pwd):/flyway/ \
           flyway/flyway:latest \
           -url=${{ secrets.DB_URL }} \
           -user=${{ secrets.DB_USERNAME }} \
           -password=${{ secrets.DB_PASSWORD }} \
           -connectRetries=3 \
           -connectRetriesInterval=10 \
-          -locations=filesystem:/flyway/sql/src/GalaxyWiki.Infrastructure/Migrations \
+          -locations=filesystem:/flyway/src/GalaxyWiki.Infrastructure/Migrations \
           migrate
