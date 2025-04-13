@@ -1,4 +1,4 @@
-namespace GalaxyWiki.API.DTO
+namespace GalaxyWiki.API.DTOs
 {
     public class CreateRevisionRequest
     {

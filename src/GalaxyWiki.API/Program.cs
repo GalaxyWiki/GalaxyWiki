@@ -50,8 +50,11 @@ builder.Services.AddScoped<NHibernate.ISession>(provider =>
 builder.Services.AddScoped<ContentRevisionService>();
 builder.Services.AddScoped<ICommentRepository, CommentRepository>();
 builder.Services.AddScoped<ICommentService, CommentService>();
+builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<UserService>();
 
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
         options.Authority = "https://accounts.google.com";
@@ -60,15 +63,20 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateIssuer = true,
             ValidIssuer = "https://accounts.google.com",
             ValidateAudience = true,
-            ValidAudiences = new[] { System.Environment.GetEnvironmentVariable("CLIENT_ID") },
+            ValidAudiences = [Environment.GetEnvironmentVariable("CLIENT_ID")],
             ValidateLifetime = true
         };
     });
 
 builder.Services.AddAuthorization();
 
+// Remove eventually
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+
 var app = builder.Build();
 
+app.UseMiddleware<GlobalExceptionMiddleware>();
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
