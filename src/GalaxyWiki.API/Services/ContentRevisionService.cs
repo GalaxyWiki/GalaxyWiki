@@ -19,7 +19,7 @@ namespace GalaxyWiki.API.Services
                                                .FirstOrDefaultAsync(cb => cb.BodyName == celestialBodyPath);
 
             if (celestialBody == null)
-                return new List<ContentRevisions>();
+                return [];
 
             return await _session.Query<ContentRevisions>()
                                  .Where(r => r.CelestialBody == celestialBody)
@@ -29,17 +29,9 @@ namespace GalaxyWiki.API.Services
         public async Task<ContentRevisions> CreateRevisionAsync(CreateRevisionRequest request, string authorId)
         {
             var celestialBody = await _session.Query<CelestialBodies>()
-                .FirstOrDefaultAsync(cb => cb.BodyName == request.CelestialBodyPath);
-
-            if (celestialBody == null)
-                throw new Exception("Celestial body not found.");
-
+                .FirstOrDefaultAsync(cb => cb.BodyName == request.CelestialBodyPath) ?? throw new Exception("Celestial body not found.");
             var author = await _session.Query<Users>()
-                .FirstOrDefaultAsync(u => u.Id == authorId);
-
-            if (author == null)
-                throw new Exception("Author not found.");
-
+                .FirstOrDefaultAsync(u => u.Id == authorId) ?? throw new Exception("Author not found.");
             var revision = new ContentRevisions
             {
                 Content = request.Content,
