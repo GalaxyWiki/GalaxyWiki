@@ -17,7 +17,15 @@ namespace GalaxyWiki.API.Services
 
         public async Task<string> Login(string idToken)
         {
-            var payload = await GoogleJsonWebSignature.ValidateAsync(idToken);
+            GoogleJsonWebSignature.Payload payload;
+            try 
+            {
+                payload = await GoogleJsonWebSignature.ValidateAsync(idToken);
+            }
+            catch (InvalidJwtException ex)
+            {
+                throw new InvalidGoogleTokenException("Invalid Google ID token: " + ex.Message);
+            }
             
             var user = await _session.GetAsync<Users>(payload.Subject);
 
@@ -29,18 +37,18 @@ namespace GalaxyWiki.API.Services
             return user.DisplayName;     
         }
 
-        public async Task<Boolean> CheckUserHasAccessRight(string authorId, UserRole[] accessLevelRequired)
+        public async Task<Boolean> CheckUserHasAccessRight(UserRole[] accessLevelRequired, string? authorId = null)
         {
             if (string.IsNullOrEmpty(authorId))
             {
-                throw new Exception("Author ID missing.");
+                throw new InvalidGoogleTokenException("Author Id missing.");
             }
 
             var user = await _userService.getUserById(authorId);
 
             if (user == null)
             {
-                throw new Exception("User does not exist.");
+                throw new UserDoesNotExist("User does not exist.");
             }
 
             return Array.Exists(accessLevelRequired, r => (int)r == user.Role.Id);
