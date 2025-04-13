@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using NHibernate.Linq;
 using GalaxyWiki.Core.Entities;
 
-namespace GalaxyWiki.Api.Controllers
+namespace GalaxyWiki.API.Controllers
 {
     [Route("api/star-system")]
     [ApiController]

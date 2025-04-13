@@ -1,11 +1,11 @@
 using NHibernate.Linq;
-using GalaxyWiki.API.DTO;
+using GalaxyWiki.API.DTOs;
 using GalaxyWiki.Core.Entities;
 using GalaxyWiki.Core.Enums;
 
 namespace GalaxyWiki.API.Services
 {
-    public class ContentRevisionService
+    public class ContentRevisionService(NHibernate.ISession session)
     {
         private readonly NHibernate.ISession _session;
 
@@ -28,7 +28,7 @@ namespace GalaxyWiki.API.Services
                                                .FirstOrDefaultAsync(cb => cb.BodyName == celestialBodyPath);
 
             if (celestialBody == null)
-                return new List<ContentRevisions>();
+                return [];
 
             return await _session.Query<ContentRevisions>()
                                  .Where(r => r.CelestialBody == celestialBody)

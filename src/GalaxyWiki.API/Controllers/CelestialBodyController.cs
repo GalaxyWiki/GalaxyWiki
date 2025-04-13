@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using NHibernate.Linq;
 using GalaxyWiki.Core.Entities;
 using Microsoft.AspNetCore.Authorization;
+using GalaxyWiki.API.DTOs;
 
 namespace GalaxyWiki.Api.Controllers
 {
@@ -183,19 +184,5 @@ namespace GalaxyWiki.Api.Controllers
                 throw;
             }
         }
-    }
-
-    public class CelestialBodyCreateRequest
-    {
-        public string BodyName { get; set; } = string.Empty;
-        public int? BodyTypeId { get; set; }
-        public int? OrbitsId { get; set; }
-    }
-
-    public class CelestialBodyUpdateRequest
-    {
-        public string BodyName { get; set; } = string.Empty;
-        public int? BodyTypeId { get; set; }
-        public int? OrbitsId { get; set; }
     }
 } 
