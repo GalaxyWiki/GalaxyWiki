@@ -47,6 +47,7 @@ builder.Services.AddScoped<NHibernate.ISession>(provider =>
 
 builder.Services.AddScoped<ContentRevisionService>();
 builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<UserService>();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
