@@ -5,15 +5,16 @@ public class CommentsMap : ClassMap<Comments>
 {
     public CommentsMap()
     {
-        Table("comments");
-        Id(x => x.Id).Column("comment_id").GeneratedBy.Identity();
-        Map(x => x.CommentText).Column("comment").Not.Nullable();
-        Map(x => x.CreatedAt).Column("created_at").Default("CURRENT_TIMESTAMP");
+          Table("comments");
+            
+            Id(x => x.CommentId).Column("comment_id").GeneratedBy.Sequence("comments_comment_id_seq");
 
-        Map(x => x.CelestialBody).Column("celestial_body_id").Not.Nullable();
-        Map(x => x.User).Column("user_id").Nullable();
+            Map(x => x.CelestialBodyId).Column("celestial_body_id").Not.Nullable();
 
-        // References(x => x.CelestialBody).Column("celestial_body_id").Not.Nullable();
-        // References(x => x.User).Column("user_id").Nullable();
+            Map(x => x.UserId).Column("user_id").Length(30);
+
+            Map(x => x.CommentText).Column("comment").Not.Nullable().Length(255);
+            
+            Map(x => x.CreatedAt).Column("created_at").Not.Nullable();
     }
 }
