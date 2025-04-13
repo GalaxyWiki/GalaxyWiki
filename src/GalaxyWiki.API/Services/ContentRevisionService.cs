@@ -1,17 +1,12 @@
 using NHibernate.Linq;
-using GalaxyWiki.API.DTO;
+using GalaxyWiki.API.DTOs;
 using GalaxyWiki.Core.Entities;
 
 namespace GalaxyWiki.API.Services
 {
-    public class ContentRevisionService
+    public class ContentRevisionService(NHibernate.ISession session)
     {
-        private readonly NHibernate.ISession _session;
-
-        public ContentRevisionService(NHibernate.ISession session)
-        {
-            _session = session;
-        }
+        private readonly NHibernate.ISession _session = session;
 
         public async Task<ContentRevisions?> GetRevisionByIdAsync(int id)
         {

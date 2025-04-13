@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
-using GalaxyWiki.API.DTO;
+using GalaxyWiki.API.DTOs;
 using GalaxyWiki.API.Services;
 using Microsoft.AspNetCore.Authorization;
 
-namespace GalaxyWiki.Api.Controllers
+namespace GalaxyWiki.API.Controllers
 {
     [Route("api/revision")]
     [ApiController]
