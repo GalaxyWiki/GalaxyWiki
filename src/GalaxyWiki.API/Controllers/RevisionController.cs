@@ -2,14 +2,17 @@ using Microsoft.AspNetCore.Mvc;
 using GalaxyWiki.API.DTO;
 using GalaxyWiki.API.Services;
 using Microsoft.AspNetCore.Authorization;
+using GalaxyWiki.Core.Enums;
+using System.Security.Claims;
 
 namespace GalaxyWiki.Api.Controllers
 {
     [Route("api/revision")]
     [ApiController]
-    public class RevisionsController(ContentRevisionService revisionService, NHibernate.ISession session) : ControllerBase
+    public class RevisionsController(ContentRevisionService revisionService, AuthService authService, NHibernate.ISession session) : ControllerBase
     {
         private readonly ContentRevisionService _revisionService = revisionService;
+        private readonly AuthService _authService = authService;
         private readonly NHibernate.ISession _session = session;
 
         [HttpGet("{id}")]
@@ -48,33 +51,22 @@ namespace GalaxyWiki.Api.Controllers
         [HttpPost]
         [Authorize]
         public async Task<IActionResult> Create([FromBody] CreateRevisionRequest request)
-        {
-            using var transaction = _session.BeginTransaction();
-            try
+        { 
+            var authorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (await _authService.CheckUserHasAccessRight([UserRole.Admin], authorId) == false)
             {
-                var authorId = User.FindFirst("sub")?.Value;
-
-                if (string.IsNullOrEmpty(authorId))
-                {
-                    return Unauthorized(new { error = "Invalid token. Author ID missing." });
-                }
-
-                var revision = await _revisionService.CreateRevisionAsync(request, authorId);
-
-                await transaction.CommitAsync();
-
-                return CreatedAtAction(nameof(GetById), new { id = revision.Id }, new
-                {
-                    revision.Id,
-                    revision.CreatedAt,
-                    revision.Content
-                });
+                return StatusCode(403, new { error = "You do not have access to perform this action." });
             }
-            catch (Exception e)
+
+            var revision = await _revisionService.CreateRevisionAsync(request, authorId);
+
+            return CreatedAtAction(nameof(GetById), new { id = revision.Id }, new
             {
-                await transaction.RollbackAsync();
-                return BadRequest(new { error = e.Message });
-            }
+                revision.Id,
+                revision.CreatedAt,
+                revision.Content
+            });
         }
     }
 }

@@ -1,6 +1,7 @@
 using NHibernate.Linq;
 using GalaxyWiki.API.DTO;
 using GalaxyWiki.Core.Entities;
+using GalaxyWiki.Core.Enums;
 
 namespace GalaxyWiki.API.Services
 {
@@ -8,9 +9,12 @@ namespace GalaxyWiki.API.Services
     {
         private readonly NHibernate.ISession _session;
 
-        public ContentRevisionService(NHibernate.ISession session)
+        private readonly AuthService _authService;
+
+        public ContentRevisionService(NHibernate.ISession session, AuthService authService)
         {
             _session = session;
+            _authService = authService;
         }
 
         public async Task<ContentRevisions?> GetRevisionByIdAsync(int id)
@@ -31,30 +35,43 @@ namespace GalaxyWiki.API.Services
                                  .ToListAsync();
         }
 
-        public async Task<ContentRevisions> CreateRevisionAsync(CreateRevisionRequest request, string authorId)
+        public async Task<ContentRevisions> CreateRevisionAsync(CreateRevisionRequest request, string? authorId = null)
         {
-            var celestialBody = await _session.Query<CelestialBodies>()
-                .FirstOrDefaultAsync(cb => cb.BodyName == request.CelestialBodyPath);
-
-            if (celestialBody == null)
-                throw new Exception("Celestial body not found.");
-
-            var author = await _session.Query<Users>()
-                .FirstOrDefaultAsync(u => u.Id == authorId);
-
-            if (author == null)
-                throw new Exception("Author not found.");
-
-            var revision = new ContentRevisions
+            using var transaction = _session.BeginTransaction();
+            try 
             {
-                Content = request.Content,
-                CelestialBody = celestialBody,
-                Author = author,
-                CreatedAt = DateTime.UtcNow
-            };
+                var celestialBody = await _session.Query<CelestialBodies>()
+                    .FirstOrDefaultAsync(cb => cb.BodyName == request.CelestialBodyPath);
 
-            await _session.SaveAsync(revision);
-            return revision;
+                if (celestialBody == null)
+                    throw new CelestialBodyDoesNotExist("Celestial body not found.");
+
+                var author = await _session.Query<Users>()
+                    .FirstOrDefaultAsync(u => u.Id == authorId);
+
+                if (author == null)
+                    throw new UserDoesNotExist("User does not exist.");
+
+                var revision = new ContentRevisions
+                {
+                    Content = request.Content,
+                    CelestialBody = celestialBody,
+                    Author = author,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                await _session.SaveAsync(revision);
+
+                await transaction.CommitAsync();
+
+                return revision;
+            }
+            catch (Exception)
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+            
         }
     }
 }
