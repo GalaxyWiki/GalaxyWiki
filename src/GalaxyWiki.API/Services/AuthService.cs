@@ -7,10 +7,12 @@ namespace GalaxyWiki.API.Services
     public class AuthService
     {
         private readonly NHibernate.ISession _session;
+        private readonly UserService _userService;
 
-        public AuthService(NHibernate.ISession session)
+        public AuthService(NHibernate.ISession session, UserService userService)
         {
             _session = session;
+            _userService = userService;
         }
 
         public async Task<string> Login(string idToken)
@@ -21,35 +23,27 @@ namespace GalaxyWiki.API.Services
 
             if (user == null)
             {
-                using var transaction = _session.BeginTransaction();
-                try
-                {   
-                    var viewerRole = await _session.GetAsync<Roles>((int)UserRole.Viewer);
-
-                    var newUser = new Users
-                    {
-                        Id = payload.Subject,
-                        Email = payload.Email,
-                        DisplayName = payload.Name,
-                        Role = viewerRole
-                    };
-
-                    await _session.SaveAsync(newUser);
-
-                    transaction.Commit();
-                
-                    return newUser.DisplayName;
-                }
-                catch (Exception)
-                {
-                    await transaction.RollbackAsync();
-                    throw;
-                }
+                user = await _userService.createUser(payload.Subject, payload.Email, payload.Name, UserRole.Viewer);
             }
-            else
+
+            return user.DisplayName;     
+        }
+
+        public async Task<Boolean> CheckUserHasAccessRight(string authorId, UserRole[] accessLevelRequired)
+        {
+            if (string.IsNullOrEmpty(authorId))
             {
-                return user.DisplayName;
+                throw new Exception("Author ID missing.");
             }
+
+            var user = await _userService.getUserById(authorId);
+
+            if (user == null)
+            {
+                throw new Exception("User does not exist.");
+            }
+
+            return Array.Exists(accessLevelRequired, r => (int)r == user.Role.Id);
         }
     }
 }

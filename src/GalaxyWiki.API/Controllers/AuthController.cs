@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using GalaxyWiki.API.Services;
 using Google.Apis.Auth;
+using GalaxyWiki.API.DTO;
 
 [ApiController]
 [Route("[controller]")]
@@ -30,12 +31,11 @@ public class AuthController : ControllerBase
         }
         catch (InvalidJwtException)
         {
-            return Unauthorized("Invalid JWT token.");
+            return Unauthorized(new {error = "Invalid JWT token."});
+        }
+        catch (Exception e)
+        {
+            return BadRequest(new {error = e.Message});
         }
     }
-}
-
-public class LoginRequest
-{
-    public required string IdToken { get; set; }
 }
