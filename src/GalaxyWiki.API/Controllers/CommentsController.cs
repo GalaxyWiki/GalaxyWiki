@@ -4,7 +4,7 @@ using GalaxyWiki.Api.Services;
 
 namespace GalaxyWiki.Api.Controllers
 {
-    [ApiController]
+  [ApiController]
     [Route("comments")]
     public class CommentsController : ControllerBase
     {
@@ -32,7 +32,7 @@ namespace GalaxyWiki.Api.Controllers
 
         // GET /comments/{id}
         [HttpGet("{id}")]
-        public IActionResult GetById(Guid id)
+        public IActionResult GetById(int id)
         {
             try
             {
@@ -65,7 +65,7 @@ namespace GalaxyWiki.Api.Controllers
 
         // GET /celestial_bodies/{celestialBodyId}
         [HttpGet("celestial_bodies/{celestialBodyId}")]
-        public IActionResult GetByCelestialBody(Guid celestialBodyId)
+        public IActionResult GetByCelestialBody(int celestialBodyId)
         {
             try
             {
@@ -80,7 +80,7 @@ namespace GalaxyWiki.Api.Controllers
 
         // GET /comments/users/{userId}
         [HttpGet("users/{userId}")]
-        public IActionResult GetByUser(Guid userId)
+        public IActionResult GetByUser(string userId)
         {
             try
             {
@@ -96,7 +96,7 @@ namespace GalaxyWiki.Api.Controllers
         // GET /comments/date-range?startDate={startDate}&endDate={endDate}&celestialBodyId={celestialBodyId}
         // Example: /comments/date-range?startDate=2024-01-01&endDate=2024-12-31&celestialBodyId=123e4567-e89b-12d3-a456-426614174000
         [HttpGet("date-range")]
-        public IActionResult GetByDateRange([FromQuery] string startDate, [FromQuery] string endDate, [FromQuery] Guid? celestialBodyId)
+        public IActionResult GetByDateRange([FromQuery] string startDate, [FromQuery] string endDate, [FromQuery] int? celestialBodyId)
         {
             try
             {
@@ -105,7 +105,6 @@ namespace GalaxyWiki.Api.Controllers
                     return BadRequest("Invalid date format. Please use YYYY-MM-DD format.");
                 }
 
-                // Set start time to beginning of day and end time to end of day
                 start = start.Date;
                 end = end.Date.AddDays(1).AddSeconds(-1);
 
@@ -120,7 +119,7 @@ namespace GalaxyWiki.Api.Controllers
 
         // PUT /comments/{id}
         [HttpPut("{id}")]
-        public IActionResult Update(Guid id, [FromBody] UpdateCommentDto updateDto)
+        public IActionResult Update(int id, [FromBody] UpdateCommentDto updateDto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
@@ -142,7 +141,7 @@ namespace GalaxyWiki.Api.Controllers
 
         // DELETE /comments/{id}
         [HttpDelete("{id}")]
-        public IActionResult Delete(Guid id)
+        public IActionResult Delete(int id)
         {
             try
             {

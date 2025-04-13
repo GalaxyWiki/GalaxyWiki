@@ -21,7 +21,7 @@ namespace GalaxyWiki.Api.Repositories
             return _session.Query<Comments>().ToList();
         }
 
-        public Comments GetById(Guid id)
+        public Comments GetById(int id)
         {
             return _session.Get<Comments>(id);
         }
@@ -34,21 +34,21 @@ namespace GalaxyWiki.Api.Repositories
             return comment;
         }
 
-        public IEnumerable<Comments> GetByCelestialBody(Guid celestialBodyId)
+        public IEnumerable<Comments> GetByCelestialBody(int celestialBodyId)
         {
             return _session.Query<Comments>()
                 .Where(c => c.CelestialBodyId == celestialBodyId)
                 .ToList();
         }
 
-        public IEnumerable<Comments> GetByUser(Guid userId)
+        public IEnumerable<Comments> GetByUser(string userId)
         {
             return _session.Query<Comments>()
                 .Where(c => c.UserId == userId)
                 .ToList();
         }
 
-        public IEnumerable<Comments> GetByDateRange(DateTime startDate, DateTime endDate, Guid? celestialBodyId = null)
+        public IEnumerable<Comments> GetByDateRange(DateTime startDate, DateTime endDate, int? celestialBodyId = null)
         {
             var query = _session.Query<Comments>()
                 .Where(c => c.CreatedAt >= startDate && c.CreatedAt <= endDate);
@@ -69,7 +69,7 @@ namespace GalaxyWiki.Api.Repositories
             return comment;
         }
 
-        public void Delete(Guid id)
+        public void Delete(int id)
         {
             var comment = _session.Get<Comments>(id);
             if (comment != null)

@@ -7,12 +7,12 @@ namespace GalaxyWiki.Api.Services
     public interface ICommentService
     {
         IEnumerable<CommentDto> GetAll();
-        CommentDto? GetById(Guid id);
+        CommentDto? GetById(int id);
         CommentDto Create(CreateCommentDto comment);
-        IEnumerable<CommentDto> GetByCelestialBody(Guid celestialBodyId);
-        IEnumerable<CommentDto> GetByUser(Guid userId);
-        IEnumerable<CommentDto> GetByDateRange(DateTime startDate, DateTime endDate, Guid? celestialBodyId = null);
-        CommentDto? Update(Guid id, UpdateCommentDto updateDto);
-        bool Delete(Guid id);
+        IEnumerable<CommentDto> GetByCelestialBody(int celestialBodyId);
+        IEnumerable<CommentDto> GetByUser(string userId);
+        IEnumerable<CommentDto> GetByDateRange(DateTime startDate, DateTime endDate, int? celestialBodyId = null);
+        CommentDto? Update(int id, UpdateCommentDto updateDto);
+        bool Delete(int id);
     }
 } 

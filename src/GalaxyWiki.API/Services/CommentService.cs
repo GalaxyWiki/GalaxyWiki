@@ -9,7 +9,7 @@ namespace GalaxyWiki.Api.Services
 {
     public class CommentService : ICommentService
     {
-        private readonly ICommentRepository _commentRepository;
+       private readonly ICommentRepository _commentRepository;
 
         public CommentService(ICommentRepository commentRepository)
         {
@@ -34,7 +34,7 @@ namespace GalaxyWiki.Api.Services
             return comments.Select(MapToDto);
         }
 
-        public CommentDto? GetById(Guid id)
+        public CommentDto? GetById(int id)
         {
             var comment = _commentRepository.GetById(id);
             return comment != null ? MapToDto(comment) : null;
@@ -44,7 +44,6 @@ namespace GalaxyWiki.Api.Services
         {
             var comment = new Comments
             {
-                CommentId = Guid.NewGuid(),
                 CommentText = commentDto.CommentText,
                 UserId = commentDto.UserId,
                 CelestialBodyId = commentDto.CelestialBodyId,
@@ -55,25 +54,25 @@ namespace GalaxyWiki.Api.Services
             return MapToDto(createdComment);
         }
 
-        public IEnumerable<CommentDto> GetByCelestialBody(Guid celestialBodyId)
+        public IEnumerable<CommentDto> GetByCelestialBody(int celestialBodyId)
         {
             var comments = _commentRepository.GetByCelestialBody(celestialBodyId);
             return comments.Select(MapToDto);
         }
 
-        public IEnumerable<CommentDto> GetByUser(Guid userId)
+        public IEnumerable<CommentDto> GetByUser(string userId)
         {
             var comments = _commentRepository.GetByUser(userId);
             return comments.Select(MapToDto);
         }
 
-        public IEnumerable<CommentDto> GetByDateRange(DateTime startDate, DateTime endDate, Guid? celestialBodyId = null)
+        public IEnumerable<CommentDto> GetByDateRange(DateTime startDate, DateTime endDate, int? celestialBodyId = null)
         {
             var comments = _commentRepository.GetByDateRange(startDate, endDate, celestialBodyId);
             return comments.Select(MapToDto);
         }
 
-        public CommentDto? Update(Guid id, UpdateCommentDto updateDto)
+        public CommentDto? Update(int id, UpdateCommentDto updateDto)
         {
             var comment = _commentRepository.GetById(id);
             if (comment == null) return null;
@@ -90,7 +89,7 @@ namespace GalaxyWiki.Api.Services
             return MapToDto(updatedComment);
         }
 
-        public bool Delete(Guid id)
+        public bool Delete(int id)
         {
             var comment = _commentRepository.GetById(id);
             if (comment == null) return false;
