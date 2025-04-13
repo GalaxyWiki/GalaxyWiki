@@ -3,6 +3,7 @@ using GalaxyWiki.API.DTO;
 using GalaxyWiki.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using GalaxyWiki.Core.Enums;
+using System.Security.Claims;
 
 namespace GalaxyWiki.Api.Controllers
 {
@@ -51,11 +52,11 @@ namespace GalaxyWiki.Api.Controllers
         [Authorize]
         public async Task<IActionResult> Create([FromBody] CreateRevisionRequest request)
         { 
-            var authorId = User.FindFirst("sub")?.Value;
+            var authorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             if (await _authService.CheckUserHasAccessRight([UserRole.Admin], authorId) == false)
             {
-                return Forbid("You do not have access to perform this action.");
+                return StatusCode(403, new { error = "You do not have access to perform this action." });
             }
 
             var revision = await _revisionService.CreateRevisionAsync(request, authorId);
