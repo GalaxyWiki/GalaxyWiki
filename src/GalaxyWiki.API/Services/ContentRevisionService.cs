@@ -5,17 +5,12 @@ using GalaxyWiki.Core.Enums;
 
 namespace GalaxyWiki.API.Services
 {
-    public class ContentRevisionService(NHibernate.ISession session)
+    public class ContentRevisionService(NHibernate.ISession _session)
     {
-        private readonly NHibernate.ISession _session;
+        // private readonly NHibernate.ISession _session;
 
-        private readonly AuthService _authService;
+        // private readonly AuthService _authService;
 
-        public ContentRevisionService(NHibernate.ISession session, AuthService authService)
-        {
-            _session = session;
-            _authService = authService;
-        }
 
         public async Task<ContentRevisions?> GetRevisionByIdAsync(int id)
         {

@@ -9,11 +9,15 @@ namespace GalaxyWiki.API.Controllers
 {
     [Route("api/revision")]
     [ApiController]
-    public class RevisionsController(ContentRevisionService revisionService, AuthService authService, NHibernate.ISession session) : ControllerBase
+    public class RevisionsController(
+        ContentRevisionService revisionService, 
+        AuthService authService 
+        // NHibernate.ISession session
+    ) : ControllerBase
     {
         private readonly ContentRevisionService _revisionService = revisionService;
         private readonly AuthService _authService = authService;
-        private readonly NHibernate.ISession _session = session;
+        // private readonly NHibernate.ISession _session = session;
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
