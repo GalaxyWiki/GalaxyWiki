@@ -1,30 +1,35 @@
 using Google.Apis.Auth;
 using Microsoft.AspNetCore.Mvc;
 
-[ApiController]
-[Route("[controller]")]
-public class AuthController : ControllerBase
+namespace GalaxyWiki.API.Controllers
 {
-    [HttpPost("/login")]
-    public async Task<IActionResult> Login([FromBody] LoginRequest request)
+    [ApiController]
+    [Route("[controller]")]
+    public class AuthController : ControllerBase
     {
-        try
+        [HttpPost("/login")]
+        public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
-            var payload = await GoogleJsonWebSignature.ValidateAsync(request.IdToken);
-            return Ok(new
+            try
             {
-                message = "Login successful",
-                name = payload.Name
-            });
-        }
-        catch (Exception)
-        {
-            return Unauthorized("Invalid Google ID token.");
+                var payload = await GoogleJsonWebSignature.ValidateAsync(request.IdToken);
+                return Ok(new
+                {
+                    message = "Login successful",
+                    name = payload.Name
+                });
+            }
+            catch (Exception)
+            {
+                return Unauthorized("Invalid Google ID token.");
+            }
         }
     }
+
+    public class LoginRequest
+    {
+        public required string IdToken { get; set; }
+    }
+    
 }
 
-public class LoginRequest
-{
-    public required string IdToken { get; set; }
-}
