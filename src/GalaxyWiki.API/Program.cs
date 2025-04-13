@@ -56,7 +56,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateIssuer = true,
             ValidIssuer = "https://accounts.google.com",
             ValidateAudience = true,
-            ValidAudiences = new[] { System.Environment.GetEnvironmentVariable("CLIENT_ID") },
+            ValidAudiences = [Environment.GetEnvironmentVariable("CLIENT_ID")],
             ValidateLifetime = true
         };
     });
