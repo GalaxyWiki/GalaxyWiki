@@ -17,19 +17,37 @@ namespace GalaxyWiki.API.Services
             _bodyTypeRepository = bodyTypesRepository;
         }
 
-        public async Task<IEnumerable<CelestialBodies>> GetAll()
+        public async Task<IEnumerable<(CelestialBodies CelestialBody, BodyTypes? BodyType)>> GetAll()
         {
-            return await _celestialBodyRepository.GetAll();
+            var celestialBodies = await _celestialBodyRepository.GetAll();
+            var result = new List<(CelestialBodies CelestialBody, BodyTypes? BodyType)>();
+            
+            foreach (var celestialBody in celestialBodies)
+            {
+                var bodyType = await _bodyTypeRepository.GetById(celestialBody.BodyType);
+                result.Add((celestialBody, bodyType));
+            }
+            
+            return result;
         }
 
-        public async Task<CelestialBodies?> GetById(int id)
+        public async Task<(CelestialBodies? CelestialBody, BodyTypes? BodyType)> GetById(int id)
         {
-            return await _celestialBodyRepository.GetById(id);
+            var celestialBody = await _celestialBodyRepository.GetById(id);
+            if (celestialBody == null)
+                return (null, null);
+                
+            var bodyType = await _bodyTypeRepository.GetById(celestialBody.BodyType);
+            return (celestialBody, bodyType);
         }
 
-        public async Task<CelestialBodies?> GetOrbitsById(int id)
+        public async Task<(CelestialBodies? CelestialBody, BodyTypes? BodyType)> GetOrbitsById(int id)
         {
-            return await _celestialBodyRepository.GetOrbitsById(id);
+            var celestialBody = await _celestialBodyRepository.GetOrbitsById(id);
+            if (celestialBody == null)
+                return (null, null);
+            var bodyType = await _bodyTypeRepository.GetById(celestialBody.BodyType);
+            return (celestialBody, bodyType);
         }
 
         public async Task<CelestialBodies> CreateCelestialBody(CreateCelestialBodyRequest request, string authorId)

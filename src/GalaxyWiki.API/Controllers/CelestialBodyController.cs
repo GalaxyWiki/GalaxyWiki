@@ -1,6 +1,4 @@
 using Microsoft.AspNetCore.Mvc;
-using NHibernate.Linq;
-using GalaxyWiki.Core.Entities;
 using Microsoft.AspNetCore.Authorization;
 using GalaxyWiki.API.DTOs;
 using GalaxyWiki.API.Services;
@@ -10,37 +8,42 @@ namespace GalaxyWiki.Api.Controllers
 {
     [Route("api/celestial-body")]
     [ApiController]
-    public class CelestialBodyController : ControllerBase
+    public class CelestialBodyController(CelestialBodyService celestialBodyService) : ControllerBase
     {
-        private readonly CelestialBodyService _celestialBodyService;
-
-        public CelestialBodyController(CelestialBodyService celestialBodyService)
-        {
-            _celestialBodyService = celestialBodyService;
-        }
+        private readonly CelestialBodyService _celestialBodyService = celestialBodyService;
 
         // GET: api/celestial-body
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
-            var celestialBodies = await _celestialBodyService.GetAll();
-            return Ok(celestialBodies);
+            var results = await _celestialBodyService.GetAll();
+            return Ok(results.Select(r => new
+            {
+                r.CelestialBody.Id,
+                r.CelestialBody.BodyName,
+                r.CelestialBody.Orbits,
+                r.CelestialBody.BodyType,
+                BodyTypeName = r.BodyType?.TypeName,
+                r.CelestialBody.ActiveRevision
+            }));
         }
 
         // GET: api/celestial-body/{id}
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
-            var celestialBody = await _celestialBodyService.GetById(id);
-            if (celestialBody == null) 
+            var (CelestialBody, BodyType) = await _celestialBodyService.GetById(id);
+            if (CelestialBody == null) 
                 return NotFound(new { error = "Celestial body not found." });
 
             return Ok(new
             {
-                celestialBody.Id,
-                celestialBody.BodyName,
-                celestialBody.Orbits,
-                celestialBody.BodyType
+                CelestialBody.Id,
+                CelestialBody.BodyName,
+                CelestialBody.Orbits,
+                CelestialBody.BodyType,
+                BodyTypeName = BodyType?.TypeName,
+                CelestialBody.ActiveRevision
             });
         }
 
@@ -49,12 +52,20 @@ namespace GalaxyWiki.Api.Controllers
         public async Task<IActionResult> GetOrbits(int id)
         {
             
-            var celestialBody = await _celestialBodyService.GetOrbitsById(id);
+            var (CelestialBody, BodyType) = await _celestialBodyService.GetOrbitsById(id);
 
-            if (celestialBody == null)
+            if (CelestialBody == null)
                 return NotFound(new { error = "Celestial body not found." });
 
-            return Ok(celestialBody);
+            return Ok(new
+            {
+                CelestialBody.Id,
+                CelestialBody.BodyName,
+                CelestialBody.Orbits,
+                CelestialBody.BodyType,
+                BodyTypeName = BodyType?.TypeName,
+                CelestialBody.ActiveRevision
+            });
         }
 
         // POST: api/celestial-body
