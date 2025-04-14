@@ -11,6 +11,11 @@ namespace GalaxyWiki.API.Services
 
         // private readonly AuthService _authService;
 
+        // public ContentRevisionService(NHibernate.ISession session, AuthService authService)
+        // {
+        //     _session = session;
+        //     _authService = authService;
+        // }
 
         public async Task<ContentRevisions?> GetRevisionByIdAsync(int id)
         {
