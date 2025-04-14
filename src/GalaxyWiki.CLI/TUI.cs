@@ -1,4 +1,6 @@
+using FluentNHibernate.Conventions;
 using GalaxyWiki.Core.Entities;
+using NHibernate.Criterion;
 using NHibernate.Util;
 using Spectre.Console;
 using Spectre.Console.Rendering;
@@ -59,6 +61,13 @@ public static class TUI {
 
         AnsiConsole.WriteLine("\n     Welcome to\n");
         AnsiConsole.Write(banner);
+    }
+    //---------- Error ----------//
+    public static void Err(string name, string desc, string info = "") {
+        AnsiConsole.Markup($"[[[bold red]{name.ToUpper()} ERR[/]]]: [red]{desc}[/]{(info.Trim().IsEmpty() ? "\n\t" + info.Replace("\n", "\n\t") : "")}\n\n");
+    }
+    public static void Warn(string name, string desc, string info = "") {
+        AnsiConsole.Markup($"[[[bold orange]{name.ToUpper()} WARN[/]]]: [orange]{desc}[/]{(info.Trim().IsEmpty() ? "\n\t" + info.Replace("\n", "\n\t") : "")}\n\n");
     }
 
     //---------- Path ----------//
