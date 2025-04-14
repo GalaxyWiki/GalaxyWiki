@@ -88,3 +88,66 @@ BEGIN
 END;
 $$;
 
+CREATE OR REPLACE PROCEDURE insert_star_system(
+    p_system_name VARCHAR(255),
+    p_center_cb_name VARCHAR(255)
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_center_cb_id INT;
+BEGIN
+    -- Get the center celestial body ID
+    SELECT celestial_body_id INTO v_center_cb_id 
+    FROM celestial_bodies 
+    WHERE body_name = p_center_cb_name;
+
+    IF v_center_cb_id IS NULL THEN
+        RAISE EXCEPTION 'Celestial body with name ''%'' does not exist',
+            p_center_cb_name;
+    END IF;
+
+    INSERT INTO star_systems (system_name, center_cb)
+        VALUES (p_system_name, v_center_cb_id);
+
+    RAISE NOTICE 'Star system % inserted successfully', p_system_name;
+
+    EXCEPTION
+        WHEN others THEN
+            RAISE EXCEPTION 'Error inserting into "star_systems": %',
+                SQLERRM;
+END;
+$$;
+
+CREATE OR REPLACE PROCEDURE insert_comment(
+    p_celestial_body_name VARCHAR(255),
+    p_user_id VARCHAR(30),
+    p_comment VARCHAR(255)
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_celestial_body_id INT;
+BEGIN
+    -- Get the celestial body ID
+    SELECT celestial_body_id INTO v_celestial_body_id
+    FROM celestial_bodies
+    WHERE body_name = p_celestial_body_name;
+
+    IF v_celestial_body_id IS NULL THEN
+        RAISE EXCEPTION 'Celestial body with name ''%'' does not exist',
+            p_celestial_body_name;
+    END IF;
+
+    INSERT INTO comments (celestial_body_id, user_id, comment)
+        VALUES (v_celestial_body_id, p_user_id, p_comment);
+
+    RAISE NOTICE 'Comment inserted successfully for celestial body %',
+        p_celestial_body_name;
+
+    EXCEPTION
+        WHEN others THEN
+            RAISE EXCEPTION 'Error inserting into "comments": %',
+                SQLERRM;
+END;
+$$;

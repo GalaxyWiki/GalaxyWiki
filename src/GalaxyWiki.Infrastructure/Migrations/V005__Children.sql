@@ -92,6 +92,6 @@ CALL insert_celestial_body('Peacock', 'Milky Way', 'Star');
 CALL insert_celestial_body('VY Canis Majoris', 'Milky Way', 'Star');
 CALL insert_celestial_body('UY Scuti', 'Milky Way', 'Star');
 CALL insert_celestial_body('Stephenson 2-18', 'Milky Way', 'Star');
-CALL insert_celestial_body('Sagittarius A*', 'Milky Way', 'Star'); -- Black hole at center of Milky Way
+CALL insert_celestial_body('Sagittarius A*', 'Milky Way', 'Black Hole'); -- Black hole at center of Milky Way
 
 

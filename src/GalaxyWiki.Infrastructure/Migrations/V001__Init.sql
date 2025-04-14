@@ -29,7 +29,7 @@ CREATE TABLE comments (
 
 CREATE TABLE star_systems (
   system_id SERIAL PRIMARY KEY,
-  name VARCHAR(255) NOT NULL,
+  system_name VARCHAR(255) NOT NULL,
   center_cb INT NOT NULL
 );
 
