@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
 using NHibernate.Linq;
 using GalaxyWiki.Core.Entities;
 
@@ -7,14 +6,9 @@ namespace GalaxyWiki.API.Controllers
 {
     [Route("api/star-system")]
     [ApiController]
-    public class StarSystemController : ControllerBase
+    public class StarSystemController(NHibernate.ISession session) : ControllerBase
     {
-        private readonly NHibernate.ISession _session;
-
-        public StarSystemController(NHibernate.ISession session)
-        {
-            _session = session;
-        }
+        private readonly NHibernate.ISession _session = session;
 
         // GET: api/star-system
         [HttpGet]
@@ -91,7 +85,6 @@ namespace GalaxyWiki.API.Controllers
 
         // POST: api/star-system
         [HttpPost]
-        [Authorize]
         public async Task<IActionResult> Create([FromBody] StarSystemCreateRequest request)
         {
             using var transaction = _session.BeginTransaction();
@@ -132,7 +125,6 @@ namespace GalaxyWiki.API.Controllers
 
         // PUT: api/star-system/{id}
         [HttpPut("{id}")]
-        [Authorize]
         public async Task<IActionResult> Update(int id, [FromBody] StarSystemUpdateRequest request)
         {
             using var transaction = _session.BeginTransaction();
@@ -168,7 +160,6 @@ namespace GalaxyWiki.API.Controllers
 
         // DELETE: api/star-system/{id}
         [HttpDelete("{id}")]
-        [Authorize]
         public async Task<IActionResult> Delete(int id)
         {
             using var transaction = _session.BeginTransaction();
