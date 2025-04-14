@@ -103,5 +103,30 @@ namespace GalaxyWiki.Api.Controllers
 
             return NoContent();
         }
+
+        // GET: api/celestial-body/{id}/children
+        [HttpGet("{id}/children")]
+        public async Task<IActionResult> GetChildren(int id)
+        {
+            try 
+            {
+                var children = await _celestialBodyService.GetChildrenById(id);
+                
+                return Ok(from r in children
+                          select new
+                          {
+                              r.CelestialBody.Id,
+                              r.CelestialBody.BodyName,
+                              r.CelestialBody.Orbits,
+                              r.CelestialBody.BodyType,
+                              BodyTypeName = r.BodyType?.TypeName,
+                              r.CelestialBody.ActiveRevision
+                          });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
+        }
     }
 } 
