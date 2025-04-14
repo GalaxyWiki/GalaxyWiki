@@ -140,5 +140,23 @@ namespace GalaxyWiki.API.Services
 
             await _celestialBodyRepository.Delete(celestialBody);
         }
+
+        public async Task<IEnumerable<(CelestialBodies CelestialBody, BodyTypes? BodyType)>> GetChildrenById(int id)
+        {
+            var celestialBody = await _celestialBodyRepository.GetById(id);
+            if (celestialBody == null)
+                throw new CelestialBodyDoesNotExist("Celestial body does not exist.");
+                
+            var children = await _celestialBodyRepository.GetCelestialBodiesOrbitingThisId(id);
+            var result = new List<(CelestialBodies CelestialBody, BodyTypes? BodyType)>();
+            
+            foreach (var child in children)
+            {
+                var bodyType = await _bodyTypeRepository.GetById(child.BodyType);
+                result.Add((child, bodyType));
+            }
+            
+            return result;
+        }
     }
 }
