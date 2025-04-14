@@ -21,9 +21,9 @@ namespace GalaxyWiki.Api.Services
             _celestialBodyRepository = celestialBodyRepository;
         }
 
-        private CommentDto MapToDto(Comments comment)
+        private CommentRequest MapToDto(Comments comment)
         {
-            return new CommentDto
+            return new CommentRequest
             {
                 CommentId = comment.CommentId,
                 CommentText = comment.CommentText,
@@ -39,31 +39,31 @@ namespace GalaxyWiki.Api.Services
             return comments;
         }
 
-        public async Task<CommentDto?> GetById(int id)
+        public async Task<CommentRequest?> GetById(int id)
         {
             var comment = await _commentRepository.GetById(id);
             return comment != null ? MapToDto(comment) : null;
         }
 
-        public async Task<IEnumerable<CommentDto>> GetByCelestialBody(int celestialBodyId)
+        public async Task<IEnumerable<CommentRequest>> GetByCelestialBody(int celestialBodyId)
         {
             var comments = await _commentRepository.GetByCelestialBody(celestialBodyId);
             return comments.Select(MapToDto);
         }
 
-        public async Task<IEnumerable<CommentDto>> GetByUser(string userId)
+        public async Task<IEnumerable<CommentRequest>> GetByUser(string userId)
         {
             var comments = await _commentRepository.GetByUser(userId);
             return comments.Select(MapToDto);
         }
 
-        public async Task<IEnumerable<CommentDto>> GetByDateRange(DateTime startDate, DateTime endDate, int? celestialBodyId = null)
+        public async Task<IEnumerable<CommentRequest>> GetByDateRange(DateTime startDate, DateTime endDate, int? celestialBodyId = null)
         {
             var comments = await _commentRepository.GetByDateRange(startDate, endDate, celestialBodyId);
             return comments.Select(MapToDto);
         }
 
-        public async Task<CommentDto> Create(CreateCommentDto commentDto, string userId)
+        public async Task<CommentRequest> Create(CreateCommentRequest commentDto, string userId)
         {
             if (await _authService.CheckUserHasAccessRight([UserRole.Admin, UserRole.Viewer], userId) == false)
             {
@@ -89,7 +89,7 @@ namespace GalaxyWiki.Api.Services
             return MapToDto(createdComment);
         }
 
-        public async Task<CommentDto> Update(int id, UpdateCommentDto updateDto, string userId)
+        public async Task<CommentRequest> Update(int id, UpdateCommentRequest updateDto, string userId)
         {
             if (await _authService.CheckUserHasAccessRight([UserRole.Admin, UserRole.Viewer], userId) == false)
             {

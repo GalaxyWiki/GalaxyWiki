@@ -21,10 +21,12 @@ public class GlobalExceptionMiddleware
 
             var statusCode = ex switch
             {
+                RequestBodyIsInvalid => StatusCodes.Status400BadRequest,
                 InvalidGoogleTokenException => StatusCodes.Status401Unauthorized,
                 UserDoesNotHaveAccess => StatusCodes.Status403Forbidden,
                 UserDoesNotExist => StatusCodes.Status401Unauthorized,
                 CelestialBodyDoesNotExist => StatusCodes.Status404NotFound,
+                BodyTypeDoesNotExist => StatusCodes.Status404NotFound,
                 RoleDoesNotExist => StatusCodes.Status400BadRequest,
                 CommentDoesNotExist => StatusCodes.Status400BadRequest,
                 CommentTooOldToUpdate => StatusCodes.Status403Forbidden,
@@ -43,6 +45,10 @@ public class GlobalExceptionMiddleware
     }
 }
 
+public class RequestBodyIsInvalid : Exception
+{
+    public RequestBodyIsInvalid(string message) : base(message) { }
+}
 public class InvalidGoogleTokenException : Exception
 {
     public InvalidGoogleTokenException(string message) : base(message) { }
@@ -60,6 +66,10 @@ public class UserDoesNotExist : Exception
 public class CelestialBodyDoesNotExist : Exception
 {
     public CelestialBodyDoesNotExist(string message) : base(message) { }
+}
+public class BodyTypeDoesNotExist : Exception
+{
+    public BodyTypeDoesNotExist(string message) : base(message) { }
 }
 
 public class RoleDoesNotExist : Exception

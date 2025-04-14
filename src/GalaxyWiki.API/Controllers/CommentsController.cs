@@ -3,7 +3,6 @@ using GalaxyWiki.Api.DTOs;
 using GalaxyWiki.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
-using GalaxyWiki.API.Services;
 
 namespace GalaxyWiki.Api.Controllers
 {
@@ -12,14 +11,10 @@ namespace GalaxyWiki.Api.Controllers
     public class CommentsController : ControllerBase
     {
         private readonly CommentService _commentService;
-        private readonly AuthService _authService;
-        private readonly UserService _userService;
 
-        public CommentsController(CommentService commentService, AuthService authService, UserService userService)
+        public CommentsController(CommentService commentService)
         {
             _commentService = commentService;
-            _authService = authService;
-            _userService = userService;
         }
 
         // GET /comments
@@ -76,7 +71,7 @@ namespace GalaxyWiki.Api.Controllers
         // POST /comments
         [HttpPost]
         [Authorize]
-        public async Task<IActionResult> Create([FromBody] CreateCommentDto newComment)
+        public async Task<IActionResult> Create([FromBody] CreateCommentRequest newComment)
         {
             if (!ModelState.IsValid) 
                 return BadRequest(ModelState);
@@ -91,7 +86,7 @@ namespace GalaxyWiki.Api.Controllers
         // PUT /comments/{id}
         [HttpPut("{id}")]
         [Authorize]
-        public async Task<IActionResult> Update(int commentId, [FromBody] UpdateCommentDto updateDto)
+        public async Task<IActionResult> Update(int commentId, [FromBody] UpdateCommentRequest updateDto)
         {
             if (!ModelState.IsValid) 
                 return BadRequest(ModelState);

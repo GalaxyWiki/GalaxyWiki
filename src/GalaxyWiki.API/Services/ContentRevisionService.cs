@@ -34,7 +34,7 @@ namespace GalaxyWiki.API.Services
             return await _contentRevisionRepository.GetByCelestialBodyId(celestialBody.Id);
         }
 
-        public async Task<ContentRevisions> CreateRevisionAsync(CreateRevisionRequest request, string authorId)
+        public async Task<ContentRevisions> CreateRevision(CreateRevisionRequest request, string authorId)
         {
             if (await _authService.CheckUserHasAccessRight([UserRole.Admin], authorId) == false)
             {

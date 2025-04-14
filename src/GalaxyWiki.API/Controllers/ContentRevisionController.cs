@@ -57,7 +57,7 @@ namespace GalaxyWiki.API.Controllers
         { 
             var authorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            var revision = await _contentRevisionService.CreateRevisionAsync(request, authorId);
+            var revision = await _contentRevisionService.CreateRevision(request, authorId);
 
             return CreatedAtAction(nameof(GetById), new { id = revision.Id }, new
             {

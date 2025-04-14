@@ -23,14 +23,6 @@ namespace GalaxyWiki.Api.Repositories
             return await _session.GetAsync<Comments>(id);
         }
 
-        public async Task<Comments> Create(Comments comment)
-        {
-            using var transaction = _session.BeginTransaction();
-            await _session.SaveAsync(comment);
-            transaction.Commit();
-            return comment;
-        }
-
         public async Task<IEnumerable<Comments>> GetByCelestialBody(int celestialBodyId)
         {
             return await _session.Query<Comments>()
@@ -58,19 +50,51 @@ namespace GalaxyWiki.Api.Repositories
             return await query.ToListAsync();
         }
 
+        public async Task<Comments> Create(Comments comment)
+        {
+            using var transaction = _session.BeginTransaction();
+            try
+            {
+                await _session.SaveAsync(comment);
+                transaction.Commit();
+                return comment;
+            }
+            catch
+            {
+                transaction.Rollback();
+                throw;
+            }
+        }
+
         public async Task<Comments> Update(Comments comment)
         {
             using var transaction = _session.BeginTransaction();
-            await _session.UpdateAsync(comment);
-            transaction.Commit();
-            return comment;
+            try
+            {
+                await _session.UpdateAsync(comment);
+                transaction.Commit();
+                return comment;
+            }
+            catch
+            {
+                transaction.Rollback();
+                throw;
+            }
         }
 
         public async Task Delete(Comments comment)
         {
             using var transaction = _session.BeginTransaction();
-            await _session.DeleteAsync(comment);
-            transaction.Commit();
+            try
+            {
+                await _session.DeleteAsync(comment);
+                transaction.Commit();
+            }
+            catch
+            {
+                transaction.Rollback();
+                throw;
+            }
         }
     }
 } 

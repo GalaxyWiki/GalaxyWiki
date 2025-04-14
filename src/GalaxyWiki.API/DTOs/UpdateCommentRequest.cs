@@ -1,6 +1,6 @@
 namespace GalaxyWiki.Api.DTOs
 {
-    public class UpdateCommentDto
+    public class UpdateCommentRequest
     {
         public string CommentText { get; set; }
     }
