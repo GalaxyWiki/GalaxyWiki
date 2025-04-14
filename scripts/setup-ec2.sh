@@ -1,27 +1,44 @@
 #!/bin/bash
 
-# Update system packages
-sudo apt-get update
-sudo apt-get upgrade -y
+# Update system packages for Amazon Linux
+sudo yum update -y
 
-# Install .NET dependencies
-wget https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
-sudo dpkg -i packages-microsoft-prod.deb
-rm packages-microsoft-prod.deb
+# Install development tools
+sudo yum groupinstall -y "Development Tools"
 
-sudo apt-get update
-sudo apt-get install -y apt-transport-https
-sudo apt-get update
-sudo apt-get install -y dotnet-sdk-7.0
-sudo apt-get install -y aspnetcore-runtime-7.0
+# Install .NET SDK
+# Reference: https://docs.microsoft.com/en-us/dotnet/core/install/linux-amazon-linux
+sudo rpm -Uvh https://packages.microsoft.com/config/centos/7/packages-microsoft-prod.rpm
+sudo yum install -y dotnet-sdk-7.0
+sudo yum install -y aspnetcore-runtime-7.0
 
 # Setup application directory
 sudo mkdir -p /var/www/galaxywiki-api
-sudo chown -R $USER:$USER /var/www/galaxywiki-api
+sudo chown -R ec2-user:ec2-user /var/www/galaxywiki-api
 sudo chmod -R 755 /var/www/galaxywiki-api
 
+# Create systemd service file
+cat > galaxywiki-api.service << 'EOF'
+[Unit]
+Description=GalaxyWiki API Service
+After=network.target
+
+[Service]
+WorkingDirectory=/var/www/galaxywiki-api
+ExecStart=/usr/bin/dotnet /var/www/galaxywiki-api/GalaxyWiki.API.dll
+Restart=always
+RestartSec=10
+SyslogIdentifier=galaxywiki-api
+User=ec2-user
+Environment=ASPNETCORE_ENVIRONMENT=Production
+Environment=ASPNETCORE_URLS=http://+:5000
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
 # Copy systemd service file
-sudo cp galaxywiki-api.service /etc/systemd/system/
+sudo mv galaxywiki-api.service /etc/systemd/system/
 
 # Reload systemd daemon
 sudo systemctl daemon-reload
