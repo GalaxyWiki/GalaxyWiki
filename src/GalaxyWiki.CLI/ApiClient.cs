@@ -41,4 +41,38 @@ public static class ApiClient
 
         return bodies;
     }
+    
+    public static async Task<Revision?> GetRevisionAsync(string apiUrl)
+    {
+        try
+        {
+            // Perform the HTTP GET request
+            HttpResponseMessage response = await httpClient.GetAsync(apiUrl);
+            response.EnsureSuccessStatusCode();
+
+            // Read the JSON response string
+            string jsonString = await response.Content.ReadAsStringAsync();
+
+            // Deserialize the JSON into a Revision object
+            Revision? revision = JsonSerializer
+                .Deserialize<Revision>(jsonString, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+            return revision;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error retrieving revision: {ex.Message}");
+            return null;
+        }
+    }
+}
+
+// Simple DTO to hold revision data
+public class Revision
+{
+    public int Id { get; set; }
+    public string? Content { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public string? CelestialBodyName { get; set; }
+    public string? AuthorDisplayName { get; set; }
 }
