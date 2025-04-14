@@ -1,0 +1,12 @@
+CALL insert_celestial_body('Vesta', 'Sun', 'Asteroid');
+CALL insert_celestial_body('Pallas', 'Sun', 'Asteroid');
+CALL insert_celestial_body('Hygiea', 'Sun', 'Asteroid');
+CALL insert_celestial_body('Euphrosyne', 'Sun', 'Asteroid');
+CALL insert_celestial_body('Interamnia', 'Sun', 'Asteroid');
+CALL insert_celestial_body('Europa (asteroid)', 'Sun', 'Asteroid');
+CALL insert_celestial_body('Davida', 'Sun', 'Asteroid');
+CALL insert_celestial_body('Sylvia', 'Sun', 'Asteroid');
+CALL insert_celestial_body('Cybele', 'Sun', 'Asteroid');
+CALL insert_celestial_body('Eunomia', 'Sun', 'Asteroid');
+CALL insert_celestial_body('Juno', 'Sun', 'Asteroid');
+CALL insert_celestial_body('Psyche', 'Sun', 'Asteroid');

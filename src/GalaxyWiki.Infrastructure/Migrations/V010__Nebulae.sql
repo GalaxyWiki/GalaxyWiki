@@ -1,0 +1,14 @@
+CALL insert_celestial_body('Orion Nebula', 'Milky Way', 'Nebula');
+CALL insert_celestial_body('Eagle Nebula', 'Milky Way', 'Nebula');
+CALL insert_celestial_body('Crab Nebula', 'Milky Way', 'Nebula');
+CALL insert_celestial_body('Horsehead Nebula', 'Milky Way', 'Nebula');
+CALL insert_celestial_body('Owl Nebula', 'Milky Way', 'Nebula');
+CALL insert_celestial_body('Cat''s Eye Nebula', 'Milky Way', 'Nebula');
+CALL insert_celestial_body('Ring Nebula', 'Milky Way', 'Nebula');
+CALL insert_celestial_body('Butterfly Nebula', 'Milky Way', 'Nebula');
+CALL insert_celestial_body('Lagoon Nebula', 'Milky Way', 'Nebula');
+CALL insert_celestial_body('Tarantula Nebula', 'Milky Way', 'Nebula');
+CALL insert_celestial_body('Trifid Nebula', 'Milky Way', 'Nebula');
+CALL insert_celestial_body('Veil Nebula', 'Milky Way', 'Nebula');
+CALL insert_celestial_body('Boomerang Nebula', 'Milky Way', 'Nebula');
+CALL insert_celestial_body('Egg Nebula', 'Milky Way', 'Nebula');

@@ -1,0 +1,13 @@
+CALL insert_celestial_body('International Space Station', 'Earth', 'Satellite');
+CALL insert_celestial_body('Hubble Space Telescope', 'Earth', 'Satellite');
+CALL insert_celestial_body('James Webb Space Telescope', 'Sun', 'Satellite');
+CALL insert_celestial_body('Voyager 1', 'Sun', 'Satellite');
+CALL insert_celestial_body('Voyager 2', 'Sun', 'Satellite');
+CALL insert_celestial_body('New Horizons', 'Sun', 'Satellite');
+CALL insert_celestial_body('GPS Constellation', 'Earth', 'Satellite');
+CALL insert_celestial_body('Galileo Constellation', 'Earth', 'Satellite');
+CALL insert_celestial_body('GLONASS Constellation', 'Earth', 'Satellite');
+CALL insert_celestial_body('Landsat 9', 'Earth', 'Satellite');
+CALL insert_celestial_body('Sentinel-2', 'Earth', 'Satellite');
+CALL insert_celestial_body('GOES-16', 'Earth', 'Satellite');
+CALL insert_celestial_body('Tiangong Space Station', 'Earth', 'Satellite');

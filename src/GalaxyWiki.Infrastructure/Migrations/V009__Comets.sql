@@ -1,0 +1,10 @@
+CALL insert_celestial_body('Halley''s Comet', 'Sun', 'Comet');
+CALL insert_celestial_body('Hale-Bopp', 'Sun', 'Comet');
+CALL insert_celestial_body('Comet Hyakutake', 'Sun', 'Comet');
+CALL insert_celestial_body('Comet McNaught', 'Sun', 'Comet');
+CALL insert_celestial_body('Comet Lovejoy', 'Sun', 'Comet');
+CALL insert_celestial_body('Comet ISON', 'Sun', 'Comet');
+CALL insert_celestial_body('Comet 67P/Churyumov-Gerasimenko', 'Sun', 'Comet');
+CALL insert_celestial_body('Comet Encke', 'Sun', 'Comet');
+CALL insert_celestial_body('Comet Wild 2', 'Sun', 'Comet');
+CALL insert_celestial_body('Comet Tempel 1', 'Sun', 'Comet');
