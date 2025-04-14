@@ -30,6 +30,8 @@ namespace GalaxyWiki.Cli
 
                     case "help": PrintHelp(); break;
 
+                    case "banner": TUI.ShowBanner(); break;
+
                     case "clear":
                     case "cls": AnsiConsole.Clear(); break;
 
@@ -45,7 +47,7 @@ namespace GalaxyWiki.Cli
 
                     case "cd": AnsiConsole.Write("TODO: If no argument provided, open path radio button selector"); break;
 
-                    case "show": AnsiConsole.Write("TODO: Show wiki page content"); break;
+                    case "show": await ShowRevisionContent(workDir); break;
 
                     case "render": AnsiConsole.Write(TUI.Image("../../assets/earth.png")); break;
 
@@ -65,7 +67,7 @@ namespace GalaxyWiki.Cli
 
         static async Task<IdMap<CelestialBodies>> GetAllCelestialBodies() {
             try { return await ApiClient.GetCelestialBodiesMap(); }
-            catch (Exception ex) { AnsiConsole.Markup("[red]An error occurred[/]:\n" + ex.Message + "\n"); }
+            catch (Exception ex) { TUI.Err("GET", "Cannot get celestial bodies", ex.Message); }
 
             return new IdMap<CelestialBodies>();
         }
@@ -79,7 +81,7 @@ namespace GalaxyWiki.Cli
             
             // Find the root (Universe) node
             var root = bodies.Values.FirstOrDefault(b => b.Orbits == null);
-            if (root == null) { AnsiConsole.WriteLine("Could not find root celestial body."); return; }
+            if (root == null) { TUI.Err("DB", "Could not find root celestial body."); return; }
             
             // Build a list of selectable items with proper indentation
             string? selection = TUI.CelestialTreeSelectable(bodies, root.Id, items);
@@ -88,20 +90,22 @@ namespace GalaxyWiki.Cli
             var selectedItem = items.FirstOrDefault(i => i.DisplayLabel == selection);
 
             if (selectedItem.Body == null || !selectedItem.Body.ActiveRevision.HasValue) {
-                AnsiConsole.WriteLine("No active revision found for this celestial body."); 
+                TUI.Err("REV", "No active revision found for this celestial body."); 
                 return;
             }
 
             await ShowRevisionContent(selectedItem.Body.ActiveRevision.Value);
         }
         
-        static async Task ShowRevisionContent(int revisionId)
+        static async Task ShowRevisionContent(int? revId)
         {
-            Revision? rev;
-            try { rev = await ApiClient.GetRevisionAsync($"http://localhost:5216/api/revision/{revisionId}"); }
-            catch (Exception ex) { AnsiConsole.MarkupLine($"[red]Error retrieving revision:[/] {ex.Message}"); return; }
+            if (revId == null) { TUI.Err("CMD", "No page selected.", "Select a wiki page with [bold italic blue]cd[/]"); return; }
 
-            if (rev == null) { AnsiConsole.WriteLine($"Could not retrieve revision #{revisionId}"); return; }
+            Revision? rev;
+            try { rev = await ApiClient.GetRevisionAsync($"http://localhost:5216/api/revision/{revId}"); }
+            catch (Exception ex) { TUI.Err("GET", "Couldn't fetch revision", ex.Message); return; }
+
+            if (rev == null) { TUI.Err("PARSE", "Null revision for rev ID", $"{revId}"); return; }
 
             // Display
             AnsiConsole.Write(TUI.Article(rev.CelestialBodyName ?? "Unknown", rev.Content));
