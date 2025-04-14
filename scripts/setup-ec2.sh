@@ -6,11 +6,15 @@ sudo yum update -y
 # Install development tools
 sudo yum groupinstall -y "Development Tools"
 
-# Install .NET SDK
-# Reference: https://docs.microsoft.com/en-us/dotnet/core/install/linux-amazon-linux
-sudo rpm -Uvh https://packages.microsoft.com/config/centos/7/packages-microsoft-prod.rpm
-sudo yum install -y dotnet-sdk-7.0
-sudo yum install -y aspnetcore-runtime-7.0
+# Install .NET SDK 9.0
+# Reference: https://learn.microsoft.com/en-us/dotnet/core/install/linux-scripted-manual#scripted-install
+wget https://dot.net/v1/dotnet-install.sh -O dotnet-install.sh
+chmod +x dotnet-install.sh
+./dotnet-install.sh --version 9.0.203 --install-dir /usr/share/dotnet
+rm dotnet-install.sh
+
+# Create symbolic links
+sudo ln -sf /usr/share/dotnet/dotnet /usr/bin/dotnet
 
 # Setup application directory
 sudo mkdir -p /var/www/galaxywiki-api
