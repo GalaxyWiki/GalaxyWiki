@@ -12,3 +12,5 @@ appsettings*
 
 .vscode/*
 !.vscode/launch.json
+
+*.pem

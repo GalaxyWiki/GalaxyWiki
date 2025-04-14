@@ -1,0 +1,16 @@
+[Unit]
+Description=GalaxyWiki API Service
+After=network.target
+
+[Service]
+WorkingDirectory=/var/www/galaxywiki-api
+ExecStart=/usr/bin/dotnet /var/www/galaxywiki-api/GalaxyWiki.API.dll
+Restart=always
+RestartSec=10
+SyslogIdentifier=galaxywiki-api
+User=www-data
+Environment=ASPNETCORE_ENVIRONMENT=Production
+Environment=ASPNETCORE_URLS=http://+:5000
+
+[Install]
+WantedBy=multi-user.target 
