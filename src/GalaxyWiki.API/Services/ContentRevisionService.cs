@@ -26,7 +26,7 @@ namespace GalaxyWiki.API.Services
 
         public async Task<IEnumerable<ContentRevisions>> GetRevisionsByCelestialBodyAsync(string celestialBodyPath)
         {
-            var celestialBody = _celestialBodyRepository.GetByName(celestialBodyPath);
+            var celestialBody = await _celestialBodyRepository.GetByName(celestialBodyPath);
 
             if (celestialBody == null)
                 throw new CelestialBodyDoesNotExist("Celestial body not found.");

@@ -7,7 +7,7 @@ using System.Security.Claims;
 namespace GalaxyWiki.Api.Controllers
 {
     [ApiController]
-    [Route("api/comments")]
+    [Route("api/comment")]
     public class CommentController : ControllerBase
     {
         private readonly CommentService _commentService;
