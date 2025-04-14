@@ -51,14 +51,15 @@ builder.Services.AddScoped<RoleRepository>();
 builder.Services.AddScoped<ContentRevisionRepository>();
 builder.Services.AddScoped<CommentRepository>();
 builder.Services.AddScoped<CelestialBodyRepository>();
+builder.Services.AddScoped<BodyTypeRepository>();
+builder.Services.AddScoped<StarSystemRepository>();
 
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<ContentRevisionService>();
 builder.Services.AddScoped<CommentService>();
-
-
-
+builder.Services.AddScoped<StarSystemService>();
+builder.Services.AddScoped<CelestialBodyService>();
 
 
 builder.Services

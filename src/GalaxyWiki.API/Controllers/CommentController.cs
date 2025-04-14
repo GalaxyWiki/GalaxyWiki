@@ -31,7 +31,7 @@ namespace GalaxyWiki.Api.Controllers
         {
             var comment = await _commentService.GetById(id);
             if (comment == null) 
-                return NotFound();
+                return NotFound(new { error = "Comment not found." });
             return Ok(comment);
         }
 
