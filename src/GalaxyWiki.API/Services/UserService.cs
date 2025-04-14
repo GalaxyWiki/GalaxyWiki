@@ -1,49 +1,44 @@
-using Google.Apis.Auth;
 using GalaxyWiki.Core.Entities;
 using GalaxyWiki.Core.Enums;
+using GalaxyWiki.Api.Repositories;
 
 namespace GalaxyWiki.API.Services
 {
     public class UserService
     {
-        private readonly NHibernate.ISession _session;
+        private readonly UserRepository _userRepository;
+        private readonly RoleRepository _roleRepository;
 
-        public UserService(NHibernate.ISession session)
+        public UserService(UserRepository userRepository, RoleRepository roleRepository)
         {
-            _session = session;
+            _userRepository = userRepository;
+            _roleRepository = roleRepository;
         }
 
-        public async Task<Users> getUserById(string googleSub)
+        public async Task<Users> GetUserById(string googleSub)
         {
-            return await _session.GetAsync<Users>(googleSub);
+            return await _userRepository.GetById(googleSub);
         }
 
-        public async Task<Users> createUser(string googleSub, string email, string name, UserRole userRole)
+        public async Task<Users> CreateUser(string googleSub, string email, string name, UserRole userRole)
         {
-            using var transaction = _session.BeginTransaction();
-            try
-            {   
-                var role = await _session.GetAsync<Roles>((int)userRole);
-
-                var newUser = new Users
-                {
-                    Id = googleSub,
-                    Email = email,
-                    DisplayName = name,
-                    Role = role
-                };
-
-                await _session.SaveAsync(newUser);
-
-                transaction.Commit();
-
-                return newUser;
-            }
-            catch (Exception)
+            var role = await _roleRepository.GetById((int)userRole);
+            if (role == null)
             {
-                await transaction.RollbackAsync();
-                throw;
+                throw new RoleDoesNotExist("The selected role type does not exist.");
             }
+
+            var user = new Users
+            {
+                Id = googleSub,
+                Email = email,
+                DisplayName = name,
+                Role = role
+            };
+
+            await _userRepository.Create(user);
+
+            return user;
         }
     }
 }

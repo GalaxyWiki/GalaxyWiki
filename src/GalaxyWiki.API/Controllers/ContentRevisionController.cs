@@ -2,32 +2,30 @@ using Microsoft.AspNetCore.Mvc;
 using GalaxyWiki.API.DTOs;
 using GalaxyWiki.API.Services;
 using Microsoft.AspNetCore.Authorization;
-using GalaxyWiki.Core.Enums;
 using System.Security.Claims;
 
 namespace GalaxyWiki.API.Controllers
 {
     [Route("api/revision")]
     [ApiController]
-    public class RevisionsController(
-        ContentRevisionService revisionService, 
-        AuthService authService 
-        // NHibernate.ISession session
-    ) : ControllerBase
+    public class RevisionsController : ControllerBase
     {
-        private readonly ContentRevisionService _revisionService = revisionService;
-        private readonly AuthService _authService = authService;
-        // private readonly NHibernate.ISession _session = session;
+        private readonly ContentRevisionService _contentRevisionService;
+        public RevisionsController(ContentRevisionService contentRevisionService)
+        {
+            _contentRevisionService = contentRevisionService;
+        }
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
-            var revision = await _revisionService.GetRevisionByIdAsync(id);
+            var revision = await _contentRevisionService.GetRevisionByIdAsync(id);
             if (revision == null)
                 return NotFound(new { error = "Revision not found." });
 
             return Ok(new
-            {
+            {   
+                revision.Id,
                 revision.Content,
                 revision.CreatedAt,
                 CelestialBodyName = revision.CelestialBody.BodyName,
@@ -38,7 +36,7 @@ namespace GalaxyWiki.API.Controllers
         [HttpGet("by-name/{celestialBodyPath}")]
         public async Task<IActionResult> GetByCelestialBody(string celestialBodyPath)
         {
-            var revisions = await _revisionService.GetRevisionsByCelestialBodyAsync(celestialBodyPath);
+            var revisions = await _contentRevisionService.GetRevisionsByCelestialBodyAsync(celestialBodyPath);
 
             if (revisions == null || !revisions.Any())
                 return NotFound(new { error = "No revisions found for the specified celestial body." });
@@ -48,6 +46,7 @@ namespace GalaxyWiki.API.Controllers
                 r.Id,
                 r.Content,
                 r.CreatedAt,
+                CelestialBodyName = r.CelestialBody.BodyName,
                 AuthorDisplayName = r.Author.DisplayName
             }));
         }
@@ -58,12 +57,7 @@ namespace GalaxyWiki.API.Controllers
         { 
             var authorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            if (await _authService.CheckUserHasAccessRight([UserRole.Admin], authorId) == false)
-            {
-                return StatusCode(403, new { error = "You do not have access to perform this action." });
-            }
-
-            var revision = await _revisionService.CreateRevisionAsync(request, authorId);
+            var revision = await _contentRevisionService.CreateRevision(request, authorId);
 
             return CreatedAtAction(nameof(GetById), new { id = revision.Id }, new
             {
