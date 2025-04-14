@@ -1,16 +1,14 @@
--- Famous nebulae in the Milky Way
-INSERT INTO celestial_bodies (body_name, orbits, body_type_id) VALUES
-('Orion Nebula', 2, 10),
-('Eagle Nebula', 2, 10),
-('Crab Nebula', 2, 10),
-('Horsehead Nebula', 2, 10),
-('Owl Nebula', 2, 10),
-('Cat''s Eye Nebula', 2, 10),
-('Ring Nebula', 2, 10),
-('Butterfly Nebula', 2, 10),
-('Lagoon Nebula', 2, 10),
-('Tarantula Nebula', 2, 10),
-('Trifid Nebula', 2, 10),
-('Veil Nebula', 2, 10),
-('Boomerang Nebula', 2, 10),
-('Egg Nebula', 2, 10);
+CALL insert_celestial_body('Orion Nebula', 'Milky Way', 'Nebula');
+CALL insert_celestial_body('Eagle Nebula', 'Milky Way', 'Nebula');
+CALL insert_celestial_body('Crab Nebula', 'Milky Way', 'Nebula');
+CALL insert_celestial_body('Horsehead Nebula', 'Milky Way', 'Nebula');
+CALL insert_celestial_body('Owl Nebula', 'Milky Way', 'Nebula');
+CALL insert_celestial_body('Cat''s Eye Nebula', 'Milky Way', 'Nebula');
+CALL insert_celestial_body('Ring Nebula', 'Milky Way', 'Nebula');
+CALL insert_celestial_body('Butterfly Nebula', 'Milky Way', 'Nebula');
+CALL insert_celestial_body('Lagoon Nebula', 'Milky Way', 'Nebula');
+CALL insert_celestial_body('Tarantula Nebula', 'Milky Way', 'Nebula');
+CALL insert_celestial_body('Trifid Nebula', 'Milky Way', 'Nebula');
+CALL insert_celestial_body('Veil Nebula', 'Milky Way', 'Nebula');
+CALL insert_celestial_body('Boomerang Nebula', 'Milky Way', 'Nebula');
+CALL insert_celestial_body('Egg Nebula', 'Milky Way', 'Nebula');

@@ -1,13 +1,12 @@
-INSERT INTO celestial_bodies (body_name, orbits, body_type_id) VALUES
-('Vesta', 65, 8),
-('Pallas', 65, 8),
-('Hygiea', 65, 8),
-('Euphrosyne', 65, 8),
-('Interamnia', 65, 8),
-('Europa (asteroid)', 65, 8),
-('Davida', 65, 8),
-('Sylvia', 65, 8),
-('Cybele', 65, 8),
-('Eunomia', 65, 8),
-('Juno', 65, 8),
-('Psyche', 65, 8);
+CALL insert_celestial_body('Vesta', 'Sun', 'Asteroid');
+CALL insert_celestial_body('Pallas', 'Sun', 'Asteroid');
+CALL insert_celestial_body('Hygiea', 'Sun', 'Asteroid');
+CALL insert_celestial_body('Euphrosyne', 'Sun', 'Asteroid');
+CALL insert_celestial_body('Interamnia', 'Sun', 'Asteroid');
+CALL insert_celestial_body('Europa (asteroid)', 'Sun', 'Asteroid');
+CALL insert_celestial_body('Davida', 'Sun', 'Asteroid');
+CALL insert_celestial_body('Sylvia', 'Sun', 'Asteroid');
+CALL insert_celestial_body('Cybele', 'Sun', 'Asteroid');
+CALL insert_celestial_body('Eunomia', 'Sun', 'Asteroid');
+CALL insert_celestial_body('Juno', 'Sun', 'Asteroid');
+CALL insert_celestial_body('Psyche', 'Sun', 'Asteroid');

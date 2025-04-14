@@ -1,23 +1,21 @@
--- Exoplanets around nearby stars
-INSERT INTO celestial_bodies (body_name, orbits, body_type_id) VALUES
-('Proxima Centauri b', 66, 3),
-('Proxima Centauri c', 66, 3),
-('Tau Ceti e', 96, 3),
-('Tau Ceti f', 96, 3),
-('Epsilon Eridani b', 78, 3),
-('TRAPPIST-1b', 118, 3),
-('TRAPPIST-1c', 118, 3),
-('TRAPPIST-1d', 118, 3),
-('TRAPPIST-1e', 118, 3),
-('TRAPPIST-1f', 118, 3),
-('TRAPPIST-1g', 118, 3),
-('TRAPPIST-1h', 118, 3),
-('Kepler-186f', 116, 3),
-('Kepler-22b', 117, 3),
-('Gliese 581d', 113, 3),
-('Gliese 581g', 113, 3),
-('Gliese 667 Cc', 109, 3),
-('Gliese 832c', 111, 3),
-('HD 219134 b', 115, 3),
-('Ross 128 b', 80, 3),
-('Wolf 1061c', 106, 3);
+CALL insert_celestial_body('Proxima Centauri b', 'Proxima Centauri', 'Planet');
+CALL insert_celestial_body('Proxima Centauri c', 'Proxima Centauri', 'Planet');
+CALL insert_celestial_body('Tau Ceti e', 'Tau Ceti', 'Planet');
+CALL insert_celestial_body('Tau Ceti f', 'Tau Ceti', 'Planet');
+CALL insert_celestial_body('Epsilon Eridani b', 'Epsilon Eridani', 'Planet');
+CALL insert_celestial_body('TRAPPIST-1b', 'TRAPPIST-1', 'Planet');
+CALL insert_celestial_body('TRAPPIST-1c', 'TRAPPIST-1', 'Planet');
+CALL insert_celestial_body('TRAPPIST-1d', 'TRAPPIST-1', 'Planet');
+CALL insert_celestial_body('TRAPPIST-1e', 'TRAPPIST-1', 'Planet');
+CALL insert_celestial_body('TRAPPIST-1f', 'TRAPPIST-1', 'Planet');
+CALL insert_celestial_body('TRAPPIST-1g', 'TRAPPIST-1', 'Planet');
+CALL insert_celestial_body('TRAPPIST-1h', 'TRAPPIST-1', 'Planet');
+CALL insert_celestial_body('Kepler-186f', 'Kepler-186', 'Planet');
+CALL insert_celestial_body('Kepler-22b', 'Kepler-22', 'Planet');
+CALL insert_celestial_body('Gliese 581d', 'Gliese 581', 'Planet');
+CALL insert_celestial_body('Gliese 581g', 'Gliese 581', 'Planet');
+CALL insert_celestial_body('Gliese 667 Cc', 'Gliese 687', 'Planet');
+CALL insert_celestial_body('Gliese 832c', 'Gliese 832', 'Planet');
+CALL insert_celestial_body('HD 219134 b', 'HD 219134', 'Planet');
+CALL insert_celestial_body('Ross 128 b', 'Ross 128', 'Planet');
+CALL insert_celestial_body('Wolf 1061c', 'Wolf 1061', 'Planet');

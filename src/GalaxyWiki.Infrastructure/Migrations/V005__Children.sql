@@ -1,96 +1,97 @@
 -- Stars in the Milky Way Galaxy
-INSERT INTO celestial_bodies (body_name, orbits, body_type_id) VALUES
-('Sun', 2, 2),
-('Proxima Centauri', 2, 2),
-('Alpha Centauri A', 2, 2),
-('Alpha Centauri B', 2, 2),
-('Barnard''s Star', 2, 2),
-('Sirius A', 2, 2),
-('Sirius B', 2, 2),
-('Wolf 359', 2, 2),
-('Lalande 21185', 2, 2),
-('Luyten 726-8 A', 2, 2),
-('Luyten 726-8 B', 2, 2),
-('Ross 154', 2, 2),
-('Ross 248', 2, 2),
-('Epsilon Eridani', 2, 2),
-('Lacaille 9352', 2, 2),
-('Ross 128', 2, 2),
-('EZ Aquarii A', 2, 2),
-('EZ Aquarii B', 2, 2),
-('EZ Aquarii C', 2, 2),
-('61 Cygni A', 2, 2),
-('61 Cygni B', 2, 2),
-('Procyon A', 2, 2),
-('Procyon B', 2, 2),
-('Struve 2398 A', 2, 2),
-('Struve 2398 B', 2, 2),
-('Groombridge 34 A', 2, 2),
-('Groombridge 34 B', 2, 2),
-('Epsilon Indi A', 2, 2),
-('Epsilon Indi Ba', 2, 2),
-('Epsilon Indi Bb', 2, 2),
-('DX Cancri', 2, 2),
-('Tau Ceti', 2, 2),
-('Gliese 1061', 2, 2),
-('YZ Ceti', 2, 2),
-('Luyten''s Star', 2, 2),
-('Teegarden''s Star', 2, 2),
-('Kapteyn''s Star', 2, 2),
-('Lacaille 8760', 2, 2),
-('Kruger 60 A', 2, 2),
-('Kruger 60 B', 2, 2),
-('WISE 0855-0714', 2, 2),
-('Wolf 1061', 2, 2),
-('Van Maanen''s Star', 2, 2),
-('Gliese 674', 2, 2),
-('Gliese 687', 2, 2),
-('Gliese 876', 2, 2),
-('Gliese 832', 2, 2),
-('Gliese 682', 2, 2),
-('Gliese 581', 2, 2),
-('Gliese 436', 2, 2),
-('HD 219134', 2, 2),
-('Kepler-186', 2, 2),
-('Kepler-22', 2, 2),
-('TRAPPIST-1', 2, 2),
-('Vega', 2, 2),
-('Arcturus', 2, 2),
-('Antares', 2, 2),
-('Betelgeuse', 2, 2),
-('Rigel', 2, 2),
-('Aldebaran', 2, 2),
-('Deneb', 2, 2),
-('Pollux', 2, 2),
-('Fomalhaut', 2, 2),
-('Mimosa', 2, 2),
-('Regulus', 2, 2),
-('Adhara', 2, 2),
-('Shaula', 2, 2),
-('Castor', 2, 2),
-('Gacrux', 2, 2),
-('Bellatrix', 2, 2),
-('Elnath', 2, 2),
-('Miaplacidus', 2, 2),
-('Alnilam', 2, 2),
-('Regor', 2, 2),
-('Alioth', 2, 2),
-('Kaus Australis', 2, 2),
-('Spica', 2, 2),
-('Polaris', 2, 2),
-('Alphard', 2, 2),
-('Algieba', 2, 2),
-('Hadar', 2, 2),
-('Menkalinan', 2, 2),
-('Dubhe', 2, 2),
-('Wezen', 2, 2),
-('Alkaid', 2, 2),
-('Sargas', 2, 2),
-('Avior', 2, 2),
-('Atria', 2, 2),
-('Alhena', 2, 2),
-('Peacock', 2, 2),
-('VY Canis Majoris', 2, 2),
-('UY Scuti', 2, 2),
-('Stephenson 2-18', 2, 2),
-('Sagittarius A*', 2, 6); -- Black hole at center of Milky Way
+CALL insert_celestial_body('Sun', 'Milky Way', 'Star');
+CALL insert_celestial_body('Proxima Centauri', 'Milky Way', 'Star');
+CALL insert_celestial_body('Alpha Centauri A', 'Milky Way', 'Star');
+CALL insert_celestial_body('Alpha Centauri B', 'Milky Way', 'Star');
+CALL insert_celestial_body('Barnard''s Star', 'Milky Way', 'Star');
+CALL insert_celestial_body('Sirius A', 'Milky Way', 'Star');
+CALL insert_celestial_body('Sirius B', 'Milky Way', 'Star');
+CALL insert_celestial_body('Wolf 359', 'Milky Way', 'Star');
+CALL insert_celestial_body('Lalande 21185', 'Milky Way', 'Star');
+CALL insert_celestial_body('Luyten 726-8 A', 'Milky Way', 'Star');
+CALL insert_celestial_body('Luyten 726-8 B', 'Milky Way', 'Star');
+CALL insert_celestial_body('Ross 154', 'Milky Way', 'Star');
+CALL insert_celestial_body('Ross 248', 'Milky Way', 'Star');
+CALL insert_celestial_body('Epsilon Eridani', 'Milky Way', 'Star');
+CALL insert_celestial_body('Lacaille 9352', 'Milky Way', 'Star');
+CALL insert_celestial_body('Ross 128', 'Milky Way', 'Star');
+CALL insert_celestial_body('EZ Aquarii A', 'Milky Way', 'Star');
+CALL insert_celestial_body('EZ Aquarii B', 'Milky Way', 'Star');
+CALL insert_celestial_body('EZ Aquarii C', 'Milky Way', 'Star');
+CALL insert_celestial_body('61 Cygni A', 'Milky Way', 'Star');
+CALL insert_celestial_body('61 Cygni B', 'Milky Way', 'Star');
+CALL insert_celestial_body('Procyon A', 'Milky Way', 'Star');
+CALL insert_celestial_body('Procyon B', 'Milky Way', 'Star');
+CALL insert_celestial_body('Struve 2398 A', 'Milky Way', 'Star');
+CALL insert_celestial_body('Struve 2398 B', 'Milky Way', 'Star');
+CALL insert_celestial_body('Groombridge 34 A', 'Milky Way', 'Star');
+CALL insert_celestial_body('Groombridge 34 B', 'Milky Way', 'Star');
+CALL insert_celestial_body('Epsilon Indi A', 'Milky Way', 'Star');
+CALL insert_celestial_body('Epsilon Indi Ba', 'Milky Way', 'Star');
+CALL insert_celestial_body('Epsilon Indi Bb', 'Milky Way', 'Star');
+CALL insert_celestial_body('DX Cancri', 'Milky Way', 'Star');
+CALL insert_celestial_body('Tau Ceti', 'Milky Way', 'Star');
+CALL insert_celestial_body('Gliese 1061', 'Milky Way', 'Star');
+CALL insert_celestial_body('YZ Ceti', 'Milky Way', 'Star');
+CALL insert_celestial_body('Luyten''s Star', 'Milky Way', 'Star');
+CALL insert_celestial_body('Teegarden''s Star', 'Milky Way', 'Star');
+CALL insert_celestial_body('Kapteyn''s Star', 'Milky Way', 'Star');
+CALL insert_celestial_body('Lacaille 8760', 'Milky Way', 'Star');
+CALL insert_celestial_body('Kruger 60 A', 'Milky Way', 'Star');
+CALL insert_celestial_body('Kruger 60 B', 'Milky Way', 'Star');
+CALL insert_celestial_body('WISE 0855-0714', 'Milky Way', 'Star');
+CALL insert_celestial_body('Wolf 1061', 'Milky Way', 'Star');
+CALL insert_celestial_body('Van Maanen''s Star', 'Milky Way', 'Star');
+CALL insert_celestial_body('Gliese 674', 'Milky Way', 'Star');
+CALL insert_celestial_body('Gliese 687', 'Milky Way', 'Star');
+CALL insert_celestial_body('Gliese 876', 'Milky Way', 'Star');
+CALL insert_celestial_body('Gliese 832', 'Milky Way', 'Star');
+CALL insert_celestial_body('Gliese 682', 'Milky Way', 'Star');
+CALL insert_celestial_body('Gliese 581', 'Milky Way', 'Star');
+CALL insert_celestial_body('Gliese 436', 'Milky Way', 'Star');
+CALL insert_celestial_body('HD 219134', 'Milky Way', 'Star');
+CALL insert_celestial_body('Kepler-186', 'Milky Way', 'Star');
+CALL insert_celestial_body('Kepler-22', 'Milky Way', 'Star');
+CALL insert_celestial_body('TRAPPIST-1', 'Milky Way', 'Star');
+CALL insert_celestial_body('Vega', 'Milky Way', 'Star');
+CALL insert_celestial_body('Arcturus', 'Milky Way', 'Star');
+CALL insert_celestial_body('Antares', 'Milky Way', 'Star');
+CALL insert_celestial_body('Betelgeuse', 'Milky Way', 'Star');
+CALL insert_celestial_body('Rigel', 'Milky Way', 'Star');
+CALL insert_celestial_body('Aldebaran', 'Milky Way', 'Star');
+CALL insert_celestial_body('Deneb', 'Milky Way', 'Star');
+CALL insert_celestial_body('Pollux', 'Milky Way', 'Star');
+CALL insert_celestial_body('Fomalhaut', 'Milky Way', 'Star');
+CALL insert_celestial_body('Mimosa', 'Milky Way', 'Star');
+CALL insert_celestial_body('Regulus', 'Milky Way', 'Star');
+CALL insert_celestial_body('Adhara', 'Milky Way', 'Star');
+CALL insert_celestial_body('Shaula', 'Milky Way', 'Star');
+CALL insert_celestial_body('Castor', 'Milky Way', 'Star');
+CALL insert_celestial_body('Gacrux', 'Milky Way', 'Star');
+CALL insert_celestial_body('Bellatrix', 'Milky Way', 'Star');
+CALL insert_celestial_body('Elnath', 'Milky Way', 'Star');
+CALL insert_celestial_body('Miaplacidus', 'Milky Way', 'Star');
+CALL insert_celestial_body('Alnilam', 'Milky Way', 'Star');
+CALL insert_celestial_body('Regor', 'Milky Way', 'Star');
+CALL insert_celestial_body('Alioth', 'Milky Way', 'Star');
+CALL insert_celestial_body('Kaus Australis', 'Milky Way', 'Star');
+CALL insert_celestial_body('Spica', 'Milky Way', 'Star');
+CALL insert_celestial_body('Polaris', 'Milky Way', 'Star');
+CALL insert_celestial_body('Alphard', 'Milky Way', 'Star');
+CALL insert_celestial_body('Algieba', 'Milky Way', 'Star');
+CALL insert_celestial_body('Hadar', 'Milky Way', 'Star');
+CALL insert_celestial_body('Menkalinan', 'Milky Way', 'Star');
+CALL insert_celestial_body('Dubhe', 'Milky Way', 'Star');
+CALL insert_celestial_body('Wezen', 'Milky Way', 'Star');
+CALL insert_celestial_body('Alkaid', 'Milky Way', 'Star');
+CALL insert_celestial_body('Sargas', 'Milky Way', 'Star');
+CALL insert_celestial_body('Avior', 'Milky Way', 'Star');
+CALL insert_celestial_body('Atria', 'Milky Way', 'Star');
+CALL insert_celestial_body('Alhena', 'Milky Way', 'Star');
+CALL insert_celestial_body('Peacock', 'Milky Way', 'Star');
+CALL insert_celestial_body('VY Canis Majoris', 'Milky Way', 'Star');
+CALL insert_celestial_body('UY Scuti', 'Milky Way', 'Star');
+CALL insert_celestial_body('Stephenson 2-18', 'Milky Way', 'Star');
+CALL insert_celestial_body('Sagittarius A*', 'Milky Way', 'Star'); -- Black hole at center of Milky Way
+
+
