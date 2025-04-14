@@ -2,7 +2,10 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using GalaxyWiki.API.DTOs;
 using GalaxyWiki.API.Services;
+using System;
 using System.Security.Claims;
+using System.Threading.Tasks;
+using System.Linq;
 
 namespace GalaxyWiki.Api.Controllers
 {
@@ -26,6 +29,36 @@ namespace GalaxyWiki.Api.Controllers
                 BodyTypeName = r.BodyType?.TypeName,
                 r.CelestialBody.ActiveRevision
             }));
+        }
+
+        // GET: api/celestial-body
+        [HttpGet("paged")]
+        public async Task<IActionResult> GetAllPaginated([FromQuery] PaginationParameters parameters)
+        {
+            var pagedResult = await _celestialBodyService.GetAllPaginated(parameters);
+            
+            var mappedItems = pagedResult.Items.Select(r => new
+            {
+                r.CelestialBody.Id,
+                r.CelestialBody.BodyName,
+                r.CelestialBody.Orbits,
+                r.CelestialBody.BodyType,
+                BodyTypeName = r.BodyType?.TypeName,
+                r.CelestialBody.ActiveRevision
+            });
+            
+            var result = new
+            {
+                PageNumber = pagedResult.PageNumber,
+                PageSize = pagedResult.PageSize,
+                TotalCount = pagedResult.TotalCount,
+                TotalPages = pagedResult.TotalPages,
+                HasPrevious = pagedResult.HasPrevious,
+                HasNext = pagedResult.HasNext,
+                Items = mappedItems
+            };
+            
+            return Ok(result);
         }
 
         // GET: api/celestial-body/{id}
@@ -122,6 +155,43 @@ namespace GalaxyWiki.Api.Controllers
                               BodyTypeName = r.BodyType?.TypeName,
                               r.CelestialBody.ActiveRevision
                           });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
+        }
+
+        // GET: api/celestial-body/{id}/children/paged
+        [HttpGet("{id}/children/paged")]
+        public async Task<IActionResult> GetChildrenPaginated(int id, [FromQuery] PaginationParameters parameters)
+        {
+            try 
+            {
+                var pagedResult = await _celestialBodyService.GetChildrenByIdPaginated(id, parameters);
+                
+                var mappedItems = pagedResult.Items.Select(r => new
+                {
+                    r.CelestialBody.Id,
+                    r.CelestialBody.BodyName,
+                    r.CelestialBody.Orbits,
+                    r.CelestialBody.BodyType,
+                    BodyTypeName = r.BodyType?.TypeName,
+                    r.CelestialBody.ActiveRevision
+                });
+                
+                var result = new
+                {
+                    PageNumber = pagedResult.PageNumber,
+                    PageSize = pagedResult.PageSize,
+                    TotalCount = pagedResult.TotalCount,
+                    TotalPages = pagedResult.TotalPages,
+                    HasPrevious = pagedResult.HasPrevious,
+                    HasNext = pagedResult.HasNext,
+                    Items = mappedItems
+                };
+                
+                return Ok(result);
             }
             catch (Exception ex)
             {
