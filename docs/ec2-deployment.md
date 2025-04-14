@@ -56,7 +56,7 @@ powershell -ExecutionPolicy Bypass -File ..\scripts\extract-ssh-key.ps1
 Get-Content .\galaxy-api-key.pem | Set-Clipboard
 ```
 
-### On Linux/macOS:
+### On Linux/macOS
 
 1. Apply the Terraform changes to generate the SSH key:
 
