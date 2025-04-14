@@ -22,8 +22,12 @@ public class GlobalExceptionMiddleware
             var statusCode = ex switch
             {
                 InvalidGoogleTokenException => StatusCodes.Status401Unauthorized,
+                UserDoesNotHaveAccess => StatusCodes.Status403Forbidden,
                 UserDoesNotExist => StatusCodes.Status401Unauthorized,
                 CelestialBodyDoesNotExist => StatusCodes.Status404NotFound,
+                RoleDoesNotExist => StatusCodes.Status400BadRequest,
+                CommentDoesNotExist => StatusCodes.Status400BadRequest,
+                CommentTooOldToUpdate => StatusCodes.Status403Forbidden,
                 _ => StatusCodes.Status500InternalServerError
             };
 
@@ -43,6 +47,10 @@ public class InvalidGoogleTokenException : Exception
 {
     public InvalidGoogleTokenException(string message) : base(message) { }
 }
+public class UserDoesNotHaveAccess : Exception
+{
+    public UserDoesNotHaveAccess(string message) : base(message) { }
+}
 
 public class UserDoesNotExist : Exception
 {
@@ -52,4 +60,19 @@ public class UserDoesNotExist : Exception
 public class CelestialBodyDoesNotExist : Exception
 {
     public CelestialBodyDoesNotExist(string message) : base(message) { }
+}
+
+public class RoleDoesNotExist : Exception
+{
+    public RoleDoesNotExist(string message) : base(message) { }
+}
+
+public class CommentDoesNotExist : Exception
+{
+    public CommentDoesNotExist(string message) : base(message) { }
+}
+
+public class CommentTooOldToUpdate : Exception
+{
+    public CommentTooOldToUpdate(string message) : base(message) { }
 }

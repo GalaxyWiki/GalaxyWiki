@@ -4,7 +4,6 @@ using FluentNHibernate.Cfg;
 using FluentNHibernate.Cfg.Db;
 using NHibernate;
 using FluentNHibernate.Automapping;
-using GalaxyWiki.Core.Entities;
 using GalaxyWiki.API.Services;
 using GalaxyWiki.Api.Repositories;
 using GalaxyWiki.Api.Services;
@@ -47,11 +46,20 @@ builder.Services.AddSingleton<ISessionFactory>(provider =>
 builder.Services.AddScoped<NHibernate.ISession>(provider =>
     provider.GetRequiredService<ISessionFactory>().OpenSession());
 
-builder.Services.AddScoped<ContentRevisionService>();
-builder.Services.AddScoped<ICommentRepository, CommentRepository>();
-builder.Services.AddScoped<ICommentService, CommentService>();
+builder.Services.AddScoped<UserRepository>();
+builder.Services.AddScoped<RoleRepository>();
+builder.Services.AddScoped<ContentRevisionRepository>();
+builder.Services.AddScoped<CommentRepository>();
+builder.Services.AddScoped<CelestialBodyRepository>();
+
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<UserService>();
+builder.Services.AddScoped<ContentRevisionService>();
+builder.Services.AddScoped<CommentService>();
+
+
+
+
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

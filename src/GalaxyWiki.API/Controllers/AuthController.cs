@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using GalaxyWiki.API.Services;
-using Google.Apis.Auth;
 using GalaxyWiki.API.DTO;
 
 namespace GalaxyWiki.API.Controllers
@@ -19,26 +18,15 @@ namespace GalaxyWiki.API.Controllers
       [HttpPost("/login")]
       public async Task<IActionResult> Login([FromBody] LoginRequest request)
       {
-          if (string.IsNullOrWhiteSpace(request.IdToken))
-              return BadRequest("ID token is required.");
+        if (string.IsNullOrWhiteSpace(request.IdToken))
+            return BadRequest("ID token is required.");
 
-          try
-          {
-              var userName = await _authService.Login(request.IdToken);
-              return Ok(new
-              {
-                  message = "Login successful",
-                  name = userName
-              });
-          }
-          catch (InvalidJwtException)
-          {
-              return Unauthorized(new {error = "Invalid JWT token."});
-          }
-          catch (Exception e)
-          {
-              return BadRequest(new {error = e.Message});
-          }
+        var userName = await _authService.Login(request.IdToken);
+        return Ok(new
+        {
+            message = "Login successful",
+            name = userName
+        });
       }
   }
 }

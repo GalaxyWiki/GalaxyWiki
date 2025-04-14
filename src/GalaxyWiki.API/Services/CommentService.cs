@@ -1,19 +1,24 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using GalaxyWiki.Api.DTOs;
 using GalaxyWiki.Core.Entities;
 using GalaxyWiki.Api.Repositories;
+using GalaxyWiki.API.Services;
+using GalaxyWiki.Core.Enums;
 
 namespace GalaxyWiki.Api.Services
 {
-    public class CommentService : ICommentService
+    public class CommentService
     {
-       private readonly ICommentRepository _commentRepository;
+        private AuthService _authService;
+        private UserService _userService;
+        private readonly CommentRepository _commentRepository;
+        private readonly CelestialBodyRepository _celestialBodyRepository;
 
-        public CommentService(ICommentRepository commentRepository)
+        public CommentService(AuthService authService, UserService userService, CommentRepository commentRepository, CelestialBodyRepository celestialBodyRepository)
         {
+            _authService = authService;
+            _userService = userService;
             _commentRepository = commentRepository;
+            _celestialBodyRepository = celestialBodyRepository;
         }
 
         private CommentDto MapToDto(Comments comment)
@@ -28,74 +33,106 @@ namespace GalaxyWiki.Api.Services
             };
         }
 
-        public IEnumerable<CommentDto> GetAll()
+        public async Task<IEnumerable<Comments>> GetAll()
         {
-            var comments = _commentRepository.GetAll();
-            return comments.Select(MapToDto);
+            var comments = await _commentRepository.GetAll();
+            return comments;
         }
 
-        public CommentDto? GetById(int id)
+        public async Task<CommentDto?> GetById(int id)
         {
-            var comment = _commentRepository.GetById(id);
+            var comment = await _commentRepository.GetById(id);
             return comment != null ? MapToDto(comment) : null;
         }
 
-        public CommentDto Create(CreateCommentDto commentDto)
+        public async Task<IEnumerable<CommentDto>> GetByCelestialBody(int celestialBodyId)
         {
+            var comments = await _commentRepository.GetByCelestialBody(celestialBodyId);
+            return comments.Select(MapToDto);
+        }
+
+        public async Task<IEnumerable<CommentDto>> GetByUser(string userId)
+        {
+            var comments = await _commentRepository.GetByUser(userId);
+            return comments.Select(MapToDto);
+        }
+
+        public async Task<IEnumerable<CommentDto>> GetByDateRange(DateTime startDate, DateTime endDate, int? celestialBodyId = null)
+        {
+            var comments = await _commentRepository.GetByDateRange(startDate, endDate, celestialBodyId);
+            return comments.Select(MapToDto);
+        }
+
+        public async Task<CommentDto> Create(CreateCommentDto commentDto, string userId)
+        {
+            if (await _authService.CheckUserHasAccessRight([UserRole.Admin, UserRole.Viewer], userId) == false)
+            {
+                throw new UserDoesNotHaveAccess("You do not have access to perform this action.");
+            }
+
+            var user = await _userService.getUserById(userId);
+
+            var celestialBody = await _celestialBodyRepository.GetById(commentDto.CelestialBodyId);
+
+            if (celestialBody == null)
+                throw new CelestialBodyDoesNotExist("Celestial body not found.");
+
             var comment = new Comments
             {
                 CommentText = commentDto.CommentText,
-                UserId = commentDto.UserId,
+                UserId = user.Id,
                 CelestialBodyId = commentDto.CelestialBodyId,
                 CreatedAt = DateTime.UtcNow
             };
 
-            var createdComment = _commentRepository.Create(comment);
+            var createdComment = await _commentRepository.Create(comment);
             return MapToDto(createdComment);
         }
 
-        public IEnumerable<CommentDto> GetByCelestialBody(int celestialBodyId)
+        public async Task<CommentDto> Update(int id, UpdateCommentDto updateDto, string userId)
         {
-            var comments = _commentRepository.GetByCelestialBody(celestialBodyId);
-            return comments.Select(MapToDto);
-        }
+            if (await _authService.CheckUserHasAccessRight([UserRole.Admin, UserRole.Viewer], userId) == false)
+            {
+                throw new UserDoesNotHaveAccess("You do not have access to perform this action.");
+            }
 
-        public IEnumerable<CommentDto> GetByUser(string userId)
-        {
-            var comments = _commentRepository.GetByUser(userId);
-            return comments.Select(MapToDto);
-        }
+            var user = await _userService.getUserById(userId);
 
-        public IEnumerable<CommentDto> GetByDateRange(DateTime startDate, DateTime endDate, int? celestialBodyId = null)
-        {
-            var comments = _commentRepository.GetByDateRange(startDate, endDate, celestialBodyId);
-            return comments.Select(MapToDto);
-        }
+            var comment = await _commentRepository.GetById(id);
+            if (comment == null) 
+                throw new CommentDoesNotExist("The selected comment does not exist");
 
-        public CommentDto? Update(int id, UpdateCommentDto updateDto)
-        {
-            var comment = _commentRepository.GetById(id);
-            if (comment == null) return null;
+            if (user.Id != comment.UserId)
+                throw new UserDoesNotHaveAccess("Cannot update a comment that is not your own."); 
 
             // Check if the comment is not older than one month
             var oneMonthAgo = DateTime.UtcNow.AddMonths(-1);
             if (comment.CreatedAt < oneMonthAgo)
-            {
-                throw new InvalidOperationException("Cannot update comments older than one month");
-            }
+                throw new CommentTooOldToUpdate("Cannot update comments older than one month");
 
             comment.CommentText = updateDto.CommentText;
-            var updatedComment = _commentRepository.Update(comment);
+            var updatedComment = await _commentRepository.Update(comment);
+
             return MapToDto(updatedComment);
         }
 
-        public bool Delete(int id)
+        public async Task Delete(int id, string userId)
         {
-            var comment = _commentRepository.GetById(id);
-            if (comment == null) return false;
+            if (await _authService.CheckUserHasAccessRight([UserRole.Admin, UserRole.Viewer], userId) == false)
+            {
+                throw new UserDoesNotHaveAccess("You do not have access to perform this action.");
+            }
 
-            _commentRepository.Delete(id);
-            return true;
+            var user = await _userService.getUserById(userId);
+
+            var comment = await _commentRepository.GetById(id);
+            if (comment == null) 
+                throw new CommentDoesNotExist("The selected comment does not exist");
+
+            if (user.Role.Id != (int)UserRole.Admin && user.Id != comment.UserId)
+                throw new UserDoesNotHaveAccess("Cannot delete a comment that is not your own."); 
+
+            await _commentRepository.Delete(comment);
         }
     }
 } 
