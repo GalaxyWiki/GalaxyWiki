@@ -5,9 +5,14 @@ using ISession = NHibernate.ISession;
 
 namespace GalaxyWiki.Api.Repositories
 {
-    public class CelestialBodyRepository(ISession session)
+    public class CelestialBodyRepository
     {
-        private readonly ISession _session = session;
+        private readonly ISession _session;
+
+        public CelestialBodyRepository(ISession session)
+        {
+            _session = session;
+        }
 
         public async Task<IEnumerable<CelestialBodies>> GetAll()
         {
