@@ -1,17 +1,14 @@
 using Google.Apis.Auth;
-using GalaxyWiki.Core.Entities;
 using GalaxyWiki.Core.Enums;
 
 namespace GalaxyWiki.API.Services
 {
     public class AuthService
     {
-        private readonly NHibernate.ISession _session;
         private readonly UserService _userService;
 
         public AuthService(NHibernate.ISession session, UserService userService)
         {
-            _session = session;
             _userService = userService;
         }
 
@@ -27,24 +24,24 @@ namespace GalaxyWiki.API.Services
                 throw new InvalidGoogleTokenException("Invalid Google ID token: " + ex.Message);
             }
             
-            var user = await _session.GetAsync<Users>(payload.Subject);
+            var user = await _userService.GetUserById(payload.Subject);
 
             if (user == null)
             {
-                user = await _userService.createUser(payload.Subject, payload.Email, payload.Name, UserRole.Viewer);
+                user = await _userService.CreateUser(payload.Subject, payload.Email, payload.Name, UserRole.Viewer);
             }
 
             return user.DisplayName;     
         }
 
-        public async Task<Boolean> CheckUserHasAccessRight(UserRole[] accessLevelRequired, string? authorId = null)
+        public async Task<bool> CheckUserHasAccessRight(UserRole[] accessLevelRequired, string? authorId)
         {
             if (string.IsNullOrEmpty(authorId))
             {
                 throw new InvalidGoogleTokenException("Author Id missing.");
             }
 
-            var user = await _userService.getUserById(authorId);
+            var user = await _userService.GetUserById(authorId);
 
             if (user == null)
             {

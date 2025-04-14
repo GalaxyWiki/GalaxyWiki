@@ -1,13 +1,10 @@
-using System.Collections.Generic;
-using System.Linq;
 using GalaxyWiki.Core.Entities;
-using NHibernate;
 using NHibernate.Linq;
 using ISession = NHibernate.ISession;
 
 namespace GalaxyWiki.Api.Repositories
 {
-    public class CommentRepository : ICommentRepository
+    public class CommentRepository
     {
         private readonly ISession _session;
 
@@ -16,39 +13,31 @@ namespace GalaxyWiki.Api.Repositories
             _session = session;
         }
 
-        public IEnumerable<Comments> GetAll()
+        public async Task<IEnumerable<Comments>> GetAll()
         {
-            return _session.Query<Comments>().ToList();
+            return await _session.Query<Comments>().ToListAsync();
         }
 
-        public Comments GetById(int id)
+        public async Task<Comments> GetById(int id)
         {
-            return _session.Get<Comments>(id);
+            return await _session.GetAsync<Comments>(id);
         }
 
-        public Comments Create(Comments comment)
+        public async Task<IEnumerable<Comments>> GetByCelestialBody(int celestialBodyId)
         {
-            using var transaction = _session.BeginTransaction();
-            _session.Save(comment);
-            transaction.Commit();
-            return comment;
-        }
-
-        public IEnumerable<Comments> GetByCelestialBody(int celestialBodyId)
-        {
-            return _session.Query<Comments>()
+            return await _session.Query<Comments>()
                 .Where(c => c.CelestialBodyId == celestialBodyId)
-                .ToList();
+                .ToListAsync();
         }
 
-        public IEnumerable<Comments> GetByUser(string userId)
+        public async Task<IEnumerable<Comments>> GetByUser(string userId)
         {
-            return _session.Query<Comments>()
+            return await _session.Query<Comments>()
                 .Where(c => c.UserId == userId)
-                .ToList();
+                .ToListAsync();
         }
 
-        public IEnumerable<Comments> GetByDateRange(DateTime startDate, DateTime endDate, int? celestialBodyId = null)
+        public async Task<IEnumerable<Comments>> GetByDateRange(DateTime startDate, DateTime endDate, int? celestialBodyId = null)
         {
             var query = _session.Query<Comments>()
                 .Where(c => c.CreatedAt >= startDate && c.CreatedAt <= endDate);
@@ -58,25 +47,53 @@ namespace GalaxyWiki.Api.Repositories
                 query = query.Where(c => c.CelestialBodyId == celestialBodyId.Value);
             }
 
-            return query.ToList();
+            return await query.ToListAsync();
         }
 
-        public Comments Update(Comments comment)
+        public async Task<Comments> Create(Comments comment)
         {
             using var transaction = _session.BeginTransaction();
-            _session.Update(comment);
-            transaction.Commit();
-            return comment;
+            try
+            {
+                await _session.SaveAsync(comment);
+                transaction.Commit();
+                return comment;
+            }
+            catch
+            {
+                transaction.Rollback();
+                throw;
+            }
         }
 
-        public void Delete(int id)
+        public async Task<Comments> Update(Comments comment)
         {
-            var comment = _session.Get<Comments>(id);
-            if (comment != null)
+            using var transaction = _session.BeginTransaction();
+            try
             {
-                using var transaction = _session.BeginTransaction();
-                _session.Delete(comment);
+                await _session.UpdateAsync(comment);
                 transaction.Commit();
+                return comment;
+            }
+            catch
+            {
+                transaction.Rollback();
+                throw;
+            }
+        }
+
+        public async Task Delete(Comments comment)
+        {
+            using var transaction = _session.BeginTransaction();
+            try
+            {
+                await _session.DeleteAsync(comment);
+                transaction.Commit();
+            }
+            catch
+            {
+                transaction.Rollback();
+                throw;
             }
         }
     }
