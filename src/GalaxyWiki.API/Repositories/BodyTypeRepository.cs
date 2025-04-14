@@ -5,11 +5,11 @@ using ISession = NHibernate.ISession;
 
 namespace GalaxyWiki.Api.Repositories
 {
-    public class BodyTypesRepository
+    public class BodyTypeRepository
     {
         private readonly ISession _session;
 
-        public BodyTypesRepository(ISession session)
+        public BodyTypeRepository(ISession session)
         {
             _session = session;
         }

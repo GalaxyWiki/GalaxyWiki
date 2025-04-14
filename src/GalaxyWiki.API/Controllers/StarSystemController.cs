@@ -1,7 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
-using NHibernate.Linq;
-using GalaxyWiki.Core.Entities;
+using GalaxyWiki.API.Services;
+using GalaxyWiki.API.DTOs;
+using System.Security.Claims;
 
 namespace GalaxyWiki.API.Controllers
 {
@@ -9,161 +10,116 @@ namespace GalaxyWiki.API.Controllers
     [ApiController]
     public class StarSystemController : ControllerBase
     {
-        private readonly NHibernate.ISession _session;
+        private readonly StarSystemService _starSystemService;
 
-        public StarSystemController(NHibernate.ISession session)
+        public StarSystemController(StarSystemService starSystemService)
         {
-            _session = session;
+            _starSystemService = starSystemService;
         }
 
         // GET: api/star-system
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
-            var starSystems = await _session.Query<StarSystems>()
-                .Select(ss => new
+            var starSystems = await _starSystemService.getAll();
+
+            return Ok(starSystems.Select(ss => new
+            {
+                ss.Id,
+                ss.Name,
+                CenterCelestialBody = new
                 {
-                    ss.Id,
-                    ss.Name,
-                    CenterCelestialBody = new
-                    {
-                        ss.CenterCb.Id,
-                        ss.CenterCb.BodyName,
-                        ss.CenterCb.BodyType
-                    }
-                })
-                .ToListAsync();
-            
-            return Ok(starSystems);
+                    ss.CenterCb.Id,
+                    ss.CenterCb.BodyName,
+                    ss.CenterCb.BodyType
+                }
+            }));
         }
 
         // GET: api/star-system/{id}
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
-            var starSystem = await _session.Query<StarSystems>()
-                .Where(ss => ss.Id == id)
-                .Select(ss => new
-                {
-                    ss.Id,
-                    ss.Name,
-                    CenterCelestialBody = new
-                    {
-                        ss.CenterCb.Id,
-                        ss.CenterCb.BodyName,
-                        ss.CenterCb.BodyType
-                    }
-                })
-                .FirstOrDefaultAsync();
+            var starSystem = await _starSystemService.GetStarSystemById(id);
 
             if (starSystem == null)
                 return NotFound(new { error = "Star system not found." });
 
-            return Ok(starSystem);
+            return Ok(new
+            {
+                starSystem.Id,
+                starSystem.Name,
+                CenterCelestialBody = new
+                {
+                    starSystem.CenterCb.Id,
+                    starSystem.CenterCb.BodyName,
+                    starSystem.CenterCb.BodyType
+                }
+            });
         }
 
         // GET: api/star-system/{id}/celestial-bodies
         [HttpGet("{id}/celestial-bodies")]
         public async Task<IActionResult> GetCelestialBodies(int id)
         {
-            var starSystem = await _session.GetAsync<StarSystems>(id);
-            if (starSystem == null)
-                return NotFound(new { error = "Star system not found." });
-
-            // Get all celestial bodies that orbit the center celestial body
-            var celestialBodies = await _session.Query<CelestialBodies>()
-                .Where(cb => cb.Orbits != null && cb.Orbits.Id == starSystem.CenterCb.Id)
-                .Select(cb => new
+            var celestialBodies = await _starSystemService.GetCelestialBodiesForStarSystemById(id);
+            
+            return Ok(celestialBodies.Select(cb => new
+            {
+                cb.Id,
+                cb.BodyName,
+                cb.BodyType,
+                Orbits = new
                 {
-                    cb.Id,
-                    cb.BodyName,
-                    cb.BodyType,
-                    Orbits = new
-                    {
-                        cb.Orbits.Id,
-                        cb.Orbits.BodyName
-                    }
-                })
-                .ToListAsync();
-
-            return Ok(celestialBodies);
+                    cb.Orbits?.Id,
+                    cb.Orbits?.BodyName
+                }
+            }));
         }
 
         // POST: api/star-system
         [HttpPost]
         [Authorize]
-        public async Task<IActionResult> Create([FromBody] StarSystemCreateRequest request)
+        public async Task<IActionResult> Create([FromBody] CreateStarSystemRequest request)
         {
-            using var transaction = _session.BeginTransaction();
-            try
+            var authorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            var starSystem = await _starSystemService.CreateStarSystem(request, authorId);
+
+            return CreatedAtAction(nameof(GetById), new { id = starSystem.Id }, new
             {
-                // Check if the center celestial body exists
-                var centerCb = await _session.GetAsync<CelestialBodies>(request.CenterCbId);
-                if (centerCb == null)
-                    return BadRequest(new { error = "Center celestial body not found." });
-
-                var starSystem = new StarSystems
+                starSystem.Id,
+                starSystem.Name,
+                CenterCelestialBody = new
                 {
-                    Name = request.Name,
-                    CenterCb = centerCb
-                };
+                    starSystem.CenterCb.Id,
+                    starSystem.CenterCb.BodyName,
+                    starSystem.CenterCb.BodyType
+                }
+            });
 
-                await _session.SaveAsync(starSystem);
-                await transaction.CommitAsync();
-
-                return CreatedAtAction(nameof(GetById), new { id = starSystem.Id }, new
-                {
-                    starSystem.Id,
-                    starSystem.Name,
-                    CenterCelestialBody = new
-                    {
-                        starSystem.CenterCb.Id,
-                        starSystem.CenterCb.BodyName,
-                        starSystem.CenterCb.BodyType
-                    }
-                });
-            }
-            catch (Exception)
-            {
-                await transaction.RollbackAsync();
-                throw;
-            }
         }
 
         // PUT: api/star-system/{id}
         [HttpPut("{id}")]
         [Authorize]
-        public async Task<IActionResult> Update(int id, [FromBody] StarSystemUpdateRequest request)
+        public async Task<IActionResult> Update(int id, [FromBody] UpdateStarSystemRequest request)
         {
-            using var transaction = _session.BeginTransaction();
-            try
-            {
-                var starSystem = await _session.GetAsync<StarSystems>(id);
-                if (starSystem == null)
-                    return NotFound(new { error = "Star system not found." });
+            var authorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-                // Check if the new center celestial body exists
-                if (request.CenterCbId.HasValue)
+            var starSystem = await _starSystemService.UpdateStarSystem(id, request, authorId);
+
+            return Ok(new
+            {
+                starSystem.Id,
+                starSystem.Name,
+                CenterCelestialBody = new
                 {
-                    var centerCb = await _session.GetAsync<CelestialBodies>(request.CenterCbId.Value);
-                    if (centerCb == null)
-                        return BadRequest(new { error = "Center celestial body not found." });
-                    
-                    starSystem.CenterCb = centerCb;
+                    starSystem.CenterCb.Id,
+                    starSystem.CenterCb.BodyName,
+                    starSystem.CenterCb.BodyType
                 }
-
-                starSystem.Name = request.Name;
-
-                await _session.UpdateAsync(starSystem);
-                await transaction.CommitAsync();
-
-                return NoContent();
-            }
-            catch (Exception)
-            {
-                await transaction.RollbackAsync();
-                throw;
-            }
+            });
         }
 
         // DELETE: api/star-system/{id}
@@ -171,35 +127,11 @@ namespace GalaxyWiki.API.Controllers
         [Authorize]
         public async Task<IActionResult> Delete(int id)
         {
-            using var transaction = _session.BeginTransaction();
-            try
-            {
-                var starSystem = await _session.GetAsync<StarSystems>(id);
-                if (starSystem == null)
-                    return NotFound(new { error = "Star system not found." });
+            var authorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-                await _session.DeleteAsync(starSystem);
-                await transaction.CommitAsync();
+            await _starSystemService.DeleteStarSystem(id, authorId);
 
-                return NoContent();
-            }
-            catch (Exception)
-            {
-                await transaction.RollbackAsync();
-                throw;
-            }
+            return NoContent();
         }
-    }
-
-    public class StarSystemCreateRequest
-    {
-        public string Name { get; set; } = string.Empty;
-        public int CenterCbId { get; set; }
-    }
-
-    public class StarSystemUpdateRequest
-    {
-        public string Name { get; set; } = string.Empty;
-        public int? CenterCbId { get; set; }
     }
 } 

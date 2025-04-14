@@ -70,7 +70,7 @@ namespace GalaxyWiki.Api.Services
                 throw new UserDoesNotHaveAccess("You do not have access to perform this action.");
             }
 
-            var user = await _userService.getUserById(userId);
+            var user = await _userService.GetUserById(userId);
 
             var celestialBody = await _celestialBodyRepository.GetById(commentDto.CelestialBodyId);
 
@@ -96,7 +96,7 @@ namespace GalaxyWiki.Api.Services
                 throw new UserDoesNotHaveAccess("You do not have access to perform this action.");
             }
 
-            var user = await _userService.getUserById(userId);
+            var user = await _userService.GetUserById(userId);
 
             var comment = await _commentRepository.GetById(id);
             if (comment == null) 
@@ -123,7 +123,7 @@ namespace GalaxyWiki.Api.Services
                 throw new UserDoesNotHaveAccess("You do not have access to perform this action.");
             }
 
-            var user = await _userService.getUserById(userId);
+            var user = await _userService.GetUserById(userId);
 
             var comment = await _commentRepository.GetById(id);
             if (comment == null) 

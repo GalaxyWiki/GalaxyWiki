@@ -24,11 +24,11 @@ namespace GalaxyWiki.API.Services
                 throw new InvalidGoogleTokenException("Invalid Google ID token: " + ex.Message);
             }
             
-            var user = await _userService.getUserById(payload.Subject);
+            var user = await _userService.GetUserById(payload.Subject);
 
             if (user == null)
             {
-                user = await _userService.createUser(payload.Subject, payload.Email, payload.Name, UserRole.Viewer);
+                user = await _userService.CreateUser(payload.Subject, payload.Email, payload.Name, UserRole.Viewer);
             }
 
             return user.DisplayName;     
@@ -41,7 +41,7 @@ namespace GalaxyWiki.API.Services
                 throw new InvalidGoogleTokenException("Author Id missing.");
             }
 
-            var user = await _userService.getUserById(authorId);
+            var user = await _userService.GetUserById(authorId);
 
             if (user == null)
             {

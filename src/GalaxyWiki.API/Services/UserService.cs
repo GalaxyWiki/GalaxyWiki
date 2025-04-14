@@ -15,12 +15,12 @@ namespace GalaxyWiki.API.Services
             _roleRepository = roleRepository;
         }
 
-        public async Task<Users> getUserById(string googleSub)
+        public async Task<Users> GetUserById(string googleSub)
         {
             return await _userRepository.GetById(googleSub);
         }
 
-        public async Task<Users> createUser(string googleSub, string email, string name, UserRole userRole)
+        public async Task<Users> CreateUser(string googleSub, string email, string name, UserRole userRole)
         {
             var role = await _roleRepository.GetById((int)userRole);
             if (role == null)

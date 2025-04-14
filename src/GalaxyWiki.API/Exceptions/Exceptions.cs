@@ -26,6 +26,7 @@ public class GlobalExceptionMiddleware
                 UserDoesNotHaveAccess => StatusCodes.Status403Forbidden,
                 UserDoesNotExist => StatusCodes.Status401Unauthorized,
                 CelestialBodyDoesNotExist => StatusCodes.Status404NotFound,
+                StarSystemDoesNotExist => StatusCodes.Status404NotFound,
                 BodyTypeDoesNotExist => StatusCodes.Status404NotFound,
                 RoleDoesNotExist => StatusCodes.Status400BadRequest,
                 CommentDoesNotExist => StatusCodes.Status400BadRequest,
@@ -71,7 +72,10 @@ public class BodyTypeDoesNotExist : Exception
 {
     public BodyTypeDoesNotExist(string message) : base(message) { }
 }
-
+public class StarSystemDoesNotExist : Exception
+{
+    public StarSystemDoesNotExist(string message) : base(message) { }
+}
 public class RoleDoesNotExist : Exception
 {
     public RoleDoesNotExist(string message) : base(message) { }

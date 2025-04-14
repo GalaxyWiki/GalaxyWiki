@@ -8,11 +8,11 @@ namespace GalaxyWiki.Api.Controllers
 {
     [ApiController]
     [Route("api/comments")]
-    public class CommentsController : ControllerBase
+    public class CommentController : ControllerBase
     {
         private readonly CommentService _commentService;
 
-        public CommentsController(CommentService commentService)
+        public CommentController(CommentService commentService)
         {
             _commentService = commentService;
         }

@@ -9,14 +9,12 @@ namespace GalaxyWiki.API.Services
     {
         private readonly CelestialBodyRepository _celestialBodyRepository;
         private readonly AuthService _authService;
-        private readonly UserRepository _userRepository;
-        private readonly BodyTypesRepository _bodyTypesRepository;
-        public CelestialBodyService(CelestialBodyRepository celestialBodyRepository, AuthService authService, UserRepository userRepository, BodyTypesRepository bodyTypesRepository)
+        private readonly BodyTypeRepository _bodyTypeRepository;
+        public CelestialBodyService(CelestialBodyRepository celestialBodyRepository, AuthService authService, BodyTypeRepository bodyTypesRepository)
         {
             _celestialBodyRepository = celestialBodyRepository;
             _authService = authService;
-            _userRepository = userRepository;
-            _bodyTypesRepository = bodyTypesRepository;
+            _bodyTypeRepository = bodyTypesRepository;
         }
 
         public async Task<IEnumerable<CelestialBodies>> GetAll()
@@ -44,7 +42,7 @@ namespace GalaxyWiki.API.Services
             if (!request.BodyTypeId.HasValue)
                 throw new RequestBodyIsInvalid("Body type ID is required.");
 
-            var bodyType = await _bodyTypesRepository.GetById(request.BodyTypeId.Value);
+            var bodyType = await _bodyTypeRepository.GetById(request.BodyTypeId.Value);
 
             if (bodyType == null)
                 throw new BodyTypeDoesNotExist("Invalid body type ID." );
@@ -85,7 +83,7 @@ namespace GalaxyWiki.API.Services
             if (!request.BodyTypeId.HasValue)
                 throw new RequestBodyIsInvalid("Body type ID is required.");
 
-            var bodyType = await _bodyTypesRepository.GetById(request.BodyTypeId.Value);
+            var bodyType = await _bodyTypeRepository.GetById(request.BodyTypeId.Value);
 
             if (bodyType == null)
                 throw new BodyTypeDoesNotExist("Invalid body type ID." );
