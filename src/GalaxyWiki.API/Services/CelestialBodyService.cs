@@ -2,20 +2,16 @@ using GalaxyWiki.API.DTOs;
 using GalaxyWiki.Core.Entities;
 using GalaxyWiki.Core.Enums;
 using GalaxyWiki.Api.Repositories;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace GalaxyWiki.API.Services
 {
-    public class CelestialBodyService
+    public class CelestialBodyService(CelestialBodyRepository celestialBodyRepository, AuthService authService, BodyTypeRepository bodyTypesRepository)
     {
-        private readonly CelestialBodyRepository _celestialBodyRepository;
-        private readonly AuthService _authService;
-        private readonly BodyTypeRepository _bodyTypeRepository;
-        public CelestialBodyService(CelestialBodyRepository celestialBodyRepository, AuthService authService, BodyTypeRepository bodyTypesRepository)
-        {
-            _celestialBodyRepository = celestialBodyRepository;
-            _authService = authService;
-            _bodyTypeRepository = bodyTypesRepository;
-        }
+        private readonly CelestialBodyRepository _celestialBodyRepository = celestialBodyRepository;
+        private readonly AuthService _authService = authService;
+        private readonly BodyTypeRepository _bodyTypeRepository = bodyTypesRepository;
 
         public async Task<IEnumerable<(CelestialBodies CelestialBody, BodyTypes? BodyType)>> GetAll()
         {
@@ -29,6 +25,26 @@ namespace GalaxyWiki.API.Services
             }
             
             return result;
+        }
+
+        public async Task<PagedResult<(CelestialBodies CelestialBody, BodyTypes? BodyType)>> GetAllPaginated(PaginationParameters parameters)
+        {
+            var (celestialBodies, totalCount) = await _celestialBodyRepository.GetAllPaginated(parameters);
+            var result = new List<(CelestialBodies CelestialBody, BodyTypes? BodyType)>();
+            
+            foreach (var celestialBody in celestialBodies)
+            {
+                var bodyType = await _bodyTypeRepository.GetById(celestialBody.BodyType);
+                result.Add((celestialBody, bodyType));
+            }
+            
+            return new PagedResult<(CelestialBodies CelestialBody, BodyTypes? BodyType)>
+            {
+                PageNumber = parameters.PageNumber,
+                PageSize = parameters.PageSize,
+                TotalCount = totalCount,
+                Items = result
+            };
         }
 
         public async Task<(CelestialBodies? CelestialBody, BodyTypes? BodyType)> GetById(int id)
@@ -157,6 +173,30 @@ namespace GalaxyWiki.API.Services
             }
             
             return result;
+        }
+
+        public async Task<PagedResult<(CelestialBodies CelestialBody, BodyTypes? BodyType)>> GetChildrenByIdPaginated(int id, PaginationParameters parameters)
+        {
+            var celestialBody = await _celestialBodyRepository.GetById(id);
+            if (celestialBody == null)
+                throw new CelestialBodyDoesNotExist("Celestial body does not exist.");
+                
+            var (children, totalCount) = await _celestialBodyRepository.GetCelestialBodiesOrbitingThisIdPaginated(id, parameters);
+            var result = new List<(CelestialBodies CelestialBody, BodyTypes? BodyType)>();
+            
+            foreach (var child in children)
+            {
+                var bodyType = await _bodyTypeRepository.GetById(child.BodyType);
+                result.Add((child, bodyType));
+            }
+            
+            return new PagedResult<(CelestialBodies CelestialBody, BodyTypes? BodyType)>
+            {
+                PageNumber = parameters.PageNumber,
+                PageSize = parameters.PageSize,
+                TotalCount = totalCount,
+                Items = result
+            };
         }
     }
 }
