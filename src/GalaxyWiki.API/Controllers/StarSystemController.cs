@@ -4,6 +4,7 @@ using GalaxyWiki.API.Services;
 using GalaxyWiki.API.DTOs;
 using System.Security.Claims;
 
+
 namespace GalaxyWiki.API.Controllers
 {
     [Route("api/star-system")]
@@ -124,7 +125,6 @@ namespace GalaxyWiki.API.Controllers
 
         // DELETE: api/star-system/{id}
         [HttpDelete("{id}")]
-        [Authorize]
         public async Task<IActionResult> Delete(int id)
         {
             var authorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
