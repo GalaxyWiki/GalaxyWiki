@@ -1,26 +1,58 @@
+using System.Diagnostics;
+using System.Net;
 using System.Net.Http.Json;
+using System.Text;
 using System.Text.Json;
 using GalaxyWiki.Core.Entities;
+using Google.Apis.Auth;
 
 public static class ApiClient
 {
     private static readonly HttpClient httpClient = new HttpClient();
 
+    public static string JWT = "";
+
     //==================== Auth ====================//
-    public static async Task LoginAsync(string jwt)
+    public static async Task LoginAsync()
     {
-        var baseUrl = Environment.GetEnvironmentVariable("API_URL");
+        var redirectUri = Environment.GetEnvironmentVariable("REDIRECT_URI");
+        var scopes = "openid email profile";
 
-        if (string.IsNullOrEmpty(baseUrl))
-        {
-            TUI.Err("ENV", "API_URL environment variable is not set.");
-            return;
-        }
+        var authUrl = $"https://accounts.google.com/o/oauth2/v2/auth?" +
+                    $"response_type=code&client_id={Environment.GetEnvironmentVariable("CLIENT_ID")}&" +
+                    $"redirect_uri={Uri.EscapeDataString(redirectUri)}&" +
+                    $"scope={Uri.EscapeDataString(scopes)}&" +
+                    $"access_type=offline";
 
-        var loginResponse = await httpClient.PostAsJsonAsync($"{baseUrl}/login", new { idToken = jwt });
-        var loginResult = await loginResponse.Content.ReadAsStringAsync();
+        using var listener = new HttpListener();
+        listener.Prefixes.Add(redirectUri);
+        listener.Start();
 
-        Console.WriteLine($"Login response: {loginResult}");
+        Console.WriteLine("Opening browser for Google login...");
+        Process.Start(new ProcessStartInfo(authUrl) { UseShellExecute = true });
+
+        var context = await listener.GetContextAsync();
+        var authCode = context.Request.QueryString["code"];
+        var responseString = "<html><body>Login successful. You can close this window.</body></html>";
+        var buffer = Encoding.UTF8.GetBytes(responseString);
+        context.Response.OutputStream.Write(buffer);
+        context.Response.OutputStream.Close();
+        listener.Stop();
+
+        Console.WriteLine($"Received auth code: {authCode}");
+        Console.WriteLine("Logging into GalaxyWiki api...");
+
+        using var http = new HttpClient();
+        var res = await http.PostAsync(Environment.GetEnvironmentVariable("API_URL")+"/login",
+            new StringContent(JsonSerializer.Serialize(new { authCode }), Encoding.UTF8, "application/json"));
+
+        var json = await res.Content.ReadAsStringAsync();
+        JWT = JsonDocument.Parse(json).RootElement.GetProperty("idToken").GetString();
+        var userName = JsonDocument.Parse(json).RootElement.GetProperty("name").GetString();
+
+        Console.WriteLine($"JWT from API: \n{JWT}");
+
+        Console.WriteLine("Logged in successfully. Welcome " + userName + ".");
     }
 
     //==================== Getters ====================//
