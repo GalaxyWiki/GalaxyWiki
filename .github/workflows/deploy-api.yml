@@ -56,8 +56,27 @@ jobs:
           }
           EOF
       
-      - name: Create service file locally
+      - name: Check and install .NET on EC2
         run: |
+          # Check if .NET is installed and install if needed
+          ssh ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} '
+            if ! command -v dotnet &> /dev/null; then
+              echo "Installing .NET 9.0..."
+              sudo rpm -Uvh https://packages.microsoft.com/config/rhel/8/packages-microsoft-prod.rpm
+              sudo yum install -y dotnet-sdk-9.0
+            fi
+            
+            # Get the path to dotnet for the service file
+            DOTNET_PATH=$(which dotnet)
+            echo "Found dotnet at: $DOTNET_PATH"
+            echo $DOTNET_PATH > ~/dotnet_path.txt
+          '
+          
+          # Get the dotnet path from the server
+          DOTNET_PATH=$(ssh ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} 'cat ~/dotnet_path.txt')
+          echo "Dotnet path: $DOTNET_PATH"
+          
+          # Create service file with correct dotnet path
           cat > galaxywiki-api.service << EOF
           [Unit]
           Description=GalaxyWiki API
@@ -65,7 +84,7 @@ jobs:
 
           [Service]
           WorkingDirectory=/var/www/galaxywiki
-          ExecStart=/usr/bin/dotnet /var/www/galaxywiki/GalaxyWiki.API.dll
+          ExecStart=${DOTNET_PATH} /var/www/galaxywiki/GalaxyWiki.API.dll
           Restart=always
           RestartSec=10
           SyslogIdentifier=galaxywiki-api
@@ -86,17 +105,18 @@ jobs:
           rsync -avz --delete ./publish/ ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}:/var/www/galaxywiki/
           
           # Ensure permissions
-          ssh ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} 'sudo chown -R ec2-user:ec2-user /var/www/galaxywiki'
+          ssh ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} 'sudo chown -R ec2-user:ec2-user /var/www/galaxywiki && chmod +x /var/www/galaxywiki/GalaxyWiki.API.dll'
           
           # Copy and install the service file
           scp galaxywiki-api.service ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}:~/galaxywiki-api.service
           ssh ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} 'sudo mv ~/galaxywiki-api.service /etc/systemd/system/ && sudo systemctl daemon-reload'
           
-          # Restart service
-          ssh ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} 'sudo systemctl restart galaxywiki-api || sudo systemctl start galaxywiki-api'
-          
-          # Enable service on boot
-          ssh ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} 'sudo systemctl enable galaxywiki-api'
-          
-          # Check status
-          ssh ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} 'sudo systemctl status galaxywiki-api' 
+          # Start service and check logs
+          ssh ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} '
+            sudo systemctl restart galaxywiki-api || sudo systemctl start galaxywiki-api
+            sudo systemctl enable galaxywiki-api
+            echo "Service status:"
+            sudo systemctl status galaxywiki-api
+            echo "Service logs:"
+            sudo journalctl -u galaxywiki-api -n 20 --no-pager
+          ' 
