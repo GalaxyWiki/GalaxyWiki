@@ -551,5 +551,31 @@ namespace GalaxyWiki.CLI
             
             return await ApiClient.CreateCommentAsync(commentText, _state.CurrentBody.Id);
         }
+
+        // Get a list of child celestial body names for autocomplete
+        public static async Task<string[]> GetAvailableDestinations()
+        {
+            if (_state.CurrentBody == null)
+            {
+                return Array.Empty<string>();
+            }
+            
+            try
+            {
+                var children = await GetChildren(_state.CurrentBody.Id);
+                var destinations = children.Select(c => c.BodyName).ToList();
+                
+                // Add special navigation options
+                destinations.Add("..");
+                destinations.Add("/");
+                
+                return destinations.ToArray();
+            }
+            catch (Exception ex)
+            {
+                TUI.Err("CD", "Failed to get available destinations.", ex.Message);
+                return Array.Empty<string>();
+            }
+        }
     }
 } 

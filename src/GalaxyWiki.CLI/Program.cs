@@ -49,6 +49,8 @@ namespace GalaxyWiki.Cli
 
                     case "warp": await CommandLogic.WarpToSelectedBody(); break;
 
+                    case "go": await ShowCdAutocomplete(); break;
+
                     case "cal": AnsiConsole.Write(TUI.Calendar()); break;
 
                     case "search": AnsiConsole.WriteLine("TODO: Search wiki pages"); break;
@@ -121,6 +123,7 @@ namespace GalaxyWiki.Cli
             grid.AddRow(new Text("cd 'Name with spaces'"), new Text("Navigate to a celestial body with spaces in the name"));
             grid.AddRow(new Text("cd .."), new Text("Navigate to parent celestial body"));
             grid.AddRow(new Text("cd /"), new Text("Navigate to Universe (root)"));
+            grid.AddRow(new Text("go"), new Text("Interactive navigation with autocomplete"));
             grid.AddRow(new Text("tree"), new Text("Display full celestial body hierarchy"));
             grid.AddRow(new Text("tree -h"), new Text("Display hierarchy from current location"));
             grid.AddRow(new Text("warp"), new Text("Show interactive tree and warp to any celestial body"));
@@ -141,7 +144,35 @@ namespace GalaxyWiki.Cli
 
         static async Task HandleCdCommand(string target)
         {
+            // If no target is provided, show autocomplete prompt
+            if (string.IsNullOrWhiteSpace(target))
+            {
+                await ShowCdAutocomplete();
+                return;
+            }
+            
             await CommandLogic.ChangeDirectory(target);
+        }
+        
+        static async Task ShowCdAutocomplete()
+        {
+            // Get available destinations
+            var destinations = await CommandLogic.GetAvailableDestinations();
+            
+            if (destinations.Length == 0)
+            {
+                TUI.Err("CD", "No destinations available.");
+                return;
+            }
+            
+            // Show destination selector
+            var selectedDestination = TUI.DestinationSelector(destinations, "Navigate to:");
+            
+            if (selectedDestination != null)
+            {
+                // Navigate to the selected destination
+                await CommandLogic.ChangeDirectory(selectedDestination);
+            }
         }
 
         static async Task HandleTreeCommand(string args)
@@ -387,14 +418,14 @@ namespace GalaxyWiki.Cli
 
             bool chatMode = true;
             while(chatMode) {
-                var msg = AnsiConsole.Ask<string>("[lightcyan1]Enter a message[/] [orange1]❯❯[/]");
+                var msg = AnsiConsole.Ask<string>("[lightcyan1]Enter a message[/] [gold3]❯❯[/]");
                 if (msg.ToLower() == "quit" || msg.ToLower() == "exit") { chatMode = false; }
                 else { AnsiConsole.WriteLine("TODO: Bot response"); }
             }
         }
 
         static async Task Login() {
-            Console.Write(new Rule("[orange]Obtaining[/] JWT"));
+            Console.Write(new Rule("[gold3]Obtaining[/] JWT"));
             await GoogleAuthenticator.GetIdTokenAsync();
 
             Console.Write(new Rule("[green]JWT Obtained[/]"));

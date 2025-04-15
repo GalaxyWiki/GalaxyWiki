@@ -68,7 +68,7 @@ public static class TUI {
         AnsiConsole.Markup($"[[[bold red]{name.ToUpper()} ERR[/]]]: [red]{desc}[/]{(info.Trim().IsEmpty() ? "\n\t" + info.Replace("\n", "\n\t") : "")}\n\n");
     }
     public static void Warn(string name, string desc, string info = "") {
-        AnsiConsole.Markup($"[[[bold orange]{name.ToUpper()} WARN[/]]]: [orange]{desc}[/]{(info.Trim().IsEmpty() ? "\n\t" + info.Replace("\n", "\n\t") : "")}\n\n");
+        AnsiConsole.Markup($"[[[bold darkorange3]{name.ToUpper()} WARN[/]]]: [gold3]{desc}[/]{(info.Trim().IsEmpty() ? "\n\t" + info.Replace("\n", "\n\t") : "")}\n\n");
     }
 
     //---------- Path ----------//
@@ -355,5 +355,24 @@ public static class TUI {
         }
     }
 
+    //---------- Interactive CD Selector ----------//
+    public static string? DestinationSelector(string[] destinations, string title = "Select destination:")
+    {
+        if (destinations.Length == 0)
+        {
+            AnsiConsole.MarkupLine("[yellow]No destinations available.[/]");
+            return null;
+        }
+        
+        var selection = AnsiConsole.Prompt(
+            new SelectionPrompt<string>()
+                .Title(title)
+                .PageSize(20)
+                .HighlightStyle(new Style(Color.SpringGreen3_1, Color.Black, Decoration.Underline))
+                .AddChoices(destinations)
+        );
+        
+        return selection;
+    }
 
 }
