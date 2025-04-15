@@ -134,6 +134,7 @@ namespace GalaxyWiki.Cli
             grid.AddRow(new Text("comment"), new Text("View comments for current celestial body"));
             grid.AddRow(new Text("comment \"text\""), new Text("Add a new comment to current celestial body"));
             grid.AddRow(new Text("comment --help"), new Text("Show detailed comment command options"));
+            grid.AddRow(new Text("render"), new Text("Render the current celestial body"));
             grid.AddRow(new Text("pwd"), new Text("Display current location path"));
             grid.AddRow(new Text("clear/cls"), new Text("Clear the screen"));
             grid.AddRow(new Text("exit/quit"), new Text("Exit the application"));

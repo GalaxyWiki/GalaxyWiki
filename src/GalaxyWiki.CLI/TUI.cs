@@ -165,7 +165,7 @@ public static class TUI {
     //---------- Image ----------//
     public static Panel Image(string path, string? title = null) {
         return Boxed(
-            new CanvasImage(path).MaxWidth(12),
+            new CanvasImage(path),
             title ?? "[cyan] :camera: Image [/]",
             Color.SkyBlue1
         );
@@ -215,7 +215,7 @@ public static class TUI {
 
             await AnimSphere(tex, glow, canvasW);
         }
-        else { AnsiConsole.Write(Image(img)); } // Display static image
+        else { AnsiConsole.Write(Align.Center(Image(img, $"{BodyTypeToEmoji(bodyType)} {bodyName}"))); } // Display static image
     }
 
     public static async Task AnimSphere(Color[,] tex, bool glow = false, int canvasW = 50) {
