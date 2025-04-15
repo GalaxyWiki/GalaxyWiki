@@ -4,6 +4,7 @@ using NHibernate.Criterion;
 using NHibernate.Util;
 using Spectre.Console;
 using Spectre.Console.Rendering;
+using System.Text.RegularExpressions;
 
 public class IdMap<T> : Dictionary<int, T> {}
 
@@ -103,13 +104,66 @@ public static class TUI {
 
     //---------- Article ----------//
     public static Panel Article(string bodyName, string? content) {
+        if (content == null) {
+            return new Panel(
+                Align.Left(new Markup("No content available"))
+            )
+            .BorderColor(Color.SpringGreen3_1)
+            .RoundedBorder()
+            .Header($"[bold cyan] {bodyName} [/]")
+            .HeaderAlignment(Justify.Center);
+        }
+
+        // Parse content with Spectre markup
+        var formattedContent = FormatContentWithSpectre(content);
+
         return new Panel(
-            Align.Left(new Markup(content ?? "No content available"))
+            Align.Left(new Markup(formattedContent))
         )
         .BorderColor(Color.SpringGreen3_1)
         .RoundedBorder()
         .Header($"[bold cyan] {bodyName} [/]")
         .HeaderAlignment(Justify.Center);
+    }
+
+    // Format content with Spectre markup
+    private static string FormatContentWithSpectre(string content) {
+        // Replace literal '\n' with actual newline characters
+        content = content.Replace("\\n", "\n");
+        
+        // Split text into paragraphs
+        var paragraphs = content.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        var result = new List<string>();
+
+        foreach (var paragraph in paragraphs) {
+            // Format names of celestial bodies with color
+            // This assumes names start with capital letters and have at least 3 characters
+            var formattedParagraph = Regex.Replace(
+                paragraph, 
+                @"\b([A-Z][a-z]{2,}(?:\s[A-Z][a-z]*)*)\b", 
+                "[cyan]$1[/]"
+            );
+            
+            // Format scientific terms
+            formattedParagraph = Regex.Replace(
+                formattedParagraph,
+                @"\b(galaxy|star|planet|moon|universe|Big Bang|gravity|light-year|atom|dark matter|dark energy)\b",
+                match => "[yellow]" + match.Value + "[/]",
+                RegexOptions.IgnoreCase
+            );
+
+            // Format numbers and measurements
+            formattedParagraph = Regex.Replace(
+                formattedParagraph,
+                @"\b(\d+(?:\.\d+)?(?:\s*(?:billion|million|trillion|light-year|ly|kg|m|km))?)\b",
+                "[green]$1[/]"
+            );
+
+            result.Add(formattedParagraph);
+        }
+
+        // Join paragraphs with line breaks between them
+        return string.Join("\n\n", result);
     }
 
     //---------- Author Info ----------//
