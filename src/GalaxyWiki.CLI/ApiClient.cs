@@ -137,6 +137,21 @@ public static class ApiClient
             return null;
         }
     }
+
+    // Get user by ID
+    public static async Task<Users?> GetUserByIdAsync(string userId)
+    {
+        try
+        {
+            string endpoint = $"/user/{userId}";
+            return await GetDeserialized<Users>(endpoint);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error retrieving user: {ex.Message}");
+            return null;
+        }
+    }
 }
 
 // Simple DTO for comment data
@@ -166,4 +181,18 @@ public class Revision
     public DateTime CreatedAt { get; set; }
     public string? CelestialBodyName { get; set; }
     public string? AuthorDisplayName { get; set; }
+}
+
+// Simple DTO to hold user data
+public class Users
+{
+    public string Id { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string DisplayName { get; set; } = string.Empty;
+    public int RoleId { get; set; }
+}
+
+public class UpdateCommentRequest
+{
+    public string CommentText { get; set; }
 }

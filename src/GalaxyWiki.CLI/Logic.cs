@@ -469,6 +469,24 @@ namespace GalaxyWiki.CLI
             {
                 comments = comments.Take(limit.Value).ToList();
             }
+
+            // Get display names for all comments
+            foreach (var comment in comments)
+            {
+                try
+                {
+                    var user = await ApiClient.GetUserByIdAsync(comment.UserId);
+                    if (user != null)
+                    {
+                        comment.UserDisplayName = user.DisplayName;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error getting user display name: {ex.Message}");
+                    comment.UserDisplayName = "Unknown User";
+                }
+            }
             
             return comments;
         }
