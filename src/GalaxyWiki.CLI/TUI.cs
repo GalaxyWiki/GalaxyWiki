@@ -193,6 +193,68 @@ public static class TUI {
         return Boxed(layout);
     }
 
+    //---------- Comments Panel ----------//
+    public static Panel CommentsPanel(List<Comment> comments, string title = "Comments") 
+    {
+        if (comments.Count == 0)
+        {
+            return new Panel(
+                Align.Center(new Markup("[grey]No comments available[/]"))
+            )
+            .BorderColor(Color.DarkOrange)
+            .RoundedBorder()
+            .Header($"[bold cyan]{title}[/]")
+            .HeaderAlignment(Justify.Center);
+        }
+
+        var table = new Table()
+            .Border(TableBorder.Rounded)
+            .BorderColor(Color.DarkOrange);
+            
+        table.AddColumn(new TableColumn("[cyan]Author[/]").Width(15));
+        table.AddColumn(new TableColumn("[cyan]Comment[/]"));
+        table.AddColumn(new TableColumn("[cyan]Date[/]").Width(18));
+        
+        foreach (var comment in comments)
+        {
+            string author = string.IsNullOrEmpty(comment.UserDisplayName) ? 
+                          $"[grey]Anonymous[/]" : 
+                          $"[bold]{comment.UserDisplayName}[/]";
+                          
+            string formattedDate = comment.CreatedDate.ToString("MMM d, yyyy HH:mm");
+            
+            string formattedComment = FormatCommentWithSpectre(comment.CommentText);
+            
+            table.AddRow(
+                new Markup(author), 
+                new Markup(formattedComment), 
+                new Markup($"[grey]{formattedDate}[/]")
+            );
+        }
+        
+        return new Panel(table)
+            .BorderColor(Color.DarkOrange)
+            .RoundedBorder()
+            .Header($"[bold cyan]{title} ({comments.Count})[/]")
+            .HeaderAlignment(Justify.Center);
+    }
+    
+    // Format comment text with Spectre markup
+    private static string FormatCommentWithSpectre(string content)
+    {
+        // Replace literal '\n' with actual newline characters
+        content = content.Replace("\\n", "\n");
+        
+        // Format names of celestial bodies with color
+        var formattedContent = Regex.Replace(
+            content, 
+            @"\b([A-Z][a-z]{2,}(?:\s[A-Z][a-z]*)*)\b", 
+            "[cyan]$1[/]"
+        );
+        
+        return formattedContent;
+    }
+
     //---------- Wiki Page ----------//
     public static Panel WikiPage() {
         var layout = new Layout("Page")

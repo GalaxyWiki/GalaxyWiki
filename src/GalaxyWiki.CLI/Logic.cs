@@ -442,5 +442,114 @@ namespace GalaxyWiki.CLI
 
             return await ApiClient.GetRevisionAsync($"http://localhost:5216/api/revision/{targetBody.ActiveRevision}");
         }
+        
+        // Get comments for the current celestial body
+        public static async Task<List<Comment>> GetCommentsForCurrentBody(int? limit = null, string sortOrder = "newest")
+        {
+            if (_state.CurrentBody == null)
+            {
+                TUI.Err("COMMENT", "Navigation system not initialized.");
+                return new List<Comment>();
+            }
+            
+            var comments = await ApiClient.GetCommentsByCelestialBodyAsync(_state.CurrentBody.Id);
+            
+            // Sort comments
+            if (sortOrder.Equals("newest", StringComparison.OrdinalIgnoreCase))
+            {
+                comments = comments.OrderByDescending(c => c.CreatedDate).ToList();
+            }
+            else if (sortOrder.Equals("oldest", StringComparison.OrdinalIgnoreCase))
+            {
+                comments = comments.OrderBy(c => c.CreatedDate).ToList();
+            }
+            
+            // Apply limit if specified
+            if (limit.HasValue && limit.Value > 0 && limit.Value < comments.Count)
+            {
+                comments = comments.Take(limit.Value).ToList();
+            }
+            
+            return comments;
+        }
+        
+        // Get comments for a celestial body by name
+        public static async Task<List<Comment>> GetCommentsForNamedBody(string bodyName, int? limit = null, string sortOrder = "newest")
+        {
+            // Get all celestial bodies
+            var bodies = await ApiClient.GetCelestialBodiesMap();
+            
+            // Find the body by name (case-insensitive)
+            var targetBody = bodies.Values.FirstOrDefault(b => 
+                b.BodyName.Equals(bodyName, StringComparison.OrdinalIgnoreCase));
+            
+            if (targetBody == null)
+            {
+                TUI.Err("COMMENT", $"Celestial body '{bodyName}' not found.");
+                return new List<Comment>();
+            }
+            
+            var comments = await ApiClient.GetCommentsByCelestialBodyAsync(targetBody.Id);
+            
+            // Sort comments
+            if (sortOrder.Equals("newest", StringComparison.OrdinalIgnoreCase))
+            {
+                comments = comments.OrderByDescending(c => c.CreatedDate).ToList();
+            }
+            else if (sortOrder.Equals("oldest", StringComparison.OrdinalIgnoreCase))
+            {
+                comments = comments.OrderBy(c => c.CreatedDate).ToList();
+            }
+            
+            // Apply limit if specified
+            if (limit.HasValue && limit.Value > 0 && limit.Value < comments.Count)
+            {
+                comments = comments.Take(limit.Value).ToList();
+            }
+            
+            return comments;
+        }
+        
+        // Get comments for current body by date range
+        public static async Task<List<Comment>> GetCommentsByDateRange(DateTime startDate, DateTime endDate, int? limit = null, string sortOrder = "newest")
+        {
+            if (_state.CurrentBody == null)
+            {
+                TUI.Err("COMMENT", "Navigation system not initialized.");
+                return new List<Comment>();
+            }
+            
+            var comments = await ApiClient.GetCommentsByDateRangeAsync(startDate, endDate, _state.CurrentBody.Id);
+            
+            // Sort comments
+            if (sortOrder.Equals("newest", StringComparison.OrdinalIgnoreCase))
+            {
+                comments = comments.OrderByDescending(c => c.CreatedDate).ToList();
+            }
+            else if (sortOrder.Equals("oldest", StringComparison.OrdinalIgnoreCase))
+            {
+                comments = comments.OrderBy(c => c.CreatedDate).ToList();
+            }
+            
+            // Apply limit if specified
+            if (limit.HasValue && limit.Value > 0 && limit.Value < comments.Count)
+            {
+                comments = comments.Take(limit.Value).ToList();
+            }
+            
+            return comments;
+        }
+        
+        // Create a new comment for the current celestial body
+        public static async Task<Comment?> CreateComment(string commentText)
+        {
+            if (_state.CurrentBody == null)
+            {
+                TUI.Err("COMMENT", "Navigation system not initialized.");
+                return null;
+            }
+            
+            return await ApiClient.CreateCommentAsync(commentText, _state.CurrentBody.Id);
+        }
     }
 } 
