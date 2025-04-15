@@ -219,7 +219,7 @@ public class Comment
     public string CommentText { get; set; } = string.Empty;
     public DateTime CreatedDate { get; set; }
     public string UserId { get; set; } = string.Empty;
-    public string UserDisplayName { get; set; } = string.Empty;
+    public string DisplayName { get; set; } = string.Empty;
     public int CelestialBodyId { get; set; }
     public string CelestialBodyName { get; set; } = string.Empty;
 }

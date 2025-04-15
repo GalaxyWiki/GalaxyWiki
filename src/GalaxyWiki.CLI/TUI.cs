@@ -334,9 +334,9 @@ public static class TUI {
         
         foreach (var comment in comments)
         {
-            string author = string.IsNullOrEmpty(comment.UserDisplayName) ? 
+            string author = string.IsNullOrEmpty(comment.DisplayName) ? 
                 $"[grey]Anonymous[/]" : 
-                $"[bold]{comment.UserDisplayName}[/]";
+                $"[bold]{comment.DisplayName}[/]";
             string formattedDate = comment.CreatedDate.ToString("MMM d, yyyy HH:mm");
             string formattedComment = FormatCommentWithSpectre(comment.CommentText);
             
