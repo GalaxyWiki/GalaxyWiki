@@ -53,7 +53,7 @@ namespace GalaxyWiki.Cli
 
                     case "chat": LaunchChatbot(); break;
 
-                    case "login": await Login(); break;
+                    case "login": await ApiClient.LoginAsync(); break;
                 }
             }
             
@@ -124,15 +124,15 @@ namespace GalaxyWiki.Cli
             }
         }
 
-        static async Task Login() {
-            Console.Write(new Rule("[orange]Obtaining[/] JWT"));
-            await GoogleAuthenticator.GetIdTokenAsync();
+        // static async Task Login() {
+        //     Console.Write(new Rule("[orange]Obtaining[/] JWT"));
+        //     await GoogleAuthenticator.GetIdTokenAsync();
 
-            Console.Write(new Rule("[green]JWT Obtained[/]"));
-            Console.WriteLine(GoogleAuthenticator.JWT);
+        //     Console.Write(new Rule("[green]JWT Obtained[/]"));
+        //     Console.WriteLine(GoogleAuthenticator.JWT);
 
-            Console.Write(new Rule("[cyan]Logging in[/] with API"));
-            await ApiClient.LoginAsync(GoogleAuthenticator.JWT);
-        }
+        //     Console.Write(new Rule("[cyan]Logging in[/] with API"));
+        //     await ApiClient.LoginAsync(GoogleAuthenticator.JWT);
+        // }
     }
 }
