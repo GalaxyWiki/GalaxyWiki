@@ -165,7 +165,7 @@ public static class TUI {
     //---------- Image ----------//
     public static Panel Image(string path, string? title = null) {
         return Boxed(
-            new CanvasImage(path),
+            new CanvasImage(path).MaxWidth(40),
             title ?? "[cyan] :camera: Image [/]",
             Color.SkyBlue1
         );
@@ -198,6 +198,7 @@ public static class TUI {
             default: img = "..\\..\\assets\\sprites\\default.png";      break;
         };
 
+        string title = $"[cyan] {BodyTypeToEmoji(bodyType)} {bodyName} [/]";
         if (isAnim) { // Display anim sphere
             Color[,] tex;
             if (img == "<generate>") { // Generate texture
@@ -213,17 +214,17 @@ public static class TUI {
             }
             else { tex = TextureUtils.LoadSphericalTexture(img, 200, 100); } // Load texture
 
-            await AnimSphere(tex, glow, canvasW);
+            await AnimSphere(tex, title, glow, canvasW);
         }
-        else { AnsiConsole.Write(Align.Center(Image(img, $"{BodyTypeToEmoji(bodyType)} {bodyName}"))); } // Display static image
+        else { AnsiConsole.Write(Align.Center(Image(img, title))); } // Display static image
     }
 
-    public static async Task AnimSphere(Color[,] tex, bool glow = false, int canvasW = 50) {
+    public static async Task AnimSphere(Color[,] tex, string title, bool glow = false, int canvasW = 50) {
         int tw = tex.GetLength(0), th = tex.GetLength(1);
         var c = new Canvas(canvasW, canvasW);
 
         // Render
-        await AnsiConsole.Live(c).StartAsync(async ctx => {
+        await AnsiConsole.Live(Boxed(c, title)).StartAsync(async ctx => {
             for (float frame = 0.0f; frame < 10.0f; frame += 0.1f) {
                 for (int px = 0; px < canvasW; px++)
                 for (int py = 0; py < canvasW; py++) {
@@ -367,16 +368,12 @@ public static class TUI {
         var layout = new Layout("Page")
             .SplitRows(
                 new Layout("Title").Ratio(1),
-                new Layout("Content").SplitColumns(
-                    new Layout("Article").Ratio(2),
-                    new Layout("Meta").Ratio(1)
-                ).Ratio(10),
+                new Layout("Article").Ratio(10),
                 new Layout("Comments").Ratio(10)
             );
         
         layout["Title"].Update(AuthorInfo(rev.AuthorDisplayName ?? "Unknown", rev.CreatedAt));
         layout["Article"].Update(Article(rev.CelestialBodyName ?? "Unknown", bodyType, rev.Content));
-        layout["Meta"].Update(Image("../../assets/earth.png"));
         layout["Comments"].Update(CommentsPanel(comments));
 
         return Boxed(layout);

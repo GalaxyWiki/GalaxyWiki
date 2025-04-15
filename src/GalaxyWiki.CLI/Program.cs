@@ -521,6 +521,7 @@ namespace GalaxyWiki.Cli
             // AnsiConsole.Write(TUI.Article(revision.CelestialBodyName ?? "Unknown", revision.Content));
             // AnsiConsole.Write(TUI.AuthorInfo(revision.AuthorDisplayName ?? "Unknown", revision.CreatedAt));
             AnsiConsole.Write(TUI.WikiPage(revision, body.BodyType, comments));
+            await TUI.RenderCelestialBody(body.BodyName, body.BodyType);
         }
         
         static async Task ShowInfoForNamedBody(string bodyName)
