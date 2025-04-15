@@ -108,19 +108,25 @@ public static class TUI {
 
     //---------- Banner ----------//
     public static void ShowBanner() {
-        var banner = new Panel(
-            Align.Left(
-                new FigletText(FigletFont.Load("../../assets/starwars.flf"), "Galaxy Wiki")
-                .Centered()
-                .Color(Color.Aqua),
-                VerticalAlignment.Bottom
+        try {
+            var banner = new Panel(
+                Align.Left(
+                    new FigletText("Galaxy Wiki")
+                    .Centered()
+                    .Color(Color.Aqua),
+                    VerticalAlignment.Bottom
+                )
             )
-        )
-        .NoBorder()
-        .Expand();
+            .NoBorder()
+            .Expand();
 
-        AnsiConsole.WriteLine("\n     Welcome to\n");
-        AnsiConsole.Write(banner);
+            AnsiConsole.WriteLine("\n     Welcome to\n");
+            AnsiConsole.Write(banner);
+        }
+        catch (Exception) {
+            // If font loading fails, just show a simple banner
+            AnsiConsole.WriteLine("\n     Welcome to Galaxy Wiki\n");
+        }
     }
     //---------- Error ----------//
     public static void Err(string name, string desc, string info = "") {

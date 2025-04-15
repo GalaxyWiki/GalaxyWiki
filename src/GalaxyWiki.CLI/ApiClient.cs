@@ -1,6 +1,7 @@
 using System.Net.Http.Json;
 using System.Text.Json;
 using GalaxyWiki.Core.Entities;
+using GalaxyWiki.Core.DTOs;
 
 public static class ApiClient
 {
@@ -135,6 +136,26 @@ public static class ApiClient
         {
             TUI.Err("POST", "Couldn't create comment", ex.Message);
             return null;
+        }
+    }
+
+    public static async Task<List<StarSystems>> GetAllStarSystems()
+    {
+        try
+        {
+            var response = await httpClient.GetAsync("http://localhost:5216/api/star-system");
+            response.EnsureSuccessStatusCode();
+            var content = await response.Content.ReadAsStringAsync();
+            var starSystems = JsonSerializer.Deserialize<List<StarSystems>>(content, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+            return starSystems ?? new List<StarSystems>();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error fetching star systems: {ex.Message}");
+            return new List<StarSystems>();
         }
     }
 }
