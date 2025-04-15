@@ -72,6 +72,8 @@ namespace GalaxyWiki.Cli
 
                     case "go": await ShowCdAutocomplete(); break;
 
+                    case "cd": await HandleCdCommand(dat); break;
+
                     case "cal": AnsiConsole.Write(TUI.Calendar()); break;
 
                     case "search": AnsiConsole.WriteLine("TODO: Search wiki pages"); break;
