@@ -33,6 +33,6 @@ jobs:
           aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           application_name: GalaxyWiki
           environment_name: GalaxyWiki-Prod
-          version_label: ${{ github.run_number }}
+          version_label: v${{ github.run_number }}-${{ github.sha }}
           region: us-east-1
           deployment_package: deploy.zip 
