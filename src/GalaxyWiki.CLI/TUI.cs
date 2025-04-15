@@ -23,7 +23,7 @@ public static class TUI {
         return $"{BodyTypeToEmoji(body.BodyType)} ({body.Id}) {body.BodyName}";
     }
 
-    static string BodyTypeToEmoji(int bodyType) {
+    public static string BodyTypeToEmoji(int bodyType) {
         return bodyType switch {
             1 => "🌌",  // Galaxy
             2 => "⭐",  // Star

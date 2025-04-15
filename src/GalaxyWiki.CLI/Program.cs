@@ -3,6 +3,8 @@ using Spectre.Console.Cli;
 using Spectre.Console.Rendering;
 using dotenv.net;
 using GalaxyWiki.Core.Entities;
+using GalaxyWiki.CLI;
+using System.Text.RegularExpressions;
 
 namespace GalaxyWiki.Cli
 {
@@ -16,13 +18,18 @@ namespace GalaxyWiki.Cli
             DotEnv.Load();
             TUI.ShowBanner();
 
-            int? workDir = null;
+            // Initialize the navigation system
+            await CommandLogic.Initialize();
+            
             bool running = true;
             while(running) {
-                var inp = AnsiConsole.Ask<string>("[lightcyan1]Enter a command[/] [springgreen3_1]❯❯[/]");
-                var parts = inp.Trim().Split();
-                var cmd = parts[0].ToLower();
-                var dat = string.Join(" ", parts[1..]);
+                // Get the current path to display in prompt
+                string promptPath = CommandLogic.GetCurrentPath();
+                
+                var inp = AnsiConsole.Ask<string>($"[lightcyan1]{promptPath}[/] [springgreen3_1]❯❯[/]");
+                
+                // Parse command and arguments, handling quoted strings
+                var (cmd, dat) = ParseCommand(inp);
 
                 switch(cmd) {
                     case "quit":
@@ -43,11 +50,14 @@ namespace GalaxyWiki.Cli
 
                     case "search": AnsiConsole.WriteLine("TODO: Search wiki pages"); break;
 
-                    case "pwd": AnsiConsole.Write(TUI.Path("Example > Path > Here")); break; // TODO: Get path
+                    case "pwd": AnsiConsole.Write(TUI.Path(CommandLogic.GetCurrentPath())); break;
 
-                    case "cd": AnsiConsole.Write("TODO: If no argument provided, open path radio button selector"); break;
+                    case "cd": await HandleCdCommand(dat); break;
 
-                    case "show": await ShowRevisionContent(workDir); break;
+                    case "ls": await HandleLsCommand(); break;
+
+                    case "show":
+                    case "info": await HandleShowCommand(); break;
 
                     case "render": AnsiConsole.Write(TUI.Image("../../assets/earth.png")); break;
 
@@ -60,10 +70,113 @@ namespace GalaxyWiki.Cli
             return 0;
         }
 
+        // Parse command and arguments, handling quoted strings
+        private static (string cmd, string args) ParseCommand(string input)
+        {
+            input = input.Trim();
+            
+            if (string.IsNullOrEmpty(input))
+                return ("", "");
+                
+            // Handle the case where the entire input is just the command
+            int firstSpaceIndex = input.IndexOf(' ');
+            if (firstSpaceIndex < 0)
+                return (input.ToLower(), "");
+                
+            // Extract the command (everything before the first space)
+            string cmd = input.Substring(0, firstSpaceIndex).ToLower();
+            
+            // Extract arguments (everything after the first space)
+            string args = input.Substring(firstSpaceIndex + 1).Trim();
+            
+            return (cmd, args);
+        }
 
         //==================== Commands ====================//
 
-        static void PrintHelp() { AnsiConsole.WriteLine("HELP MENU"); }
+        static void PrintHelp() { 
+            AnsiConsole.WriteLine("Available Commands:");
+            AnsiConsole.WriteLine();
+            
+            // Create a simple grid without using markup
+            var grid = new Grid();
+            grid.AddColumn();
+            grid.AddColumn();
+            
+            // Add headers
+            grid.AddRow(
+                new Text("Command", Style.Parse("bold")), 
+                new Text("Description", Style.Parse("bold"))
+            );
+            
+            // Add rows with plain Text objects to avoid markup parsing
+            grid.AddRow(new Text("ls"), new Text("List celestial bodies in current location"));
+            grid.AddRow(new Text("cd [name]"), new Text("Navigate to a celestial body"));
+            grid.AddRow(new Text("cd 'Name with spaces'"), new Text("Navigate to a celestial body with spaces in the name"));
+            grid.AddRow(new Text("cd .."), new Text("Navigate to parent celestial body"));
+            grid.AddRow(new Text("cd /"), new Text("Navigate to Universe (root)"));
+            grid.AddRow(new Text("show/info"), new Text("Display wiki content for current celestial body"));
+            grid.AddRow(new Text("pwd"), new Text("Display current location path"));
+            grid.AddRow(new Text("tree"), new Text("Display interactive celestial body tree"));
+            grid.AddRow(new Text("clear/cls"), new Text("Clear the screen"));
+            grid.AddRow(new Text("exit/quit"), new Text("Exit the application"));
+            
+            AnsiConsole.Write(grid);
+            AnsiConsole.WriteLine();
+        }
+
+        static async Task HandleCdCommand(string target)
+        {
+            await CommandLogic.ChangeDirectory(target);
+        }
+
+        static async Task HandleLsCommand()
+        {
+            var children = await CommandLogic.ListDirectory();
+            
+            if (children.Count == 0)
+            {
+                AnsiConsole.MarkupLine("[yellow]No celestial bodies found in this location.[/]");
+                return;
+            }
+            
+            var table = new Table();
+            table.AddColumn("Type");
+            table.AddColumn("Name");
+            table.AddColumn("ID");
+            
+            foreach (var child in children)
+            {
+                string emoji = TUI.BodyTypeToEmoji(child.BodyType);
+                string id = child.Id.ToString();
+                
+                // If the name contains spaces, suggest using quotes
+                string name = child.BodyName;
+                if (name.Contains(" "))
+                {
+                    name = $"{name} [grey](use: cd '{name}')[/]";
+                }
+                
+                table.AddRow(emoji, name, id);
+            }
+            
+            AnsiConsole.Write(table);
+        }
+
+        static async Task HandleShowCommand()
+        {
+            var revision = await CommandLogic.GetCurrentRevision();
+            
+            if (revision == null)
+            {
+                TUI.Err("INFO", "No content available for this celestial body.", 
+                    "This celestial body might not have an active revision.");
+                return;
+            }
+            
+            AnsiConsole.Write(TUI.Article(revision.CelestialBodyName ?? "Unknown", revision.Content));
+            AnsiConsole.Write(TUI.AuthorInfo(revision.AuthorDisplayName ?? "Unknown", revision.CreatedAt));
+        }
 
         static async Task<IdMap<CelestialBodies>> GetAllCelestialBodies() {
             try { return await ApiClient.GetCelestialBodiesMap(); }
@@ -89,29 +202,31 @@ namespace GalaxyWiki.Cli
             // Find the selected body
             var selectedItem = items.FirstOrDefault(i => i.DisplayLabel == selection);
 
-            if (selectedItem.Body == null || !selectedItem.Body.ActiveRevision.HasValue) {
-                TUI.Err("REV", "No active revision found for this celestial body."); 
+            if (selectedItem.Body == null) {
                 return;
             }
-
-            await ShowRevisionContent(selectedItem.Body.ActiveRevision.Value);
+            
+            // Navigate to the selected body
+            await CommandLogic.ChangeDirectory("/"); // First go to root
+            
+            // Then navigate to each level of the path
+            var pathParts = new List<string>();
+            var current = selectedItem.Body;
+            
+            // Build the path from the selected body back to root
+            while (current != null)
+            {
+                pathParts.Insert(0, current.BodyName);
+                current = current.Orbits;
+            }
+            
+            // Navigate to each part of the path
+            foreach (var part in pathParts)
+            {
+                await CommandLogic.ChangeDirectory(part);
+            }
         }
         
-        static async Task ShowRevisionContent(int? revId)
-        {
-            if (revId == null) { TUI.Err("CMD", "No page selected.", "Select a wiki page with [bold italic blue]cd[/]"); return; }
-
-            Revision? rev;
-            try { rev = await ApiClient.GetRevisionAsync($"http://localhost:5216/api/revision/{revId}"); }
-            catch (Exception ex) { TUI.Err("GET", "Couldn't fetch revision", ex.Message); return; }
-
-            if (rev == null) { TUI.Err("PARSE", "Null revision for rev ID", $"{revId}"); return; }
-
-            // Display
-            AnsiConsole.Write(TUI.Article(rev.CelestialBodyName ?? "Unknown", rev.Content));
-            AnsiConsole.Write(TUI.AuthorInfo(rev.AuthorDisplayName ?? "Unknown", rev.CreatedAt));
-        }
-
         static void LaunchChatbot() {
             var header = new Rule("[cyan] Galaxy Bot :robot: :sparkles: [/]");
             AnsiConsole.Write(header);
