@@ -62,7 +62,7 @@ namespace GalaxyWiki.Cli
                     case "find": await HandleListCommand(dat); break;
 
                     case "show":
-                    case "info": await HandleShowCommand(); break;
+                    case "info": await HandleShowCommand(dat); break;
 
                     case "render": AnsiConsole.Write(TUI.Image("../../assets/earth.png")); break;
 
@@ -126,6 +126,7 @@ namespace GalaxyWiki.Cli
             grid.AddRow(new Text("list/find"), new Text("List all celestial body types"));
             grid.AddRow(new Text("list/find -t <type>"), new Text("List all celestial bodies of a specific type (by name or ID)"));
             grid.AddRow(new Text("show/info"), new Text("Display wiki content for current celestial body"));
+            grid.AddRow(new Text("show/info -n <name>"), new Text("Display wiki content for specified celestial body by name"));
             grid.AddRow(new Text("pwd"), new Text("Display current location path"));
             grid.AddRow(new Text("clear/cls"), new Text("Clear the screen"));
             grid.AddRow(new Text("exit/quit"), new Text("Exit the application"));
@@ -275,7 +276,25 @@ namespace GalaxyWiki.Cli
             AnsiConsole.Write(table);
         }
 
-        static async Task HandleShowCommand()
+        static async Task HandleShowCommand(string args)
+        {
+            // Parse arguments to check for -n or --name flag
+            var argParts = args.Split(new[] { ' ' }, 2, StringSplitOptions.RemoveEmptyEntries);
+            
+            // Check if a specific celestial body was requested
+            if (argParts.Length == 2 && (argParts[0].Equals("-n", StringComparison.OrdinalIgnoreCase) || 
+                                         argParts[0].Equals("--name", StringComparison.OrdinalIgnoreCase)))
+            {
+                string bodyName = CommandLogic.TrimQuotes(argParts[1]);
+                await ShowInfoForNamedBody(bodyName);
+                return;
+            }
+            
+            // If no specific body was requested, show info for current location
+            await ShowInfoForCurrentLocation();
+        }
+        
+        static async Task ShowInfoForCurrentLocation()
         {
             var revision = await CommandLogic.GetCurrentRevision();
             
@@ -287,6 +306,21 @@ namespace GalaxyWiki.Cli
             }
             
             AnsiConsole.Write(TUI.Article(revision.CelestialBodyName ?? "Unknown", revision.Content));
+            AnsiConsole.Write(TUI.AuthorInfo(revision.AuthorDisplayName ?? "Unknown", revision.CreatedAt));
+        }
+        
+        static async Task ShowInfoForNamedBody(string bodyName)
+        {
+            var revision = await CommandLogic.GetRevisionByBodyName(bodyName);
+            
+            if (revision == null)
+            {
+                TUI.Err("INFO", $"No content available for '{bodyName}'.", 
+                    "The celestial body might not exist or doesn't have an active revision.");
+                return;
+            }
+            
+            AnsiConsole.Write(TUI.Article(revision.CelestialBodyName ?? bodyName, revision.Content));
             AnsiConsole.Write(TUI.AuthorInfo(revision.AuthorDisplayName ?? "Unknown", revision.CreatedAt));
         }
 

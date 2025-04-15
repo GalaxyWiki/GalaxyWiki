@@ -424,5 +424,23 @@ namespace GalaxyWiki.CLI
                 return new List<CelestialBodies>();
             }
         }
+
+        // Find a celestial body by name and get its revision
+        public static async Task<Revision?> GetRevisionByBodyName(string bodyName)
+        {
+            // Get all celestial bodies
+            var bodies = await ApiClient.GetCelestialBodiesMap();
+            
+            // Find the body by name (case-insensitive)
+            var targetBody = bodies.Values.FirstOrDefault(b => 
+                b.BodyName.Equals(bodyName, StringComparison.OrdinalIgnoreCase));
+            
+            if (targetBody == null || !targetBody.ActiveRevision.HasValue)
+            {
+                return null;
+            }
+
+            return await ApiClient.GetRevisionAsync($"http://localhost:5216/api/revision/{targetBody.ActiveRevision}");
+        }
     }
 } 
