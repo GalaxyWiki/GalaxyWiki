@@ -216,7 +216,7 @@ namespace GalaxyWiki.CLI
                 return null;
             }
 
-            return await ApiClient.GetRevisionAsync($"http://localhost:5216/api/revision/{_state.CurrentBody.ActiveRevision}");
+            return await ApiClient.GetRevisionAsync($"/api/revision/{_state.CurrentBody.ActiveRevision}");
         }
 
         // Display a tree view of celestial bodies
@@ -235,18 +235,26 @@ namespace GalaxyWiki.CLI
             {
                 // Use current location as root
                 rootBody = _state.CurrentBody;
+                
+                if (rootBody == null)
+                {
+                    TUI.Err("TREE", "No current celestial body to use as root.");
+                    return;
+                }
             }
             else
             {
                 // Find the universe root
                 var bodies = await ApiClient.GetCelestialBodiesMap();
-                rootBody = bodies.Values.FirstOrDefault(b => b.Orbits == null);
+                var possibleRoot = bodies.Values.FirstOrDefault(b => b.Orbits == null);
                 
-                if (rootBody == null)
+                if (possibleRoot == null)
                 {
                     TUI.Err("TREE", "Could not find root celestial body (Universe).");
                     return;
                 }
+                
+                rootBody = possibleRoot;
             }
 
             // Create tree and build it
@@ -439,8 +447,17 @@ namespace GalaxyWiki.CLI
             {
                 return null;
             }
-
-            return await ApiClient.GetRevisionAsync($"http://localhost:5216/api/revision/{targetBody.ActiveRevision}");
+            
+            try
+            {
+                // Get the active revision
+                return await ApiClient.GetRevisionAsync($"/api/revision/{targetBody.ActiveRevision.Value}");
+            }
+            catch (Exception ex)
+            {
+                TUI.Err("INFO", $"Failed to get revision for '{bodyName}'", ex.Message);
+                return null;
+            }
         }
         
         // Get comments for the current celestial body

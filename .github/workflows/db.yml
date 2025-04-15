@@ -4,8 +4,6 @@ on:
   push:
     branches:
       - main
-      - tevlen-migrations
-      - tevlen-api-fixes
 
 jobs:
   migrate:
@@ -24,32 +22,21 @@ jobs:
           docker run --rm \
           -v $(pwd):/flyway/sql \
           flyway/flyway:latest \
-          -url=${{ secrets.DB_URL }} \
+          -url=jdbc:postgresql://${{ secrets.DB_URL }}:${{ secrets.DB_PORT }}/${{ secrets.DB_NAME }} \
           -user=${{ secrets.DB_USERNAME }} \
           -password=${{ secrets.DB_PASSWORD }} \
           -connectRetries=3 \
           -connectRetriesInterval=10 \
           info
 
-          echo "Cleaning..."
-          docker run --rm \
-          flyway/flyway:latest \
-          -url=${{ secrets.DB_URL }} \
-          -user=${{ secrets.DB_USERNAME }} \
-          -password=${{ secrets.DB_PASSWORD }} \
-          -connectRetries=3 \
-          -connectRetriesInterval=10 \
-          -cleanDisabled=false \
-          clean
-          
           echo "Running migrations..."
           docker run --rm \
           -v $(pwd):/flyway/sql \
           flyway/flyway:latest \
-          -url=${{ secrets.DB_URL }} \
+          -url=jdbc:postgresql://${{ secrets.DB_URL }}:${{ secrets.DB_PORT }}/${{ secrets.DB_NAME }} \
           -user=${{ secrets.DB_USERNAME }} \
           -password=${{ secrets.DB_PASSWORD }} \
           -connectRetries=3 \
           -connectRetriesInterval=10 \
-          -locations=filesystem:/flyway/sql/src/GalaxyWiki.Infrastructure/Migrations \
+          -locations=filesystem:/flyway/sql/Migrations \
           migrate

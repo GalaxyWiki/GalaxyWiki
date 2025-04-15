@@ -11,6 +11,10 @@ namespace GalaxyWiki.Cli
 {
     public static class Program
     {
+        // Command history to store previous commands
+        private static List<string> _commandHistory = new List<string>();
+        private static int _historyIndex = -1;
+
         public static async Task<int> Main(string[] args)
         {
             //==================== Main command loop ====================//
@@ -27,7 +31,24 @@ namespace GalaxyWiki.Cli
                 // Get the current path to display in prompt
                 string promptPath = CommandLogic.GetCurrentPath();
                 
-                var inp = AnsiConsole.Ask<string>($"[lightcyan1]{promptPath}[/] [springgreen3_1]❯❯[/]");
+                // Display prompt
+                AnsiConsole.Markup($"[lightcyan1]{promptPath}[/] [springgreen3_1]❯❯[/] ");
+                
+                // Use custom input method with command history support
+                var inp = ReadLineWithHistory();
+                
+                // Skip empty input
+                if (string.IsNullOrWhiteSpace(inp))
+                    continue;
+                
+                // Add command to history if not empty and not a duplicate of the most recent command
+                if (!string.IsNullOrWhiteSpace(inp) && 
+                    (_commandHistory.Count == 0 || inp != _commandHistory[_commandHistory.Count - 1])) {
+                    _commandHistory.Add(inp);
+                }
+                
+                // Reset history navigation index
+                _historyIndex = -1;
                 
                 // Parse command and arguments, handling quoted strings
                 var (cmd, dat) = ParseCommand(inp);
@@ -51,13 +72,13 @@ namespace GalaxyWiki.Cli
 
                     case "go": await ShowCdAutocomplete(); break;
 
+                    case "cd": await HandleCdCommand(dat); break;
+
                     case "cal": AnsiConsole.Write(TUI.Calendar()); break;
 
                     case "search": AnsiConsole.WriteLine("TODO: Search wiki pages"); break;
 
                     case "pwd": AnsiConsole.Write(TUI.Path(CommandLogic.GetCurrentPath())); break;
-
-                    case "cd": await HandleCdCommand(dat); break;
 
                     case "ls": await HandleLsCommand(); break;
 
@@ -67,15 +88,146 @@ namespace GalaxyWiki.Cli
                     case "show":
                     case "info": await HandleShowCommand(dat); break;
 
-                    case "render": AnsiConsole.Write(TUI.Image("../../assets/earth.png")); break;
+                    case "render": await HandleRenderCommand(); break;
 
                     case "chat": LaunchChatbot(); break;
 
-                    case "login": await Login(); break;
+                    case "login": await ApiClient.LoginAsync(); break;
+
+                    default: HandleUnknownCommand(cmd); break;
                 }
             }
             
             return 0;
+        }
+
+        // Custom input method that supports command history with up/down arrows
+        private static string ReadLineWithHistory()
+        {
+            StringBuilder input = new StringBuilder();
+            int cursorPos = 0;
+            
+            // Starting position for editable area
+            int startLeft = Console.CursorLeft;
+            int startTop = Console.CursorTop;
+            
+            while (true)
+            {
+                ConsoleKeyInfo keyInfo = Console.ReadKey(true);
+                
+                if (keyInfo.Key == ConsoleKey.Enter)
+                {
+                    Console.WriteLine(); // Move to next line after Enter
+                    return input.ToString();
+                }
+                else if (keyInfo.Key == ConsoleKey.Backspace && cursorPos > 0)
+                {
+                    input.Remove(cursorPos - 1, 1);
+                    cursorPos--;
+                    
+                    // Redraw the input line
+                    Console.SetCursorPosition(startLeft, startTop);
+                    Console.Write(new string(' ', input.Length + 1)); // Clear the line
+                    Console.SetCursorPosition(startLeft, startTop);
+                    Console.Write(input.ToString());
+                    Console.SetCursorPosition(startLeft + cursorPos, startTop);
+                }
+                else if (keyInfo.Key == ConsoleKey.Delete && cursorPos < input.Length)
+                {
+                    input.Remove(cursorPos, 1);
+                    
+                    // Redraw the input line
+                    Console.SetCursorPosition(startLeft, startTop);
+                    Console.Write(new string(' ', input.Length + 1)); // Clear the line
+                    Console.SetCursorPosition(startLeft, startTop);
+                    Console.Write(input.ToString());
+                    Console.SetCursorPosition(startLeft + cursorPos, startTop);
+                }
+                else if (keyInfo.Key == ConsoleKey.LeftArrow && cursorPos > 0)
+                {
+                    cursorPos--;
+                    Console.SetCursorPosition(startLeft + cursorPos, startTop);
+                }
+                else if (keyInfo.Key == ConsoleKey.RightArrow && cursorPos < input.Length)
+                {
+                    cursorPos++;
+                    Console.SetCursorPosition(startLeft + cursorPos, startTop);
+                }
+                else if (keyInfo.Key == ConsoleKey.Home)
+                {
+                    cursorPos = 0;
+                    Console.SetCursorPosition(startLeft, startTop);
+                }
+                else if (keyInfo.Key == ConsoleKey.End)
+                {
+                    cursorPos = input.Length;
+                    Console.SetCursorPosition(startLeft + cursorPos, startTop);
+                }
+                else if (keyInfo.Key == ConsoleKey.UpArrow)
+                {
+                    // Navigate backward in history
+                    if (_commandHistory.Count > 0)
+                    {
+                        // Move to the previous command in history (if possible)
+                        _historyIndex = Math.Min(_commandHistory.Count - 1, _historyIndex + 1);
+                        string historyCommand = _commandHistory[_commandHistory.Count - 1 - _historyIndex];
+                        
+                        // Clear current input
+                        Console.SetCursorPosition(startLeft, startTop);
+                        Console.Write(new string(' ', input.Length));
+                        Console.SetCursorPosition(startLeft, startTop);
+                        
+                        // Replace with command from history
+                        input.Clear();
+                        input.Append(historyCommand);
+                        Console.Write(input.ToString());
+                        cursorPos = input.Length;
+                        Console.SetCursorPosition(startLeft + cursorPos, startTop);
+                    }
+                }
+                else if (keyInfo.Key == ConsoleKey.DownArrow)
+                {
+                    // Navigate forward in history
+                    if (_historyIndex > 0)
+                    {
+                        _historyIndex--;
+                        string historyCommand = _commandHistory[_commandHistory.Count - 1 - _historyIndex];
+                        
+                        // Clear current input
+                        Console.SetCursorPosition(startLeft, startTop);
+                        Console.Write(new string(' ', input.Length));
+                        Console.SetCursorPosition(startLeft, startTop);
+                        
+                        // Replace with command from history
+                        input.Clear();
+                        input.Append(historyCommand);
+                        Console.Write(input.ToString());
+                        cursorPos = input.Length;
+                        Console.SetCursorPosition(startLeft + cursorPos, startTop);
+                    }
+                    else if (_historyIndex == 0)
+                    {
+                        // Clear the input when navigating past the newest history entry
+                        _historyIndex = -1;
+                        Console.SetCursorPosition(startLeft, startTop);
+                        Console.Write(new string(' ', input.Length));
+                        Console.SetCursorPosition(startLeft, startTop);
+                        input.Clear();
+                        cursorPos = 0;
+                    }
+                }
+                else if (!char.IsControl(keyInfo.KeyChar))
+                {
+                    // Insert character at cursor position
+                    input.Insert(cursorPos, keyInfo.KeyChar);
+                    cursorPos++;
+                    
+                    // Redraw the input line
+                    Console.SetCursorPosition(startLeft, startTop);
+                    Console.Write(input.ToString());
+                    Console.SetCursorPosition(startLeft + cursorPos, startTop);
+                }
+            }
         }
 
         // Parse command and arguments, handling quoted strings
@@ -119,7 +271,7 @@ namespace GalaxyWiki.Cli
             
             // Add rows with plain Text objects to avoid markup parsing
             grid.AddRow(new Text("ls"), new Text("List celestial bodies in current location"));
-            grid.AddRow(new Text("cd [name]"), new Text("Navigate to a celestial body"));
+            grid.AddRow(new Text("cd <name>"), new Text("Navigate to a celestial body"));
             grid.AddRow(new Text("cd 'Name with spaces'"), new Text("Navigate to a celestial body with spaces in the name"));
             grid.AddRow(new Text("cd .."), new Text("Navigate to parent celestial body"));
             grid.AddRow(new Text("cd /"), new Text("Navigate to Universe (root)"));
@@ -134,12 +286,17 @@ namespace GalaxyWiki.Cli
             grid.AddRow(new Text("comment"), new Text("View comments for current celestial body"));
             grid.AddRow(new Text("comment \"text\""), new Text("Add a new comment to current celestial body"));
             grid.AddRow(new Text("comment --help"), new Text("Show detailed comment command options"));
+            grid.AddRow(new Text("render"), new Text("Render the current celestial body"));
             grid.AddRow(new Text("pwd"), new Text("Display current location path"));
             grid.AddRow(new Text("clear/cls"), new Text("Clear the screen"));
             grid.AddRow(new Text("exit/quit"), new Text("Exit the application"));
             
             AnsiConsole.Write(grid);
             AnsiConsole.WriteLine();
+        }
+
+        static void HandleUnknownCommand(string cmd) {
+            TUI.Err("CMD", $"Unknown command [bold italic cyan]{cmd}[/]", "Run [bold italic blue]help[/] for options");
         }
 
         static async Task HandleCdCommand(string target)
@@ -332,9 +489,23 @@ namespace GalaxyWiki.Cli
             // If no specific body was requested, show info for current location
             await ShowInfoForCurrentLocation();
         }
+
+        static async Task HandleRenderCommand()
+        {
+            var body = CommandLogic.GetCurrentBody();
+            await TUI.RenderCelestialBody(body?.BodyName ?? "", body?.BodyType ?? -1);
+        }
         
         static async Task ShowInfoForCurrentLocation()
         {
+            var body = CommandLogic.GetCurrentBody();
+            
+            if (body == null)
+            {
+                TUI.Err("INFO", "No celestial body found at current location.");
+                return;
+            }
+            
             var revision = await CommandLogic.GetCurrentRevision();
             
             if (revision == null)
@@ -344,8 +515,15 @@ namespace GalaxyWiki.Cli
                 return;
             }
             
-            AnsiConsole.Write(TUI.Article(revision.CelestialBodyName ?? "Unknown", revision.Content));
-            AnsiConsole.Write(TUI.AuthorInfo(revision.AuthorDisplayName ?? "Unknown", revision.CreatedAt));
+            List<Comment> comments = new List<Comment>();
+            if (revision.CelestialBodyName != null) {
+                comments = await CommandLogic.GetCommentsForNamedBody(revision.CelestialBodyName);
+            }
+
+            // AnsiConsole.Write(TUI.Article(revision.CelestialBodyName ?? "Unknown", revision.Content));
+            // AnsiConsole.Write(TUI.AuthorInfo(revision.AuthorDisplayName ?? "Unknown", revision.CreatedAt));
+            AnsiConsole.Write(TUI.WikiPage(revision, body.BodyType, comments));
+            await TUI.RenderCelestialBody(body.BodyName, body.BodyType);
         }
         
         static async Task ShowInfoForNamedBody(string bodyName)
@@ -359,7 +537,7 @@ namespace GalaxyWiki.Cli
                 return;
             }
             
-            AnsiConsole.Write(TUI.Article(revision.CelestialBodyName ?? bodyName, revision.Content));
+            AnsiConsole.Write(TUI.Article(revision.CelestialBodyName ?? bodyName, null, revision.Content));
             AnsiConsole.Write(TUI.AuthorInfo(revision.AuthorDisplayName ?? "Unknown", revision.CreatedAt));
         }
 
@@ -418,21 +596,16 @@ namespace GalaxyWiki.Cli
 
             bool chatMode = true;
             while(chatMode) {
-                var msg = AnsiConsole.Ask<string>("[lightcyan1]Enter a message[/] [gold3]❯❯[/]");
-                if (msg.ToLower() == "quit" || msg.ToLower() == "exit") { chatMode = false; }
-                else { AnsiConsole.WriteLine("TODO: Bot response"); }
+                AnsiConsole.Markup("[lightcyan1]Enter a message[/] [gold3]❯❯[/] ");
+                var msg = ReadLineWithHistory();
+                
+                if (msg.ToLower() == "quit" || msg.ToLower() == "exit") { 
+                    chatMode = false; 
+                }
+                else { 
+                    AnsiConsole.WriteLine("TODO: Bot response"); 
+                }
             }
-        }
-
-        static async Task Login() {
-            Console.Write(new Rule("[gold3]Obtaining[/] JWT"));
-            await GoogleAuthenticator.GetIdTokenAsync();
-
-            Console.Write(new Rule("[green]JWT Obtained[/]"));
-            Console.WriteLine(GoogleAuthenticator.JWT);
-
-            Console.Write(new Rule("[cyan]Logging in[/] with API"));
-            await ApiClient.LoginAsync(GoogleAuthenticator.JWT);
         }
 
         static async Task HandleCommentCommand(string args)
