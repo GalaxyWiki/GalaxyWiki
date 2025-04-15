@@ -6,7 +6,7 @@ on:
       - main
     paths:
       - 'src/GalaxyWiki.API/**'
-      - '.github/workflows/deploy-api.yml'
+      - '.github/workflows/api.yml'
 
 jobs:
   deploy:
