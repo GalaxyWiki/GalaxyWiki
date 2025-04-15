@@ -201,18 +201,8 @@ public static class TUI {
         string title = $"[cyan] {BodyTypeToEmoji(bodyType)} {bodyName} [/]";
         if (isAnim) { // Display anim sphere
             Color[,] tex;
-            if (img == "<generate>") { // Generate texture
-                // TODO: Generate texture by cryptographic hash
-                List<Color> palette = new List<Color> {
-                    new Color(255, 0, 0),
-                    new Color(0, 255, 0),
-                    new Color(0, 0, 255)
-                };
-                List<float> weights = new List<float> { 1, 10, 30 };
-
-                tex = TextureUtils.GenerateWarpedTexturePattern(palette, weights, 100, 50, warpFactor: 25.0);
-            }
-            else { tex = TextureUtils.LoadSphericalTexture(img, 200, 100); } // Load texture
+            if (img == "<generate>") { tex = TextureUtils.GenerateTextureFromSeed(bodyName); }      // Generate texture
+            else                     { tex = TextureUtils.LoadSphericalTexture(img, 200, 100); }    // Load texture
 
             await AnimSphere(tex, title, glow, canvasW);
         }

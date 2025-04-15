@@ -1,5 +1,6 @@
 using System.Drawing;
-
+using System.Security.Cryptography;
+using System.Text;
 using Color = Spectre.Console.Color;
 
 public class TextureUtils {
@@ -150,5 +151,34 @@ public class TextureUtils {
         }
 
         return res;
+    }
+
+    public static Color[,] GenerateTextureFromSeed(string seed) {
+        // Hash seed string
+        byte[] hash;
+        using (SHA256 sha = SHA256.Create()) { hash = sha.ComputeHash(Encoding.UTF8.GetBytes(seed)); }
+
+        // Convert hash to random seed
+        int randomSeed = BitConverter.ToInt32(hash, 0);
+        Random rand = new Random(randomSeed);
+
+        // Generate palette
+        List<Color> palette = new List<Color>();
+        for (int i = 0; i < 3; i++) {
+            byte r = (byte)rand.Next(0, 256);
+            byte g = (byte)rand.Next(0, 256);
+            byte b = (byte)rand.Next(0, 256);
+            palette.Add(new Color(r, g, b));
+        }
+
+        // Generate weights
+        List<float> weights = new List<float>();
+        for (int i = 0; i < 3; i++) { weights.Add((float)(rand.NextDouble() * 50.0 + 1.0)); }
+
+        // Generate warp factor
+        double warpFactor = rand.NextDouble() * 45.0 + 5.0;
+
+        // Generate texture using utility
+        return GenerateWarpedTexturePattern(palette, weights, 100, 50, warpFactor);
     }
 }
