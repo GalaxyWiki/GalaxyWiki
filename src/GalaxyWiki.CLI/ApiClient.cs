@@ -13,7 +13,7 @@ public static class ApiClient
 
         if (string.IsNullOrEmpty(baseUrl))
         {
-            Console.WriteLine("API_URL environment variable is not set.");
+            TUI.Err("ENV", "API_URL environment variable is not set.");
             return;
         }
 
@@ -70,7 +70,7 @@ public static class ApiClient
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error retrieving revision: {ex.Message}");
+            TUI.Err("GET", "Couldn't retrieve revision", ex.Message);
             return null;
         }
     }
@@ -85,7 +85,7 @@ public static class ApiClient
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error retrieving comments: {ex.Message}");
+            TUI.Err("GET", "Couldn't retrieve comments", ex.Message);
             return new List<Comment>();
         }
     }
@@ -102,7 +102,7 @@ public static class ApiClient
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error retrieving comments by date range: {ex.Message}");
+            TUI.Err("GET", "Couldn't retrieve comments by date range", ex.Message);
             return new List<Comment>();
         }
     }
@@ -133,7 +133,7 @@ public static class ApiClient
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error creating comment: {ex.Message}");
+            TUI.Err("POST", "Couldn't create comment", ex.Message);
             return null;
         }
     }

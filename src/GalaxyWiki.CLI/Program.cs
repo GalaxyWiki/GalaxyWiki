@@ -72,6 +72,8 @@ namespace GalaxyWiki.Cli
                     case "chat": LaunchChatbot(); break;
 
                     case "login": await Login(); break;
+
+                    default: HandleUnknownCommand(cmd); break;
                 }
             }
             
@@ -119,7 +121,7 @@ namespace GalaxyWiki.Cli
             
             // Add rows with plain Text objects to avoid markup parsing
             grid.AddRow(new Text("ls"), new Text("List celestial bodies in current location"));
-            grid.AddRow(new Text("cd [name]"), new Text("Navigate to a celestial body"));
+            grid.AddRow(new Text("cd <name>"), new Text("Navigate to a celestial body"));
             grid.AddRow(new Text("cd 'Name with spaces'"), new Text("Navigate to a celestial body with spaces in the name"));
             grid.AddRow(new Text("cd .."), new Text("Navigate to parent celestial body"));
             grid.AddRow(new Text("cd /"), new Text("Navigate to Universe (root)"));
@@ -140,6 +142,10 @@ namespace GalaxyWiki.Cli
             
             AnsiConsole.Write(grid);
             AnsiConsole.WriteLine();
+        }
+
+        static void HandleUnknownCommand(string cmd) {
+            TUI.Err("CMD", $"Unknown command [bold italic cyan]{cmd}[/]", "Run [bold italic blue]help[/] for options");
         }
 
         static async Task HandleCdCommand(string target)
@@ -335,6 +341,7 @@ namespace GalaxyWiki.Cli
         
         static async Task ShowInfoForCurrentLocation()
         {
+            var body = CommandLogic.GetCurrentBody();
             var revision = await CommandLogic.GetCurrentRevision();
             
             if (revision == null)
@@ -344,8 +351,14 @@ namespace GalaxyWiki.Cli
                 return;
             }
             
-            AnsiConsole.Write(TUI.Article(revision.CelestialBodyName ?? "Unknown", revision.Content));
-            AnsiConsole.Write(TUI.AuthorInfo(revision.AuthorDisplayName ?? "Unknown", revision.CreatedAt));
+            List<Comment> comments = new List<Comment>();
+            if (revision.CelestialBodyName != null) {
+                comments = await CommandLogic.GetCommentsForNamedBody(revision.CelestialBodyName);
+            }
+
+            // AnsiConsole.Write(TUI.Article(revision.CelestialBodyName ?? "Unknown", revision.Content));
+            // AnsiConsole.Write(TUI.AuthorInfo(revision.AuthorDisplayName ?? "Unknown", revision.CreatedAt));
+            AnsiConsole.Write(TUI.WikiPage(revision, body.BodyType, comments));
         }
         
         static async Task ShowInfoForNamedBody(string bodyName)
@@ -359,7 +372,7 @@ namespace GalaxyWiki.Cli
                 return;
             }
             
-            AnsiConsole.Write(TUI.Article(revision.CelestialBodyName ?? bodyName, revision.Content));
+            AnsiConsole.Write(TUI.Article(revision.CelestialBodyName ?? bodyName, null, revision.Content));
             AnsiConsole.Write(TUI.AuthorInfo(revision.AuthorDisplayName ?? "Unknown", revision.CreatedAt));
         }
 
@@ -677,6 +690,291 @@ namespace GalaxyWiki.Cli
             else
             {
                 TUI.Err("COMMENT", "Failed to add comment.");
+            }
+        }
+        
+        // Helper to split arguments while respecting quoted strings
+        static List<string> SplitArgumentsRespectingQuotes(string args)
+        {
+            var result = new List<string>();
+            bool inQuotes = false;
+            var currentArg = new StringBuilder();
+            
+            for (int i = 0; i < args.Length; i++)
+            {
+                char c = args[i];
+                
+                if (c == '"')
+                {
+                    inQuotes = !inQuotes;
+                    // Don't include the quote characters
+                }
+                else if (c == ' ' && !inQuotes)
+                {
+                    // End of an argument
+                    if (currentArg.Length > 0)
+                    {
+                        result.Add(currentArg.ToString());
+                        currentArg.Clear();
+                    }
+                }
+                else
+                {
+                    currentArg.Append(c);
+                }
+            }
+            
+            // Add the last argument if there is one
+            if (currentArg.Length > 0)
+            {
+                result.Add(currentArg.ToString());
+            }
+            
+            return result;
+        }
+        
+        // Helper to join arguments back into a single string
+        static string JoinArgs(List<string> args)
+        {
+            return string.Join(" ", args);
+        }
+
+        static async Task HandleCommentCommand(string args)
+        {
+            // If no arguments, display all comments for current celestial body
+            if (string.IsNullOrWhiteSpace(args))
+            {
+                await ViewCommentsForCurrentBody();
+                return;
+            }
+            
+            // Split arguments by spaces while respecting quotes
+            var argsList = SplitArgumentsRespectingQuotes(args);
+            
+            if (argsList.Count == 0)
+            {
+                await ViewCommentsForCurrentBody();
+                return;
+            }
+            
+            // Check if the first argument is a flag
+            string firstArg = argsList[0].ToLower();
+            
+            // Add a new comment if arguments don't start with a flag
+            if (!firstArg.StartsWith("-"))
+            {
+                await AddComment(args);
+                return;
+            }
+            
+            // Parse flags
+            switch (firstArg)
+            {
+                case "-a":
+                case "--add":
+                    if (argsList.Count < 2)
+                    {
+                        TUI.Err("COMMENT", "No comment text provided.", "Usage: comment -a \"Your comment text\"");
+                        return;
+                    }
+                    await AddComment(JoinArgs(argsList.Skip(1).ToList()));
+                    break;
+                
+                case "-l":
+                case "--limit":
+                    if (argsList.Count < 2 || !int.TryParse(argsList[1], out int limit))
+                    {
+                        TUI.Err("COMMENT", "Invalid limit value.", "Usage: comment -l <number>");
+                        return;
+                    }
+                    await ViewCommentsForCurrentBody(limit);
+                    break;
+                
+                case "-s":
+                case "--sort":
+                    if (argsList.Count < 2)
+                    {
+                        TUI.Err("COMMENT", "Sort order not specified.", "Usage: comment -s <newest|oldest>");
+                        return;
+                    }
+                    string sortOrder = argsList[1].ToLower();
+                    if (sortOrder != "newest" && sortOrder != "oldest")
+                    {
+                        TUI.Err("COMMENT", "Invalid sort order.", "Valid options: newest, oldest");
+                        return;
+                    }
+                    await ViewCommentsForCurrentBody(null, sortOrder);
+                    break;
+                
+                case "-n":
+                case "--name":
+                    if (argsList.Count < 2)
+                    {
+                        TUI.Err("COMMENT", "Celestial body name not provided.", "Usage: comment -n \"Body Name\"");
+                        return;
+                    }
+                    
+                    string bodyName = argsList[1];
+                    
+                    // Check for additional flags
+                    int? bodyLimit = null;
+                    string bodySortOrder = "newest";
+                    
+                    for (int i = 2; i < argsList.Count - 1; i++)
+                    {
+                        if ((argsList[i] == "-l" || argsList[i] == "--limit") && int.TryParse(argsList[i+1], out int bodyLimitVal))
+                        {
+                            bodyLimit = bodyLimitVal;
+                            i++; // Skip the next arg as we've consumed it
+                        }
+                        else if ((argsList[i] == "-s" || argsList[i] == "--sort") && i+1 < argsList.Count)
+                        {
+                            bodySortOrder = argsList[i+1].ToLower();
+                            i++; // Skip the next arg as we've consumed it
+                        }
+                    }
+                    
+                    await ViewCommentsForNamedBody(bodyName, bodyLimit, bodySortOrder);
+                    break;
+                
+                case "-d":
+                case "--dates":
+                    if (argsList.Count < 3)
+                    {
+                        TUI.Err("COMMENT", "Date range not properly specified.", 
+                            "Usage: comment -d <startDate> <endDate>\nDates should be in the format YYYY-MM-DD.");
+                        return;
+                    }
+                    
+                    if (!DateTime.TryParse(argsList[1], out DateTime startDate) || 
+                        !DateTime.TryParse(argsList[2], out DateTime endDate))
+                    {
+                        TUI.Err("COMMENT", "Invalid date format.", "Dates should be in the format YYYY-MM-DD.");
+                        return;
+                    }
+                    
+                    // Check for additional flags
+                    int? dateLimit = null;
+                    string dateSortOrder = "newest";
+                    
+                    for (int i = 3; i < argsList.Count - 1; i++)
+                    {
+                        if ((argsList[i] == "-l" || argsList[i] == "--limit") && int.TryParse(argsList[i+1], out int dateLimitVal))
+                        {
+                            dateLimit = dateLimitVal;
+                            i++; // Skip the next arg as we've consumed it
+                        }
+                        else if ((argsList[i] == "-s" || argsList[i] == "--sort") && i+1 < argsList.Count)
+                        {
+                            dateSortOrder = argsList[i+1].ToLower();
+                            i++; // Skip the next arg as we've consumed it
+                        }
+                    }
+                    
+                    await ViewCommentsByDateRange(startDate, endDate, dateLimit, dateSortOrder);
+                    break;
+                
+                case "-h":
+                case "--help":
+                    DisplayCommentHelp();
+                    break;
+                
+                default:
+                    TUI.Err("COMMENT", $"Unknown flag: {firstArg}", "Use 'comment --help' to see available options.");
+                    break;
+            }
+        }
+        
+        static void DisplayCommentHelp()
+        {
+            AnsiConsole.WriteLine("Comment Command Usage:");
+            AnsiConsole.WriteLine();
+            
+            var grid = new Grid();
+            grid.AddColumn();
+            grid.AddColumn();
+            
+            grid.AddRow(
+                new Text("Command", Style.Parse("bold")), 
+                new Text("Description", Style.Parse("bold"))
+            );
+            
+            grid.AddRow(new Text("comment"), new Text("View all comments for the current celestial body"));
+            grid.AddRow(new Text("comment \"Your text here\""), new Text("Add a new comment to the current celestial body"));
+            grid.AddRow(new Text("comment -a \"Comment text\""), new Text("Add a new comment to the current celestial body"));
+            grid.AddRow(new Text("comment -l <number>"), new Text("Limit the number of comments displayed"));
+            grid.AddRow(new Text("comment -s <sort>"), new Text("Sort comments (newest or oldest)"));
+            grid.AddRow(new Text("comment -n \"Body Name\""), new Text("View comments for the specified celestial body"));
+            grid.AddRow(new Text("comment -d <start> <end>"), new Text("View comments within date range (YYYY-MM-DD format)"));
+            grid.AddRow(new Text("comment -n \"Body\" -l 5 -s oldest"), new Text("Combine flags for specific queries"));
+            
+            AnsiConsole.Write(grid);
+            AnsiConsole.WriteLine();
+        }
+        
+        static async Task ViewCommentsForCurrentBody(int? limit = null, string sortOrder = "newest")
+        {
+            var comments = await CommandLogic.GetCommentsForCurrentBody(limit, sortOrder);
+            
+            string title = CommandLogic.GetCurrentBody()?.BodyName ?? "Unknown";
+            title = $"Comments for {title}";
+            
+            if (limit.HasValue)
+            {
+                title += $" (Showing {Math.Min(limit.Value, comments.Count)} of {comments.Count})";
+            }
+            
+            AnsiConsole.Write(TUI.CommentsPanel(comments, title));
+        }
+        
+        static async Task ViewCommentsForNamedBody(string bodyName, int? limit = null, string sortOrder = "newest")
+        {
+            var comments = await CommandLogic.GetCommentsForNamedBody(bodyName, limit, sortOrder);
+            
+            string title = $"Comments for {bodyName}";
+            
+            if (limit.HasValue && comments.Count > 0)
+            {
+                title += $" (Showing {Math.Min(limit.Value, comments.Count)} of {comments.Count})";
+            }
+            
+            AnsiConsole.Write(TUI.CommentsPanel(comments, title));
+        }
+        
+        static async Task ViewCommentsByDateRange(DateTime startDate, DateTime endDate, int? limit = null, string sortOrder = "newest")
+        {
+            var comments = await CommandLogic.GetCommentsByDateRange(startDate, endDate, limit, sortOrder);
+            
+            string bodyName = CommandLogic.GetCurrentBody()?.BodyName ?? "Unknown";
+            string dateRange = $"{startDate:yyyy-MM-dd} to {endDate:yyyy-MM-dd}";
+            string title = $"Comments for {bodyName} ({dateRange})";
+            
+            if (limit.HasValue && comments.Count > 0)
+            {
+                title += $" (Showing {Math.Min(limit.Value, comments.Count)} of {comments.Count})";
+            }
+            
+            AnsiConsole.Write(TUI.CommentsPanel(comments, title));
+        }
+        
+        static async Task AddComment(string commentText)
+        {
+            // Trim any surrounding quotes
+            commentText = CommandLogic.TrimQuotes(commentText);
+            
+            if (string.IsNullOrWhiteSpace(commentText)) {
+                TUI.Err("COMMENT", "Comment text is empty.");
+                return;
+            }
+            
+            var comment = await CommandLogic.CreateComment(commentText);
+            
+            if (comment != null) {
+                AnsiConsole.MarkupLine("[green]Comment added successfully![/]");
+                
+                // Display the newly added comment
+                var newComments = new List<Comment> { comment };
+                AnsiConsole.Write(TUI.CommentsPanel(newComments, "Your New Comment"));
             }
         }
         
