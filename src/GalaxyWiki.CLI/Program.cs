@@ -44,7 +44,7 @@ namespace GalaxyWiki.Cli
 
                     case "comment": AnsiConsole.WriteLine($"TODO: Comment\n{dat}"); break;
 
-                    case "tree": await DisplayInteractiveUniverseTree(); break;
+                    case "tree": await HandleTreeCommand(dat); break;
 
                     case "cal": AnsiConsole.Write(TUI.Calendar()); break;
 
@@ -115,9 +115,10 @@ namespace GalaxyWiki.Cli
             grid.AddRow(new Text("cd 'Name with spaces'"), new Text("Navigate to a celestial body with spaces in the name"));
             grid.AddRow(new Text("cd .."), new Text("Navigate to parent celestial body"));
             grid.AddRow(new Text("cd /"), new Text("Navigate to Universe (root)"));
+            grid.AddRow(new Text("tree"), new Text("Display full celestial body hierarchy"));
+            grid.AddRow(new Text("tree -h"), new Text("Display hierarchy from current location"));
             grid.AddRow(new Text("show/info"), new Text("Display wiki content for current celestial body"));
             grid.AddRow(new Text("pwd"), new Text("Display current location path"));
-            grid.AddRow(new Text("tree"), new Text("Display interactive celestial body tree"));
             grid.AddRow(new Text("clear/cls"), new Text("Clear the screen"));
             grid.AddRow(new Text("exit/quit"), new Text("Exit the application"));
             
@@ -128,6 +129,15 @@ namespace GalaxyWiki.Cli
         static async Task HandleCdCommand(string target)
         {
             await CommandLogic.ChangeDirectory(target);
+        }
+
+        static async Task HandleTreeCommand(string args)
+        {
+            // Check for the "-h" or "--here" flag
+            bool useCurrentAsRoot = args.Trim().Equals("-h", StringComparison.OrdinalIgnoreCase) || 
+                                   args.Trim().Equals("--here", StringComparison.OrdinalIgnoreCase);
+            
+            await CommandLogic.DisplayTree(useCurrentAsRoot);
         }
 
         static async Task HandleLsCommand()

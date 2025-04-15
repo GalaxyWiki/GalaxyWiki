@@ -1,4 +1,5 @@
 using GalaxyWiki.Core.Entities;
+using Spectre.Console;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -193,6 +194,80 @@ namespace GalaxyWiki.CLI
             }
 
             return await ApiClient.GetRevisionAsync($"http://localhost:5216/api/revision/{_state.CurrentBody.ActiveRevision}");
+        }
+
+        // Display a tree view of celestial bodies
+        public static async Task DisplayTree(bool useCurrentAsRoot = false)
+        {
+            if (_state.CurrentBody == null)
+            {
+                TUI.Err("TREE", "Navigation system not initialized.");
+                return;
+            }
+
+            // Determine root node for the tree
+            CelestialBodies rootBody;
+            
+            if (useCurrentAsRoot)
+            {
+                // Use current location as root
+                rootBody = _state.CurrentBody;
+            }
+            else
+            {
+                // Find the universe root
+                var bodies = await ApiClient.GetCelestialBodiesMap();
+                rootBody = bodies.Values.FirstOrDefault(b => b.Orbits == null);
+                
+                if (rootBody == null)
+                {
+                    TUI.Err("TREE", "Could not find root celestial body (Universe).");
+                    return;
+                }
+            }
+
+            // Create tree and build it
+            var tree = new Tree(FormatCelestialBodyLabel(rootBody));
+            await BuildTreeRecursively(rootBody.Id, tree);
+            
+            // Display tree with some styling
+            tree.Guide = TreeGuide.BoldLine;
+            tree.Style = Style.Parse("blue");
+            AnsiConsole.Write(tree);
+        }
+
+        // Helper to recursively build the tree
+        private static async Task BuildTreeRecursively(int parentId, IHasTreeNodes parentNode)
+        {
+            try
+            {
+                // Get children of this node
+                var children = await GetChildren(parentId);
+                
+                // Add each child to the tree
+                foreach (var child in children)
+                {
+                    var childNode = parentNode.AddNode(FormatCelestialBodyLabel(child));
+                    await BuildTreeRecursively(child.Id, childNode);
+                }
+            }
+            catch (Exception ex)
+            {
+                TUI.Err("TREE", $"Error building tree for node {parentId}", ex.Message);
+            }
+        }
+
+        // Format celestial body for display in the tree
+        private static string FormatCelestialBodyLabel(CelestialBodies body)
+        {
+            string emoji = TUI.BodyTypeToEmoji(body.BodyType);
+            return $"{emoji} {body.BodyName}";
+        }
+
+        // Get the current celestial body
+        public static CelestialBodies? GetCurrentBody()
+        {
+            return _state.CurrentBody;
         }
     }
 } 
