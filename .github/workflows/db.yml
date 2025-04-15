@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-
+      - deployment
 jobs:
   migrate:
     runs-on: ubuntu-latest
@@ -22,7 +22,7 @@ jobs:
           docker run --rm \
           -v $(pwd):/flyway/sql \
           flyway/flyway:latest \
-          -url=${{ secrets.DB_URL }} \
+          -url=jdbc:postgresql://${{ secrets.DB_HOST }}:${{ secrets.DB_PORT }}/${{ secrets.DB_NAME }} \
           -user=${{ secrets.DB_USERNAME }} \
           -password=${{ secrets.DB_PASSWORD }} \
           -connectRetries=3 \
