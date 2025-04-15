@@ -67,6 +67,29 @@ jobs:
           # Ensure permissions
           ssh ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} 'sudo chown -R ec2-user:ec2-user /var/www/galaxywiki'
           
+          # Create systemd service file if it doesn't exist
+          ssh ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} 'if [ ! -f /etc/systemd/system/galaxywiki-api.service ]; then
+            sudo tee /etc/systemd/system/galaxywiki-api.service > /dev/null << EOT
+            [Unit]
+            Description=GalaxyWiki API
+            After=network.target
+
+            [Service]
+            WorkingDirectory=/var/www/galaxywiki
+            ExecStart=/usr/bin/dotnet /var/www/galaxywiki/GalaxyWiki.API.dll
+            Restart=always
+            RestartSec=10
+            SyslogIdentifier=galaxywiki-api
+            User=ec2-user
+            Environment=ASPNETCORE_ENVIRONMENT=Production
+            Environment=DOTNET_PRINT_TELEMETRY_MESSAGE=false
+
+            [Install]
+            WantedBy=multi-user.target
+            EOT
+            sudo systemctl daemon-reload
+          fi'
+          
           # Restart service
           ssh ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} 'sudo systemctl restart galaxywiki-api || sudo systemctl start galaxywiki-api'
           
