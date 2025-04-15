@@ -38,5 +38,5 @@ jobs:
           -password=${{ secrets.DB_PASSWORD }} \
           -connectRetries=3 \
           -connectRetriesInterval=10 \
-          -locations=filesystem:/flyway/sql/src/GalaxyWiki.Infrastructure/Migrations \
+          -locations=filesystem:/flyway/sql/Migrations \
           migrate
