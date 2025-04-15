@@ -73,10 +73,10 @@ namespace GalaxyWiki.CLI
             
             foreach (var body in reversedPath)
             {
-                path.Append($"\\{body.BodyName}");
+                path.Append($" \\ {body.BodyName}");
             }
             
-            path.Append(">");
+            // path.Append(">");
             return path.ToString();
         }
 
