@@ -12,10 +12,12 @@ public static class TUI {
     //==================== Utils ====================//
 
     // Wrap an arbitrary element in a TUI box
-    public static Panel Boxed(IRenderable elem, String title = "") {
+    public static Panel Boxed(IRenderable elem, String title = "", Color? color = null, Justify headAlign = Justify.Center) {
         return new Panel(Align.Center(elem, VerticalAlignment.Middle))
         .RoundedBorder()
         .Header(title)
+        .BorderColor(color ?? Color.Default)
+        .HeaderAlignment(headAlign)
         .Expand();
     }
 
@@ -39,91 +41,6 @@ public static class TUI {
             11 => "🌠", // Universe
             _ => "🔭"   // Default
         };
-    }
-
-
-
-    //==================== Elements ====================//
-
-    //-------------------- Static --------------------//
-
-    //---------- Banner ----------//
-    public static void ShowBanner() {
-        var banner = new Panel(
-            Align.Left(
-                new FigletText(FigletFont.Load("../../assets/starwars.flf"), "Galaxy Wiki")
-                .Centered()
-                .Color(Color.Aqua),
-                VerticalAlignment.Bottom
-            )
-        )
-        .NoBorder()
-        .Expand();
-
-        AnsiConsole.WriteLine("\n     Welcome to\n");
-        AnsiConsole.Write(banner);
-    }
-    //---------- Error ----------//
-    public static void Err(string name, string desc, string info = "") {
-        AnsiConsole.Markup($"[[[bold red]{name.ToUpper()} ERR[/]]]: [red]{desc}[/]{(info.Trim().IsEmpty() ? "\n\t" + info.Replace("\n", "\n\t") : "")}\n\n");
-    }
-    public static void Warn(string name, string desc, string info = "") {
-        AnsiConsole.Markup($"[[[bold darkorange3]{name.ToUpper()} WARN[/]]]: [gold3]{desc}[/]{(info.Trim().IsEmpty() ? "\n\t" + info.Replace("\n", "\n\t") : "")}\n\n");
-    }
-
-    //---------- Path ----------//
-    public static Panel Path(string path) {
-        var elem = new TextPath(path);
-
-        elem.RootStyle = new Style(foreground: Color.Red);
-        elem.SeparatorStyle = new Style(foreground: Color.Green);
-        elem.StemStyle = new Style(foreground: Color.Blue);
-        elem.LeafStyle = new Style(foreground: Color.Yellow);
-
-        return Boxed(elem);
-    }
-
-    //---------- Calendar ----------//
-    public static Panel Calendar() {
-        var cal = new Calendar(DateTime.Today)
-            .AddCalendarEvent(DateTime.Today)
-            .HeaderStyle(Style.Parse("bold"))
-            .HighlightStyle(Style.Parse("yellow bold"))
-            .RoundedBorder();
-
-        return Boxed(cal, "[cyan] Calendar :calendar: [/]");
-    }
-
-    //---------- Image ----------//
-    public static Panel Image(string path) {
-        return Boxed(
-            new CanvasImage(path).MaxWidth(12),
-            "[cyan] Image :camera: [/]"
-        );
-    }
-
-    //---------- Article ----------//
-    public static Panel Article(string bodyName, string? content) {
-        if (content == null) {
-            return new Panel(
-                Align.Left(new Markup("No content available"))
-            )
-            .BorderColor(Color.SpringGreen3_1)
-            .RoundedBorder()
-            .Header($"[bold cyan] {bodyName} [/]")
-            .HeaderAlignment(Justify.Center);
-        }
-
-        // Parse content with Spectre markup
-        var formattedContent = FormatContentWithSpectre(content);
-
-        return new Panel(
-            Align.Left(new Markup(formattedContent))
-        )
-        .BorderColor(Color.SpringGreen3_1)
-        .RoundedBorder()
-        .Header($"[bold cyan] {bodyName} [/]")
-        .HeaderAlignment(Justify.Center);
     }
 
     // Format content with Spectre markup
@@ -166,12 +83,113 @@ public static class TUI {
         return string.Join("\n\n", result);
     }
 
+    
+    // Format comment text with Spectre markup
+    private static string FormatCommentWithSpectre(string content)
+    {
+        // Replace literal '\n' with actual newline characters
+        content = content.Replace("\\n", "\n");
+        
+        // Format names of celestial bodies with color
+        var formattedContent = Regex.Replace(
+            content, 
+            @"\b([A-Z][a-z]{2,}(?:\s[A-Z][a-z]*)*)\b", 
+            "[cyan]$1[/]"
+        );
+        
+        return formattedContent;
+    }
+
+
+
+    //==================== Elements ====================//
+
+    //-------------------- Static --------------------//
+
+    //---------- Banner ----------//
+    public static void ShowBanner() {
+        var banner = new Panel(
+            Align.Left(
+                new FigletText(FigletFont.Load("../../assets/starwars.flf"), "Galaxy Wiki")
+                .Centered()
+                .Color(Color.Aqua),
+                VerticalAlignment.Bottom
+            )
+        )
+        .NoBorder()
+        .Expand();
+
+        AnsiConsole.WriteLine("\n     Welcome to\n");
+        AnsiConsole.Write(banner);
+    }
+    //---------- Error ----------//
+    public static void Err(string name, string desc, string info = "") {
+        AnsiConsole.Markup($"[[[bold red]{name.ToUpper()} ERR[/]]]: [red]{desc}[/]");
+        if (!info.Trim().IsEmpty()) { AnsiConsole.Markup("\n\t" + info.Replace("\n", "\n\t")); }
+        AnsiConsole.Write("\n\n");
+    }
+    public static void Warn(string name, string desc, string info = "") {
+        AnsiConsole.Markup($"[[[bold darkorange3]{name.ToUpper()} WARN[/]]]: [gold3]{desc}[/]");
+        if (!info.Trim().IsEmpty()) { AnsiConsole.Markup("\n\t" + info.Replace("\n", "\n\t") + "\n\n"); }
+        AnsiConsole.Write("\n\n");
+    }
+
+    //---------- Path ----------//
+    public static Panel Path(string path) {
+        var elem = new TextPath(path);
+
+        elem.RootStyle = new Style(foreground: Color.Red);
+        elem.SeparatorStyle = new Style(foreground: Color.Green);
+        elem.StemStyle = new Style(foreground: Color.Blue);
+        elem.LeafStyle = new Style(foreground: Color.Yellow);
+
+        return Boxed(elem);
+    }
+
+    //---------- Calendar ----------//
+    public static Panel Calendar() {
+        var cal = new Calendar(DateTime.Today)
+            .AddCalendarEvent(DateTime.Today)
+            .HeaderStyle(Style.Parse("bold"))
+            .HighlightStyle(Style.Parse("yellow bold"))
+            .RoundedBorder();
+
+        return Boxed(cal, "[cyan] Calendar :calendar: [/]");
+    }
+
+    //---------- Image ----------//
+    public static Panel Image(string path, string? title = null) {
+        return Boxed(
+            new CanvasImage(path).MaxWidth(12),
+            title ?? "[cyan] :camera: Image [/]",
+            Color.SkyBlue1
+        );
+    }
+
+    //---------- Article ----------//
+    public static Panel Article(string bodyName, int? bodyType, string? content) {
+        string title = $"[bold cyan] {BodyTypeToEmoji(bodyType ?? -1)} {bodyName} [/]";
+        if (content == null) {
+            return Boxed(
+                Align.Left(new Markup("No content available")),
+                title,
+                Color.SpringGreen3_1
+            );
+        }
+
+        return Boxed(
+            Align.Left(new Markup(FormatContentWithSpectre(content))),
+            $"[bold cyan] {BodyTypeToEmoji(bodyType ?? -1)} {bodyName} [/]",
+            Color.SpringGreen3_1
+        );
+    }
+
     //---------- Author Info ----------//
     public static Panel AuthorInfo(string displayName, DateTime date) {
         var formattedDate = date.ToString("MMMM d, yyyy 'at' h:mm tt");
         return new Panel(
             Align.Right(
-                new Markup($"[italic grey]Written by [/][bold]{displayName}[/] [italic grey]on {formattedDate}[/]")
+                new Markup($"[italic grey]Last updated by [/][bold]{displayName}[/] [italic grey]on {formattedDate}[/]")
             )
         )
         .NoBorder()
@@ -196,21 +214,18 @@ public static class TUI {
     //---------- Comments Panel ----------//
     public static Panel CommentsPanel(List<Comment> comments, string title = "Comments") 
     {
-        if (comments.Count == 0)
-        {
-            return new Panel(
-                Align.Center(new Markup("[grey]No comments available[/]"))
-            )
-            .BorderColor(Color.DarkOrange)
-            .RoundedBorder()
-            .Header($"[bold cyan]{title}[/]")
-            .HeaderAlignment(Justify.Center);
+        if (comments.Count == 0) {
+            return Boxed(
+                Align.Center(new Markup("[grey]No comments available[/]")),
+                $"[bold cyan] {title} [/]"
+            );
         }
 
         var table = new Table()
             .Border(TableBorder.Rounded)
-            .BorderColor(Color.DarkOrange);
-            
+            .BorderColor(Color.LightCoral)
+            .HideHeaders();
+
         table.AddColumn(new TableColumn("[cyan]Author[/]").Width(15));
         table.AddColumn(new TableColumn("[cyan]Comment[/]"));
         table.AddColumn(new TableColumn("[cyan]Date[/]").Width(18));
@@ -218,11 +233,9 @@ public static class TUI {
         foreach (var comment in comments)
         {
             string author = string.IsNullOrEmpty(comment.UserDisplayName) ? 
-                          $"[grey]Anonymous[/]" : 
-                          $"[bold]{comment.UserDisplayName}[/]";
-                          
+                $"[grey]Anonymous[/]" : 
+                $"[bold]{comment.UserDisplayName}[/]";
             string formattedDate = comment.CreatedDate.ToString("MMM d, yyyy HH:mm");
-            
             string formattedComment = FormatCommentWithSpectre(comment.CommentText);
             
             table.AddRow(
@@ -232,42 +245,28 @@ public static class TUI {
             );
         }
         
-        return new Panel(table)
-            .BorderColor(Color.DarkOrange)
-            .RoundedBorder()
-            .Header($"[bold cyan]{title} ({comments.Count})[/]")
-            .HeaderAlignment(Justify.Center);
-    }
-    
-    // Format comment text with Spectre markup
-    private static string FormatCommentWithSpectre(string content)
-    {
-        // Replace literal '\n' with actual newline characters
-        content = content.Replace("\\n", "\n");
-        
-        // Format names of celestial bodies with color
-        var formattedContent = Regex.Replace(
-            content, 
-            @"\b([A-Z][a-z]{2,}(?:\s[A-Z][a-z]*)*)\b", 
-            "[cyan]$1[/]"
-        );
-        
-        return formattedContent;
+        return Boxed(table, $"[bold cyan] {title} ({comments.Count}) [/]", Color.DarkOrange);
     }
 
     //---------- Wiki Page ----------//
-    public static Panel WikiPage() {
+    public static Panel WikiPage(Revision rev, int? bodyType, List<Comment> comments) {
+        int w = Console.BufferWidth;
+        int h = Console.BufferHeight;
+
         var layout = new Layout("Page")
             .SplitRows(
+                new Layout("Title").Ratio(1),
                 new Layout("Content").SplitColumns(
-                    new Layout("Article"),
-                    new Layout("Meta")
-                ),
-                new Layout("Comments")
+                    new Layout("Article").Ratio(2),
+                    new Layout("Meta").Ratio(1)
+                ).Ratio(10),
+                new Layout("Comments").Ratio(10)
             );
         
-        layout["Article"].Update(new Text("PAGE CONTENT GOES HERE"));
+        layout["Title"].Update(AuthorInfo(rev.AuthorDisplayName ?? "Unknown", rev.CreatedAt));
+        layout["Article"].Update(Article(rev.CelestialBodyName ?? "Unknown", bodyType, rev.Content));
         layout["Meta"].Update(Image("../../assets/earth.png"));
+        layout["Comments"].Update(CommentsPanel(comments));
 
         return Boxed(layout);
     }

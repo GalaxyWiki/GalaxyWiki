@@ -72,6 +72,8 @@ namespace GalaxyWiki.Cli
                     case "chat": LaunchChatbot(); break;
 
                     case "login": await Login(); break;
+
+                    default: HandleUnknownCommand(cmd); break;
                 }
             }
             
@@ -119,7 +121,7 @@ namespace GalaxyWiki.Cli
             
             // Add rows with plain Text objects to avoid markup parsing
             grid.AddRow(new Text("ls"), new Text("List celestial bodies in current location"));
-            grid.AddRow(new Text("cd [name]"), new Text("Navigate to a celestial body"));
+            grid.AddRow(new Text("cd <name>"), new Text("Navigate to a celestial body"));
             grid.AddRow(new Text("cd 'Name with spaces'"), new Text("Navigate to a celestial body with spaces in the name"));
             grid.AddRow(new Text("cd .."), new Text("Navigate to parent celestial body"));
             grid.AddRow(new Text("cd /"), new Text("Navigate to Universe (root)"));
@@ -140,6 +142,10 @@ namespace GalaxyWiki.Cli
             
             AnsiConsole.Write(grid);
             AnsiConsole.WriteLine();
+        }
+
+        static void HandleUnknownCommand(string cmd) {
+            TUI.Err("CMD", $"Unknown command [bold italic cyan]{cmd}[/]", "Run [bold italic blue]help[/] for options");
         }
 
         static async Task HandleCdCommand(string target)
@@ -335,6 +341,7 @@ namespace GalaxyWiki.Cli
         
         static async Task ShowInfoForCurrentLocation()
         {
+            var body = CommandLogic.GetCurrentBody();
             var revision = await CommandLogic.GetCurrentRevision();
             
             if (revision == null)
@@ -344,8 +351,14 @@ namespace GalaxyWiki.Cli
                 return;
             }
             
-            AnsiConsole.Write(TUI.Article(revision.CelestialBodyName ?? "Unknown", revision.Content));
-            AnsiConsole.Write(TUI.AuthorInfo(revision.AuthorDisplayName ?? "Unknown", revision.CreatedAt));
+            List<Comment> comments = new List<Comment>();
+            if (revision.CelestialBodyName != null) {
+                comments = await CommandLogic.GetCommentsForNamedBody(revision.CelestialBodyName);
+            }
+
+            // AnsiConsole.Write(TUI.Article(revision.CelestialBodyName ?? "Unknown", revision.Content));
+            // AnsiConsole.Write(TUI.AuthorInfo(revision.AuthorDisplayName ?? "Unknown", revision.CreatedAt));
+            AnsiConsole.Write(TUI.WikiPage(revision, body.BodyType, comments));
         }
         
         static async Task ShowInfoForNamedBody(string bodyName)
@@ -359,7 +372,7 @@ namespace GalaxyWiki.Cli
                 return;
             }
             
-            AnsiConsole.Write(TUI.Article(revision.CelestialBodyName ?? bodyName, revision.Content));
+            AnsiConsole.Write(TUI.Article(revision.CelestialBodyName ?? bodyName, null, revision.Content));
             AnsiConsole.Write(TUI.AuthorInfo(revision.AuthorDisplayName ?? "Unknown", revision.CreatedAt));
         }
 
@@ -658,25 +671,19 @@ namespace GalaxyWiki.Cli
             // Trim any surrounding quotes
             commentText = CommandLogic.TrimQuotes(commentText);
             
-            if (string.IsNullOrWhiteSpace(commentText))
-            {
+            if (string.IsNullOrWhiteSpace(commentText)) {
                 TUI.Err("COMMENT", "Comment text is empty.");
                 return;
             }
             
             var comment = await CommandLogic.CreateComment(commentText);
             
-            if (comment != null)
-            {
+            if (comment != null) {
                 AnsiConsole.MarkupLine("[green]Comment added successfully![/]");
                 
                 // Display the newly added comment
                 var newComments = new List<Comment> { comment };
                 AnsiConsole.Write(TUI.CommentsPanel(newComments, "Your New Comment"));
-            }
-            else
-            {
-                TUI.Err("COMMENT", "Failed to add comment.");
             }
         }
         
