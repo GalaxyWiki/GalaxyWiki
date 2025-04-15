@@ -342,6 +342,13 @@ namespace GalaxyWiki.Cli
         static async Task ShowInfoForCurrentLocation()
         {
             var body = CommandLogic.GetCurrentBody();
+            
+            if (body == null)
+            {
+                TUI.Err("INFO", "No celestial body found at current location.");
+                return;
+            }
+            
             var revision = await CommandLogic.GetCurrentRevision();
             
             if (revision == null)
