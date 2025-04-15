@@ -34,5 +34,5 @@ jobs:
           application_name: GalaxyWiki
           environment_name: GalaxyWiki-Prod
           version_label: v${{ github.run_number }}-${{ github.sha }}
-          region: us-east-1
+          region: eu-west-1
           deployment_package: deploy.zip 
