@@ -23,6 +23,7 @@ jobs:
       - name: Generate deployment package
         run: |
           cd publish
+          cp ../src/GalaxyWiki.API/.env .
           zip -r ../deploy.zip .
           cd ..
       
