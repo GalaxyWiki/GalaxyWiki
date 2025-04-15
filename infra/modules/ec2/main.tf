@@ -116,6 +116,12 @@ resource "aws_iam_role_policy_attachment" "ssm_policy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
 
+# Add EC2 Instance Connect policy
+resource "aws_iam_role_policy_attachment" "ec2_instance_connect_policy" {
+  role       = aws_iam_role.ec2_role.name
+  policy_arn = "arn:aws:iam::aws:policy/EC2InstanceConnect"
+}
+
 resource "aws_iam_instance_profile" "ec2_profile" {
   name = "galaxy-ec2-profile"
   role = aws_iam_role.ec2_role.name
@@ -162,6 +168,7 @@ locals {
     export DB_USERNAME="${var.db_username}"
     export DB_PASSWORD="${var.db_password}"
     export ASPNETCORE_URLS="http://0.0.0.0:5000"
+    export ASPNETCORE_ENVIRONMENT="Production"
     ENVFILE
     
     # Make environment variables available to services
@@ -216,10 +223,12 @@ resource "aws_instance" "api_server" {
   instance_type          = "t2.micro"
   subnet_id              = aws_subnet.api_subnet.id
   vpc_security_group_ids = [aws_security_group.api_sg.id]
-  iam_instance_profile   = aws_iam_instance_profile.ec2_profile.name
-  user_data              = local.user_data
-  key_name               = aws_key_pair.generated_key.key_name
+  key_name              = aws_key_pair.generated_key.key_name
+  iam_instance_profile  = aws_iam_instance_profile.ec2_profile.name
   
+  user_data = local.user_data
+  user_data_replace_on_change = true
+
   root_block_device {
     volume_type           = "gp2"
     volume_size           = 8
@@ -228,6 +237,7 @@ resource "aws_instance" "api_server" {
   
   tags = {
     Name = "galaxy-api-server"
+    Environment = "Production"
   }
 }
 

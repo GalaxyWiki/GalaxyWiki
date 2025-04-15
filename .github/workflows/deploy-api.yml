@@ -1,122 +1,38 @@
-name: Deploy API
+name: Deploy to Elastic Beanstalk
 
 on:
   push:
-    branches: 
+    branches:
       - main
       - deployment
-    paths:
-      - 'src/**'
-      - '.github/workflows/deploy-api.yml'
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
-    
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v3
       
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: '9.0.x'
-      
-      - name: Restore dependencies
-        run: dotnet restore
-      
-      - name: Build
-        run: dotnet build --no-restore --configuration Release
+          dotnet-version: 9.0.x
       
       - name: Publish
         run: dotnet publish src/GalaxyWiki.API/GalaxyWiki.API.csproj -c Release -o ./publish
       
-      - name: Install SSH key
-        uses: shimataro/ssh-key-action@v2
+      - name: Generate deployment package
+        run: |
+          cd publish
+          zip -r ../deploy.zip .
+          cd ..
+      
+      - name: Deploy to EB
+        uses: einaregilsson/beanstalk-deploy@v21
         with:
-          key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
-          known_hosts: 'just-a-placeholder-so-we-dont-get-errors'
-          
-      - name: Add to known hosts
-        run: ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
-      
-      - name: Configure app settings
-        run: |
-          cat > ./publish/appsettings.Production.json << EOF
-          {
-            "ConnectionStrings": {
-              "DefaultConnection": "Host=${{ secrets.DB_HOST }};Port=${{ secrets.DB_PORT }};Database=${{ secrets.DB_NAME }};Username=${{ secrets.DB_USERNAME }};Password=${{ secrets.DB_PASSWORD }};"
-            },
-            "Logging": {
-              "LogLevel": {
-                "Default": "Information",
-                "Microsoft.AspNetCore": "Warning"
-              }
-            }
-          }
-          EOF
-      
-      - name: Check and install .NET on EC2
-        run: |
-          # Check if .NET is installed and install if needed
-          ssh ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} '
-            if ! command -v dotnet &> /dev/null; then
-              echo "Installing .NET 9.0..."
-              sudo rpm -Uvh https://packages.microsoft.com/config/rhel/8/packages-microsoft-prod.rpm
-              sudo yum install -y dotnet-sdk-9.0
-            fi
-            
-            # Get the path to dotnet for the service file
-            DOTNET_PATH=$(which dotnet)
-            echo "Found dotnet at: $DOTNET_PATH"
-            echo $DOTNET_PATH > ~/dotnet_path.txt
-          '
-          
-          # Get the dotnet path from the server
-          DOTNET_PATH=$(ssh ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} 'cat ~/dotnet_path.txt')
-          echo "Dotnet path: $DOTNET_PATH"
-          
-          # Create service file with correct dotnet path
-          cat > galaxywiki-api.service << EOF
-          [Unit]
-          Description=GalaxyWiki API
-          After=network.target
-
-          [Service]
-          WorkingDirectory=/var/www/galaxywiki
-          ExecStart=${DOTNET_PATH} /var/www/galaxywiki/GalaxyWiki.API.dll
-          Restart=always
-          RestartSec=10
-          SyslogIdentifier=galaxywiki-api
-          User=ec2-user
-          Environment=ASPNETCORE_ENVIRONMENT=Production
-          Environment=DOTNET_PRINT_TELEMETRY_MESSAGE=false
-
-          [Install]
-          WantedBy=multi-user.target
-          EOF
-      
-      - name: Deploy to EC2
-        run: |
-          # Ensure directory exists
-          ssh ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} 'mkdir -p /var/www/galaxywiki'
-          
-          # Copy files
-          rsync -avz --delete ./publish/ ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}:/var/www/galaxywiki/
-          
-          # Ensure permissions
-          ssh ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} 'sudo chown -R ec2-user:ec2-user /var/www/galaxywiki && chmod +x /var/www/galaxywiki/GalaxyWiki.API.dll'
-          
-          # Copy and install the service file
-          scp galaxywiki-api.service ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}:~/galaxywiki-api.service
-          ssh ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} 'sudo mv ~/galaxywiki-api.service /etc/systemd/system/ && sudo systemctl daemon-reload'
-          
-          # Start service and check logs
-          ssh ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} '
-            sudo systemctl restart galaxywiki-api || sudo systemctl start galaxywiki-api
-            sudo systemctl enable galaxywiki-api
-            echo "Service status:"
-            sudo systemctl status galaxywiki-api
-            echo "Service logs:"
-            sudo journalctl -u galaxywiki-api -n 20 --no-pager
-          ' 
+          aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          application_name: GalaxyWiki
+          environment_name: GalaxyWiki-Prod
+          version_label: ${{ github.run_number }}
+          region: us-east-1
+          deployment_package: deploy.zip 

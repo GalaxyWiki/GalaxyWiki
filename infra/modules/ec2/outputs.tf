@@ -18,6 +18,7 @@ output "vpc_id" {
   value       = aws_vpc.api_vpc.id
 }
 
+# Comment out SSH key outputs since we're using SSM instead
 output "ssh_private_key" {
   description = "The private key for SSH access (sensitive)"
   value       = tls_private_key.ssh_key.private_key_pem
@@ -32,4 +33,9 @@ output "ssh_key_name" {
 output "ssh_username" {
   description = "The username for SSH access"
   value       = "ec2-user"  # For Amazon Linux AMI
+}
+
+output "ssm_connection_instructions" {
+  description = "Instructions for connecting via SSM Session Manager"
+  value       = "To connect to the instance, install the AWS CLI and the Session Manager plugin, then run: aws ssm start-session --target ${aws_instance.api_server.id}"
 } 
