@@ -62,7 +62,7 @@ namespace GalaxyWiki.Cli
 
                     case "render": AnsiConsole.Write(TUI.Image("../../assets/earth.png")); break;
 
-                    case "chat": LaunchChatbot(); break;
+                    case "chat": await LaunchChatbot(); break;
 
                     case "login": await Login(); break;
                 }
@@ -121,15 +121,34 @@ namespace GalaxyWiki.Cli
             AnsiConsole.Write(TUI.AuthorInfo(rev.AuthorDisplayName ?? "Unknown", rev.CreatedAt));
         }
 
-        static void LaunchChatbot() {
+        static async Task LaunchChatbot() {
             var header = new Rule("[cyan] Galaxy Bot :robot: :sparkles: [/]");
             AnsiConsole.Write(header);
+
+            // Ensure environment variables are loaded
+            DotEnv.Load(options: new DotEnvOptions(envFilePaths: new[] { ".env" }));
+            var apiKey = Environment.GetEnvironmentVariable("CLAUDE_API_KEY");
+            
+            if (string.IsNullOrEmpty(apiKey))
+            {
+                AnsiConsole.MarkupLine("[red]Error:[/] CLAUDE_API_KEY environment variable is not set.");
+                AnsiConsole.MarkupLine("Please check that your .env file contains a valid CLAUDE_API_KEY.");
+                return;
+            }
 
             bool chatMode = true;
             while(chatMode) {
                 var msg = AnsiConsole.Ask<string>("[lightcyan1]Enter a message[/] [orange1]❯❯[/]");
-                if (msg.ToLower() == "quit" || msg.ToLower() == "exit") { chatMode = false; }
-                else { AnsiConsole.WriteLine("TODO: Bot response"); }
+                if (msg.ToLower() == "quit" || msg.ToLower() == "exit") { 
+                    chatMode = false; 
+                }
+                else { 
+                    await AnsiConsole.Status()
+                        .StartAsync("Thinking...", async ctx => {
+                            var response = await ClaudeClient.GetResponse(msg);
+                            AnsiConsole.MarkupLine($"[green]Bot:[/] {response}");
+                        });
+                }
             }
         }
 
