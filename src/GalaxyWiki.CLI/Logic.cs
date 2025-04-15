@@ -17,9 +17,32 @@ namespace GalaxyWiki.CLI
         public Dictionary<int, List<CelestialBodies>> ChildrenCache { get; set; } = new Dictionary<int, List<CelestialBodies>>();
     }
 
+    // Class to store body type information
+    public class BodyTypeInfo
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string Emoji => TUI.BodyTypeToEmoji(Id);
+    }
+
     public static class CommandLogic
     {
         private static NavigationState _state = new NavigationState();
+        private static List<BodyTypeInfo> _bodyTypes = new List<BodyTypeInfo>
+        {
+            new BodyTypeInfo { Id = 1, Name = "Galaxy", Description = "A vast system of stars, gas, and dust held together by gravity" },
+            new BodyTypeInfo { Id = 2, Name = "Star", Description = "A luminous ball of plasma held together by its own gravity" },
+            new BodyTypeInfo { Id = 3, Name = "Planet", Description = "A celestial body orbiting a star with sufficient mass for gravity to make it round" },
+            new BodyTypeInfo { Id = 4, Name = "Moon", Description = "A natural satellite orbiting a planet or other celestial body" },
+            new BodyTypeInfo { Id = 5, Name = "Satellite", Description = "An artificial object placed in orbit around a celestial body" },
+            new BodyTypeInfo { Id = 6, Name = "Black Hole", Description = "A region of spacetime where gravity is so strong that nothing can escape from it" },
+            new BodyTypeInfo { Id = 7, Name = "Dwarf Planet", Description = "A celestial body orbiting the Sun that is massive enough to be rounded by its own gravity" },
+            new BodyTypeInfo { Id = 8, Name = "Asteroid", Description = "A minor rocky body orbiting the Sun, smaller than a planet" },
+            new BodyTypeInfo { Id = 9, Name = "Comet", Description = "A small, icy object that, when close to the Sun, displays a visible coma and tail" },
+            new BodyTypeInfo { Id = 10, Name = "Nebula", Description = "A cloud of gas and dust in outer space" },
+            new BodyTypeInfo { Id = 11, Name = "Universe", Description = "All of space and time and their contents" }
+        };
 
         // Initialize the navigation state with the universe root
         public static async Task Initialize()
@@ -130,7 +153,7 @@ namespace GalaxyWiki.CLI
         }
 
         // Helper method to remove surrounding quotes from a string
-        private static string TrimQuotes(string input)
+        public static string TrimQuotes(string input)
         {
             if (string.IsNullOrEmpty(input))
                 return input;
@@ -289,10 +312,11 @@ namespace GalaxyWiki.CLI
             
             // Show the selection prompt with a loading indicator
             await AnsiConsole.Status()
-                .StartAsync("Building universe map...", async ctx => 
+                .StartAsync("Building universe map...", ctx => 
                 {
                     // Build a list of selectable items with proper indentation
                     TUI.RecBuildSelectableTree(bodies, root.Id, items, 0);
+                    return Task.CompletedTask;
                 });
             
             if (items.Count == 0)
@@ -361,6 +385,44 @@ namespace GalaxyWiki.CLI
                 });
             
             AnsiConsole.MarkupLine($"[green]Successfully warped to[/] [cyan]{targetBody.BodyName}[/]");
+        }
+        
+        // List all available body types
+        public static List<BodyTypeInfo> GetBodyTypes()
+        {
+            return _bodyTypes;
+        }
+        
+        // Get body type info by ID or name
+        public static BodyTypeInfo? GetBodyTypeInfo(string typeIdentifier)
+        {
+            // Try to parse as number first
+            if (int.TryParse(typeIdentifier, out int typeId))
+            {
+                return _bodyTypes.FirstOrDefault(t => t.Id == typeId);
+            }
+            
+            // Otherwise search by name (case-insensitive)
+            return _bodyTypes.FirstOrDefault(t => 
+                t.Name.Equals(typeIdentifier, StringComparison.OrdinalIgnoreCase));
+        }
+        
+        // List all celestial bodies of a specific type
+        public static async Task<List<CelestialBodies>> ListCelestialBodiesByType(int bodyTypeId)
+        {
+            try
+            {
+                // Get all celestial bodies
+                var allBodies = await ApiClient.GetCelestialBodies();
+                
+                // Filter by body type
+                return allBodies.Where(b => b.BodyType == bodyTypeId).ToList();
+            }
+            catch (Exception ex)
+            {
+                TUI.Err("LIST", "Failed to list celestial bodies by type.", ex.Message);
+                return new List<CelestialBodies>();
+            }
         }
     }
 } 

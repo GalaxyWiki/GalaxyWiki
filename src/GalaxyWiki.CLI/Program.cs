@@ -58,6 +58,9 @@ namespace GalaxyWiki.Cli
 
                     case "ls": await HandleLsCommand(); break;
 
+                    case "list":
+                    case "find": await HandleListCommand(dat); break;
+
                     case "show":
                     case "info": await HandleShowCommand(); break;
 
@@ -120,6 +123,8 @@ namespace GalaxyWiki.Cli
             grid.AddRow(new Text("tree"), new Text("Display full celestial body hierarchy"));
             grid.AddRow(new Text("tree -h"), new Text("Display hierarchy from current location"));
             grid.AddRow(new Text("warp"), new Text("Show interactive tree and warp to any celestial body"));
+            grid.AddRow(new Text("list/find"), new Text("List all celestial body types"));
+            grid.AddRow(new Text("list/find -t <type>"), new Text("List all celestial bodies of a specific type (by name or ID)"));
             grid.AddRow(new Text("show/info"), new Text("Display wiki content for current celestial body"));
             grid.AddRow(new Text("pwd"), new Text("Display current location path"));
             grid.AddRow(new Text("clear/cls"), new Text("Clear the screen"));
@@ -141,6 +146,100 @@ namespace GalaxyWiki.Cli
                                    args.Trim().Equals("--here", StringComparison.OrdinalIgnoreCase);
             
             await CommandLogic.DisplayTree(useCurrentAsRoot);
+        }
+
+        static async Task HandleListCommand(string args)
+        {
+            // Parse arguments
+            var argParts = args.Split(new[] { ' ' }, 2, StringSplitOptions.RemoveEmptyEntries);
+            
+            // If no arguments or not the right format, show all body types
+            if (argParts.Length < 2 || !argParts[0].Equals("-t", StringComparison.OrdinalIgnoreCase))
+            {
+                // Display all body types
+                DisplayBodyTypes();
+                return;
+            }
+            
+            // Get the type identifier (name or ID)
+            string typeIdentifier = CommandLogic.TrimQuotes(argParts[1]);
+            
+            // Get body type info
+            var bodyType = CommandLogic.GetBodyTypeInfo(typeIdentifier);
+            if (bodyType == null)
+            {
+                TUI.Err("LIST", $"Unknown body type: {typeIdentifier}", 
+                    "Use 'list' without arguments to see available types.");
+                return;
+            }
+            
+            // Get and display bodies of the specified type
+            await DisplayBodiesByType(bodyType);
+        }
+
+        static void DisplayBodyTypes()
+        {
+            var bodyTypes = CommandLogic.GetBodyTypes();
+            
+            var table = new Table();
+            table.AddColumn("ID");
+            table.AddColumn("Type");
+            table.AddColumn("Symbol");
+            table.AddColumn("Description");
+            
+            foreach (var type in bodyTypes)
+            {
+                table.AddRow(
+                    type.Id.ToString(),
+                    type.Name,
+                    type.Emoji,
+                    type.Description
+                );
+            }
+            
+            table.Title = new TableTitle("Celestial Body Types");
+            table.BorderColor(Color.Aqua);
+            AnsiConsole.Write(table);
+            
+            AnsiConsole.WriteLine();
+            AnsiConsole.MarkupLine("[grey]Use[/] [cyan]list -t <type>[/] [grey]to list all bodies of a specific type.[/]");
+            AnsiConsole.MarkupLine("[grey]Example:[/] [cyan]list -t Planet[/] [grey]or[/] [cyan]list -t 3[/]");
+        }
+
+        static async Task DisplayBodiesByType(BodyTypeInfo bodyType)
+        {
+            // Show loading indicator
+            var bodies = await AnsiConsole.Status()
+                .StartAsync($"Searching for {bodyType.Name}s...", _ => 
+                    CommandLogic.ListCelestialBodiesByType(bodyType.Id));
+            
+            if (bodies.Count == 0)
+            {
+                AnsiConsole.MarkupLine($"[yellow]No {bodyType.Name}s found in the database.[/]");
+                return;
+            }
+            
+            var table = new Table();
+            table.AddColumn("ID");
+            table.AddColumn("Name");
+            table.AddColumn("Orbits");
+            
+            foreach (var body in bodies)
+            {
+                table.AddRow(
+                    body.Id.ToString(),
+                    body.BodyName,
+                    body.Orbits?.BodyName ?? "None"
+                );
+            }
+            
+            table.Title = new TableTitle($"{bodyType.Emoji} {bodyType.Name}s ({bodies.Count})");
+            table.BorderColor(Color.Aqua);
+            AnsiConsole.Write(table);
+            
+            AnsiConsole.WriteLine();
+            AnsiConsole.MarkupLine($"[grey]To navigate to a {bodyType.Name.ToLower()}, use[/] [cyan]cd \"Name\"[/] [grey]from its parent location.[/]");
+            AnsiConsole.MarkupLine($"[grey]Or use[/] [cyan]warp[/] [grey]to select any {bodyType.Name.ToLower()} directly.[/]");
         }
 
         static async Task HandleLsCommand()
