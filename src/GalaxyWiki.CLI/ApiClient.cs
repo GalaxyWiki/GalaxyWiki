@@ -74,6 +74,88 @@ public static class ApiClient
             return null;
         }
     }
+
+    // Get comments for a celestial body
+    public static async Task<List<Comment>> GetCommentsByCelestialBodyAsync(int celestialBodyId)
+    {
+        try
+        {
+            string endpoint = $"/comment/celestial_bodies/{celestialBodyId}";
+            return await GetDeserialized<List<Comment>>(endpoint);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error retrieving comments: {ex.Message}");
+            return new List<Comment>();
+        }
+    }
+    
+    // Get comments by date range
+    public static async Task<List<Comment>> GetCommentsByDateRangeAsync(DateTime startDate, DateTime endDate, int celestialBodyId)
+    {
+        try
+        {
+            string formattedStart = startDate.ToString("yyyy-MM-dd");
+            string formattedEnd = endDate.ToString("yyyy-MM-dd");
+            string endpoint = $"/comment/date-range?startDate={formattedStart}&endDate={formattedEnd}&celestialBodyId={celestialBodyId}";
+            return await GetDeserialized<List<Comment>>(endpoint);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error retrieving comments by date range: {ex.Message}");
+            return new List<Comment>();
+        }
+    }
+    
+    // Create a new comment
+    public static async Task<Comment?> CreateCommentAsync(string commentText, int celestialBodyId)
+    {
+        try
+        {
+            var commentRequest = new CreateCommentRequest
+            {
+                CommentText = commentText,
+                CelestialBodyId = celestialBodyId
+            };
+            
+            HttpResponseMessage response = await httpClient.PostAsJsonAsync(
+                "http://localhost:5216/api/comment", 
+                commentRequest
+            );
+            
+            response.EnsureSuccessStatusCode();
+            
+            string jsonResponse = await response.Content.ReadAsStringAsync();
+            return JsonSerializer.Deserialize<Comment>(
+                jsonResponse, 
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
+            );
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error creating comment: {ex.Message}");
+            return null;
+        }
+    }
+}
+
+// Simple DTO for comment data
+public class Comment
+{
+    public int CommentId { get; set; }
+    public string CommentText { get; set; } = string.Empty;
+    public DateTime CreatedDate { get; set; }
+    public string UserId { get; set; } = string.Empty;
+    public string UserDisplayName { get; set; } = string.Empty;
+    public int CelestialBodyId { get; set; }
+    public string CelestialBodyName { get; set; } = string.Empty;
+}
+
+// Simple DTO to create a comment
+public class CreateCommentRequest
+{
+    public string CommentText { get; set; } = string.Empty;
+    public int CelestialBodyId { get; set; }
 }
 
 // Simple DTO to hold revision data

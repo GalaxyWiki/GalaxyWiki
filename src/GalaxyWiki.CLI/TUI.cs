@@ -4,6 +4,7 @@ using NHibernate.Criterion;
 using NHibernate.Util;
 using Spectre.Console;
 using Spectre.Console.Rendering;
+using System.Text.RegularExpressions;
 
 public class IdMap<T> : Dictionary<int, T> {}
 
@@ -67,7 +68,7 @@ public static class TUI {
         AnsiConsole.Markup($"[[[bold red]{name.ToUpper()} ERR[/]]]: [red]{desc}[/]{(info.Trim().IsEmpty() ? "\n\t" + info.Replace("\n", "\n\t") : "")}\n\n");
     }
     public static void Warn(string name, string desc, string info = "") {
-        AnsiConsole.Markup($"[[[bold orange]{name.ToUpper()} WARN[/]]]: [orange]{desc}[/]{(info.Trim().IsEmpty() ? "\n\t" + info.Replace("\n", "\n\t") : "")}\n\n");
+        AnsiConsole.Markup($"[[[bold darkorange3]{name.ToUpper()} WARN[/]]]: [gold3]{desc}[/]{(info.Trim().IsEmpty() ? "\n\t" + info.Replace("\n", "\n\t") : "")}\n\n");
     }
 
     //---------- Path ----------//
@@ -103,13 +104,66 @@ public static class TUI {
 
     //---------- Article ----------//
     public static Panel Article(string bodyName, string? content) {
+        if (content == null) {
+            return new Panel(
+                Align.Left(new Markup("No content available"))
+            )
+            .BorderColor(Color.SpringGreen3_1)
+            .RoundedBorder()
+            .Header($"[bold cyan] {bodyName} [/]")
+            .HeaderAlignment(Justify.Center);
+        }
+
+        // Parse content with Spectre markup
+        var formattedContent = FormatContentWithSpectre(content);
+
         return new Panel(
-            Align.Left(new Markup(content ?? "No content available"))
+            Align.Left(new Markup(formattedContent))
         )
         .BorderColor(Color.SpringGreen3_1)
         .RoundedBorder()
         .Header($"[bold cyan] {bodyName} [/]")
         .HeaderAlignment(Justify.Center);
+    }
+
+    // Format content with Spectre markup
+    private static string FormatContentWithSpectre(string content) {
+        // Replace literal '\n' with actual newline characters
+        content = content.Replace("\\n", "\n");
+        
+        // Split text into paragraphs
+        var paragraphs = content.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        var result = new List<string>();
+
+        foreach (var paragraph in paragraphs) {
+            // Format names of celestial bodies with color
+            // This assumes names start with capital letters and have at least 3 characters
+            var formattedParagraph = Regex.Replace(
+                paragraph, 
+                @"\b([A-Z][a-z]{2,}(?:\s[A-Z][a-z]*)*)\b", 
+                "[cyan]$1[/]"
+            );
+            
+            // Format scientific terms
+            formattedParagraph = Regex.Replace(
+                formattedParagraph,
+                @"\b(galaxy|star|planet|moon|universe|Big Bang|gravity|light-year|atom|dark matter|dark energy)\b",
+                match => "[yellow]" + match.Value + "[/]",
+                RegexOptions.IgnoreCase
+            );
+
+            // Format numbers and measurements
+            formattedParagraph = Regex.Replace(
+                formattedParagraph,
+                @"\b(\d+(?:\.\d+)?(?:\s*(?:billion|million|trillion|light-year|ly|kg|m|km))?)\b",
+                "[green]$1[/]"
+            );
+
+            result.Add(formattedParagraph);
+        }
+
+        // Join paragraphs with line breaks between them
+        return string.Join("\n\n", result);
     }
 
     //---------- Author Info ----------//
@@ -137,6 +191,68 @@ public static class TUI {
         layout["Content"].Update(new Text(content));
 
         return Boxed(layout);
+    }
+
+    //---------- Comments Panel ----------//
+    public static Panel CommentsPanel(List<Comment> comments, string title = "Comments") 
+    {
+        if (comments.Count == 0)
+        {
+            return new Panel(
+                Align.Center(new Markup("[grey]No comments available[/]"))
+            )
+            .BorderColor(Color.DarkOrange)
+            .RoundedBorder()
+            .Header($"[bold cyan]{title}[/]")
+            .HeaderAlignment(Justify.Center);
+        }
+
+        var table = new Table()
+            .Border(TableBorder.Rounded)
+            .BorderColor(Color.DarkOrange);
+            
+        table.AddColumn(new TableColumn("[cyan]Author[/]").Width(15));
+        table.AddColumn(new TableColumn("[cyan]Comment[/]"));
+        table.AddColumn(new TableColumn("[cyan]Date[/]").Width(18));
+        
+        foreach (var comment in comments)
+        {
+            string author = string.IsNullOrEmpty(comment.UserDisplayName) ? 
+                          $"[grey]Anonymous[/]" : 
+                          $"[bold]{comment.UserDisplayName}[/]";
+                          
+            string formattedDate = comment.CreatedDate.ToString("MMM d, yyyy HH:mm");
+            
+            string formattedComment = FormatCommentWithSpectre(comment.CommentText);
+            
+            table.AddRow(
+                new Markup(author), 
+                new Markup(formattedComment), 
+                new Markup($"[grey]{formattedDate}[/]")
+            );
+        }
+        
+        return new Panel(table)
+            .BorderColor(Color.DarkOrange)
+            .RoundedBorder()
+            .Header($"[bold cyan]{title} ({comments.Count})[/]")
+            .HeaderAlignment(Justify.Center);
+    }
+    
+    // Format comment text with Spectre markup
+    private static string FormatCommentWithSpectre(string content)
+    {
+        // Replace literal '\n' with actual newline characters
+        content = content.Replace("\\n", "\n");
+        
+        // Format names of celestial bodies with color
+        var formattedContent = Regex.Replace(
+            content, 
+            @"\b([A-Z][a-z]{2,}(?:\s[A-Z][a-z]*)*)\b", 
+            "[cyan]$1[/]"
+        );
+        
+        return formattedContent;
     }
 
     //---------- Wiki Page ----------//
@@ -239,5 +355,24 @@ public static class TUI {
         }
     }
 
+    //---------- Interactive CD Selector ----------//
+    public static string? DestinationSelector(string[] destinations, string title = "Select destination:")
+    {
+        if (destinations.Length == 0)
+        {
+            AnsiConsole.MarkupLine("[yellow]No destinations available.[/]");
+            return null;
+        }
+        
+        var selection = AnsiConsole.Prompt(
+            new SelectionPrompt<string>()
+                .Title(title)
+                .PageSize(20)
+                .HighlightStyle(new Style(Color.SpringGreen3_1, Color.Black, Decoration.Underline))
+                .AddChoices(destinations)
+        );
+        
+        return selection;
+    }
 
 }
