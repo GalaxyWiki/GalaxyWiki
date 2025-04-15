@@ -8,14 +8,14 @@ namespace GalaxyWiki.API.Controllers
 {
     [Route("api/star-system")]
     [ApiController]
-    public class StarSystemController(NHibernate.ISession session) : ControllerBase
+    public class StarSystemController : ControllerBase
     {
         private readonly StarSystemService _starSystemService;
 
-        // public StarSystemController(StarSystemService starSystemService)
-        // {
-        //     _starSystemService = starSystemService;
-        // }
+        public StarSystemController(StarSystemService starSystemService)
+        {
+            _starSystemService = starSystemService;
+        }
 
         // GET: api/star-system
         [HttpGet]
