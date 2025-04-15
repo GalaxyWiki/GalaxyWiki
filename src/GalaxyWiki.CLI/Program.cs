@@ -46,6 +46,8 @@ namespace GalaxyWiki.Cli
 
                     case "tree": await HandleTreeCommand(dat); break;
 
+                    case "warp": await CommandLogic.WarpToSelectedBody(); break;
+
                     case "cal": AnsiConsole.Write(TUI.Calendar()); break;
 
                     case "search": AnsiConsole.WriteLine("TODO: Search wiki pages"); break;
@@ -117,6 +119,7 @@ namespace GalaxyWiki.Cli
             grid.AddRow(new Text("cd /"), new Text("Navigate to Universe (root)"));
             grid.AddRow(new Text("tree"), new Text("Display full celestial body hierarchy"));
             grid.AddRow(new Text("tree -h"), new Text("Display hierarchy from current location"));
+            grid.AddRow(new Text("warp"), new Text("Show interactive tree and warp to any celestial body"));
             grid.AddRow(new Text("show/info"), new Text("Display wiki content for current celestial body"));
             grid.AddRow(new Text("pwd"), new Text("Display current location path"));
             grid.AddRow(new Text("clear/cls"), new Text("Clear the screen"));

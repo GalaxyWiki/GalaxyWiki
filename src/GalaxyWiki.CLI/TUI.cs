@@ -214,7 +214,7 @@ public static class TUI {
         return selection;
     }
 
-    static void RecBuildSelectableTree(
+    public static void RecBuildSelectableTree(
         IdMap<CelestialBodies> bodyMap, 
         int bodyId, 
         List<(string DisplayLabel, CelestialBodies Body)> items, 

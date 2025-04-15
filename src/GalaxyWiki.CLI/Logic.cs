@@ -269,5 +269,98 @@ namespace GalaxyWiki.CLI
         {
             return _state.CurrentBody;
         }
+
+        // Warp to a selected celestial body using an interactive tree
+        public static async Task WarpToSelectedBody()
+        {
+            // Get all celestial bodies
+            var bodies = await ApiClient.GetCelestialBodiesMap();
+            
+            // Find the root (Universe) node
+            var root = bodies.Values.FirstOrDefault(b => b.Orbits == null);
+            if (root == null)
+            {
+                TUI.Err("WARP", "Could not find root celestial body (Universe).");
+                return;
+            }
+            
+            // Create an empty list of selectable items
+            var items = new List<(string DisplayLabel, CelestialBodies Body)>();
+            
+            // Show the selection prompt with a loading indicator
+            await AnsiConsole.Status()
+                .StartAsync("Building universe map...", async ctx => 
+                {
+                    // Build a list of selectable items with proper indentation
+                    TUI.RecBuildSelectableTree(bodies, root.Id, items, 0);
+                });
+            
+            if (items.Count == 0)
+            {
+                TUI.Err("WARP", "No celestial bodies found in the universe.");
+                return;
+            }
+            
+            // Display the selection prompt
+            var selection = AnsiConsole.Prompt(
+                new SelectionPrompt<string>()
+                    .Title("Select a celestial body to warp to:")
+                    .PageSize(30)
+                    .HighlightStyle(new Style(Color.SpringGreen3_1, Color.Black, Decoration.Underline))
+                    .AddChoices(items.Select(i => i.DisplayLabel))
+            );
+            
+            // Find the selected body
+            var selectedItem = items.FirstOrDefault(i => i.DisplayLabel == selection);
+            
+            if (selectedItem.Body == null)
+            {
+                TUI.Err("WARP", "Selected celestial body not found.");
+                return;
+            }
+            
+            // Navigate to the selected body
+            await WarpToBody(selectedItem.Body);
+        }
+
+        // Navigate to a specific celestial body by following the path from root
+        private static async Task WarpToBody(CelestialBodies targetBody)
+        {
+            if (targetBody == null)
+                return;
+
+            // First go to root
+            await ChangeDirectory("/");
+            
+            // Build the path from the selected body back to root
+            var pathParts = new List<string>();
+            var current = targetBody;
+            
+            while (current != null)
+            {
+                pathParts.Insert(0, current.BodyName);
+                current = current.Orbits;
+            }
+            
+            // Navigate to each part of the path
+            AnsiConsole.Status()
+                .Start("Warping through space...", ctx => 
+                {
+                    // Skip the first part (Universe) as we're already there
+                    for (int i = 1; i < pathParts.Count; i++)
+                    {
+                        ctx.Status($"Passing through {pathParts[i-1]}...");
+                        ctx.Spinner(Spinner.Known.Star);
+                        Thread.Sleep(300); // Short delay for visual effect
+                        ChangeDirectory(pathParts[i]).Wait();
+                    }
+                    
+                    ctx.Status($"Arrived at {targetBody.BodyName}!");
+                    Thread.Sleep(500); // Pause briefly to show arrival message
+                    return;
+                });
+            
+            AnsiConsole.MarkupLine($"[green]Successfully warped to[/] [cyan]{targetBody.BodyName}[/]");
+        }
     }
 } 
