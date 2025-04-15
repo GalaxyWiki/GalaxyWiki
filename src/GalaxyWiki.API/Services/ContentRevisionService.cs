@@ -1,7 +1,7 @@
 using GalaxyWiki.API.DTOs;
 using GalaxyWiki.Core.Entities;
 using GalaxyWiki.Core.Enums;
-using GalaxyWiki.Api.Repositories;
+using GalaxyWiki.API.Repositories;
 
 namespace GalaxyWiki.API.Services
 {

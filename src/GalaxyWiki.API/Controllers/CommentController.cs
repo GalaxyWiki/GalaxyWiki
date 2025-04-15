@@ -1,10 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
-using GalaxyWiki.Api.DTOs;
-using GalaxyWiki.Api.Services;
+using GalaxyWiki.API.DTOs;
+using GalaxyWiki.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 
-namespace GalaxyWiki.Api.Controllers
+namespace GalaxyWiki.API.Controllers
 {
     [ApiController]
     [Route("api/comment")]

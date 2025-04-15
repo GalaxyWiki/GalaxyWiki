@@ -1,11 +1,11 @@
-using GalaxyWiki.Api.DTOs;
+using GalaxyWiki.API.DTOs;
 using GalaxyWiki.Core.Entities;
-using GalaxyWiki.Api.Repositories;
+using GalaxyWiki.API.Repositories;
 using GalaxyWiki.API.Services;
 using GalaxyWiki.Core.Enums;
 
-namespace GalaxyWiki.Api.Services
-{
+namespace GalaxyWiki.API.Services
+{   
     public class CommentService
     {
         private AuthService _authService;

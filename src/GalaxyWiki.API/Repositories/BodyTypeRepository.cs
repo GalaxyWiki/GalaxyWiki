@@ -3,7 +3,7 @@ using GalaxyWiki.Core.Entities;
 using NHibernate.Linq;
 using ISession = NHibernate.ISession;
 
-namespace GalaxyWiki.Api.Repositories
+namespace GalaxyWiki.API.Repositories
 {
     public class BodyTypeRepository
     {

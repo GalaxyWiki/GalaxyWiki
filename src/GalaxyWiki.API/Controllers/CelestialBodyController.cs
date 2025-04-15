@@ -7,7 +7,7 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using System.Linq;
 
-namespace GalaxyWiki.Api.Controllers
+namespace GalaxyWiki.API.Controllers
 {
     [Route("api/celestial-body")]
     [ApiController]

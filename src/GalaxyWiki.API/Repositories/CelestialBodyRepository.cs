@@ -3,7 +3,7 @@ using GalaxyWiki.API.DTOs;
 using NHibernate.Linq;
 using ISession = NHibernate.ISession;
 
-namespace GalaxyWiki.Api.Repositories
+namespace GalaxyWiki.API.Repositories
 {
     public class CelestialBodyRepository
     {

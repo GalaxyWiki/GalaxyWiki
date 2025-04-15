@@ -5,8 +5,8 @@ using FluentNHibernate.Cfg.Db;
 using NHibernate;
 using FluentNHibernate.Automapping;
 using GalaxyWiki.API.Services;
-using GalaxyWiki.Api.Repositories;
-using GalaxyWiki.Api.Services;
+using GalaxyWiki.API.Repositories;
+
 
 DotEnv.Load();
 
