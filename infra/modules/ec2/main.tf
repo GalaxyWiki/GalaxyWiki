@@ -151,6 +151,16 @@ locals {
   EOF
 }
 
+resource "tls_private_key" "ssh_key" {
+  algorithm = "RSA"
+  rsa_bits  = 4096
+}
+
+resource "aws_key_pair" "generated_key" {
+  key_name   = "galaxy-api-key"
+  public_key = tls_private_key.ssh_key.public_key_openssh
+}
+
 resource "aws_instance" "api_server" {
   ami                    = data.aws_ami.amazon_linux.id
   instance_type          = "t2.micro"
@@ -158,6 +168,7 @@ resource "aws_instance" "api_server" {
   vpc_security_group_ids = [aws_security_group.api_sg.id]
   iam_instance_profile   = aws_iam_instance_profile.ec2_profile.name
   user_data              = local.user_data
+  key_name               = aws_key_pair.generated_key.key_name
   
   root_block_device {
     volume_type           = "gp2"
