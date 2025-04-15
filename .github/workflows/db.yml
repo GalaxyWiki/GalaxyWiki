@@ -22,7 +22,7 @@ jobs:
           docker run --rm \
           -v $(pwd):/flyway/sql \
           flyway/flyway:latest \
-          -url=${{ secrets.DB_URL }} \
+          -url=jdbc:postgresql://${{ secrets.DB_URL }}:${{ secrets.DB_PORT }}/${{ secrets.DB_NAME }} \
           -user=${{ secrets.DB_USERNAME }} \
           -password=${{ secrets.DB_PASSWORD }} \
           -connectRetries=3 \
@@ -33,7 +33,7 @@ jobs:
           docker run --rm \
           -v $(pwd):/flyway/sql \
           flyway/flyway:latest \
-          -url=${{ secrets.DB_URL }} \
+          -url=jdbc:postgresql://${{ secrets.DB_URL }}:${{ secrets.DB_PORT }}/${{ secrets.DB_NAME }} \
           -user=${{ secrets.DB_USERNAME }} \
           -password=${{ secrets.DB_PASSWORD }} \
           -connectRetries=3 \
