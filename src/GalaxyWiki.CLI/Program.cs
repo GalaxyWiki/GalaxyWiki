@@ -57,8 +57,6 @@ namespace GalaxyWiki.Cli
 
                     case "pwd": AnsiConsole.Write(TUI.Path(CommandLogic.GetCurrentPath())); break;
 
-                    case "cd": await HandleCdCommand(dat); break;
-
                     case "ls": await HandleLsCommand(); break;
 
                     case "list":
@@ -67,7 +65,7 @@ namespace GalaxyWiki.Cli
                     case "show":
                     case "info": await HandleShowCommand(dat); break;
 
-                    case "render": AnsiConsole.Write(TUI.Image("../../assets/earth.png")); break;
+                    case "render": await HandleRenderCommand(); break;
 
                     case "chat": LaunchChatbot(); break;
 
@@ -337,6 +335,12 @@ namespace GalaxyWiki.Cli
             
             // If no specific body was requested, show info for current location
             await ShowInfoForCurrentLocation();
+        }
+
+        static async Task HandleRenderCommand()
+        {
+            var body = CommandLogic.GetCurrentBody();
+            await TUI.RenderCelestialBody(body?.BodyName ?? "", body?.BodyType ?? -1);
         }
         
         static async Task ShowInfoForCurrentLocation()

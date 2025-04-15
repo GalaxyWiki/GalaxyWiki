@@ -4,12 +4,17 @@ using NHibernate.Criterion;
 using NHibernate.Util;
 using Spectre.Console;
 using Spectre.Console.Rendering;
+using System.Diagnostics;
 using System.Text.RegularExpressions;
 
 public class IdMap<T> : Dictionary<int, T> {}
 
 public static class TUI {
     //==================== Utils ====================//
+
+    static int Mod(int x, int m) => (x%m + m)%m;
+
+    static Color Shade(Color col, float amt) => Color.Default.Blend(col, amt);
 
     // Wrap an arbitrary element in a TUI box
     public static Panel Boxed(IRenderable elem, String title = "", Color? color = null, Justify headAlign = Justify.Center) {
@@ -165,6 +170,112 @@ public static class TUI {
             Color.SkyBlue1
         );
     }
+
+    public static async Task RenderCelestialBody(string bodyName, int bodyType, int canvasW = 50) {
+        bool isAnim = false;
+        bool glow = false;
+        string img;
+
+        switch(bodyType) {
+            case 4: // Moon
+            case 2: // Star
+            case 3: // Planet
+            case 7: // Dwarf planet
+                string fileName = Regex.Replace(bodyName.ToLower(), @"\s+", "_");
+                string filePath = $"..\\..\\assets\\maps\\{fileName}.png";
+                img = File.Exists(filePath) ? filePath : "<generate>";
+                glow = bodyType == 2; // Star
+                isAnim = true;
+            break;
+
+            case 1:  img = "..\\..\\assets\\sprites\\galaxy.png";       break;
+            case 5:  img = "..\\..\\assets\\sprites\\satellite.png";    break;
+            case 6:  img = "..\\..\\assets\\sprites\\black_hole.png";   break;
+            case 8:  img = "..\\..\\assets\\sprites\\asteroid.png";     break;
+            case 9:  img = "..\\..\\assets\\sprites\\comet.png";        break;
+            case 10: img = "..\\..\\assets\\sprites\\nebula.png";       break;
+            case 11: img = "..\\..\\assets\\sprites\\universe.png";     break;
+            default: img = "..\\..\\assets\\sprites\\default.png";      break;
+        };
+
+        if (isAnim) { // Display anim sphere
+            Color[,] tex;
+            if (img == "<generate>") { // Generate texture
+                // TODO: Generate texture by cryptographic hash
+                List<Color> palette = new List<Color> {
+                    new Color(255, 0, 0),
+                    new Color(0, 255, 0),
+                    new Color(0, 0, 255)
+                };
+                List<float> weights = new List<float> { 1, 10, 30 };
+
+                tex = TextureUtils.GenerateWarpedTexturePattern(palette, weights, 100, 50, warpFactor: 25.0);
+            }
+            else { tex = TextureUtils.LoadSphericalTexture(img, 200, 100); } // Load texture
+
+            await AnimSphere(tex, glow, canvasW);
+        }
+        else { AnsiConsole.Write(Image(img)); } // Display static image
+    }
+
+    public static async Task AnimSphere(Color[,] tex, bool glow = false, int canvasW = 50) {
+        int tw = tex.GetLength(0), th = tex.GetLength(1);
+        var c = new Canvas(canvasW, canvasW);
+
+        // Render
+        await AnsiConsole.Live(c).StartAsync(async ctx => {
+            for (float frame = 0.0f; frame < 10.0f; frame += 0.1f) {
+                for (int px = 0; px < canvasW; px++)
+                for (int py = 0; py < canvasW; py++) {
+                    double xn = 2.0 * (px / (double)canvasW) - 1.0;
+                    double yn = 2.0 * (py / (double)canvasW) - 1.0;
+                    double d2 = xn * xn + yn * yn;
+                    if (d2 >= 1.0) {
+                        if (glow) {
+                            float bg = (float)Math.Pow(d2, 2) / 2.0f;
+                            c.SetPixel(px, py, Color.Orange1.Blend(Color.Black, Math.Clamp(bg, 0.0f, 1.0f)));
+                        }
+                        continue; // Background
+                    }
+
+                    // Compute z so that (xn, yn, z) lies on a unit sphere.
+                    double z = Math.Sqrt(1.0 - xn * xn - yn * yn);
+
+                    // Apply rotation matrix
+                    double cosF = Math.Cos(frame);
+                    double sinF = Math.Sin(frame);
+                    double rx = cosF * xn + sinF * z;
+                    double ry = yn;
+                    double rz = -sinF * xn + cosF * z;
+
+                    // Compute spherical coords
+                    double u = 0.5 + Math.Atan2(rz, rx) / (2 * Math.PI);    // Theta about y-axis
+                    double v = Math.Acos(ry) / Math.PI;                     // Phi around y-axis
+
+                    // Map uv to tex
+                    int tx = ((int)(u * tw)) % tw;
+                    int ty = th - ((int)(v * th)) % th;
+                    if (tx < 0) tx += tw;
+                    if (ty < 0) ty += th;
+
+                    // Lighting
+                    double lx = -0.25, ly = -0.4 + 0.2*Math.Sin(frame), lz = 1;
+                    double len = Math.Sqrt(lx*lx + ly*ly + lz*lz);
+                    lx /= len; ly /= len; lz /= len;
+                    double dot = xn*lx + yn*ly + z*lz;
+                    double light = glow ? 1 : Math.Sqrt(Math.Max(0.05, dot));
+
+                    Color p = Shade(tex[tx, ty], (float)light);
+                    c.SetPixel(px, py, p);
+                }
+
+                // Update
+                ctx.Refresh();
+                await Task.Delay(10);
+            }
+        });
+    }
+
 
     //---------- Article ----------//
     public static Panel Article(string bodyName, int? bodyType, string? content) {
