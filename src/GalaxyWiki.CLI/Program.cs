@@ -72,13 +72,13 @@ namespace GalaxyWiki.Cli
 
                     case "go": await ShowCdAutocomplete(); break;
 
+                    case "cd": await HandleCdCommand(dat); break;
+
                     case "cal": AnsiConsole.Write(TUI.Calendar()); break;
 
                     case "search": AnsiConsole.WriteLine("TODO: Search wiki pages"); break;
 
                     case "pwd": AnsiConsole.Write(TUI.Path(CommandLogic.GetCurrentPath())); break;
-
-                    case "cd": await HandleCdCommand(dat); break;
 
                     case "ls": await HandleLsCommand(); break;
 
@@ -88,11 +88,11 @@ namespace GalaxyWiki.Cli
                     case "show":
                     case "info": await HandleShowCommand(dat); break;
 
-                    case "render": AnsiConsole.Write(TUI.Image("../../assets/earth.png")); break;
+                    case "render": await HandleRenderCommand(); break;
 
                     case "chat": LaunchChatbot(); break;
 
-                    case "login": await Login(); break;
+                    case "login": await ApiClient.LoginAsync(); break;
 
                     default: HandleUnknownCommand(cmd); break;
                 }
@@ -286,6 +286,7 @@ namespace GalaxyWiki.Cli
             grid.AddRow(new Text("comment"), new Text("View comments for current celestial body"));
             grid.AddRow(new Text("comment \"text\""), new Text("Add a new comment to current celestial body"));
             grid.AddRow(new Text("comment --help"), new Text("Show detailed comment command options"));
+            grid.AddRow(new Text("render"), new Text("Render the current celestial body"));
             grid.AddRow(new Text("pwd"), new Text("Display current location path"));
             grid.AddRow(new Text("clear/cls"), new Text("Clear the screen"));
             grid.AddRow(new Text("exit/quit"), new Text("Exit the application"));
@@ -488,6 +489,12 @@ namespace GalaxyWiki.Cli
             // If no specific body was requested, show info for current location
             await ShowInfoForCurrentLocation();
         }
+
+        static async Task HandleRenderCommand()
+        {
+            var body = CommandLogic.GetCurrentBody();
+            await TUI.RenderCelestialBody(body?.BodyName ?? "", body?.BodyType ?? -1);
+        }
         
         static async Task ShowInfoForCurrentLocation()
         {
@@ -516,6 +523,7 @@ namespace GalaxyWiki.Cli
             // AnsiConsole.Write(TUI.Article(revision.CelestialBodyName ?? "Unknown", revision.Content));
             // AnsiConsole.Write(TUI.AuthorInfo(revision.AuthorDisplayName ?? "Unknown", revision.CreatedAt));
             AnsiConsole.Write(TUI.WikiPage(revision, body.BodyType, comments));
+            await TUI.RenderCelestialBody(body.BodyName, body.BodyType);
         }
         
         static async Task ShowInfoForNamedBody(string bodyName)
@@ -598,17 +606,6 @@ namespace GalaxyWiki.Cli
                     AnsiConsole.WriteLine("TODO: Bot response"); 
                 }
             }
-        }
-
-        static async Task Login() {
-            Console.Write(new Rule("[gold3]Obtaining[/] JWT"));
-            await GoogleAuthenticator.GetIdTokenAsync();
-
-            Console.Write(new Rule("[green]JWT Obtained[/]"));
-            Console.WriteLine(GoogleAuthenticator.JWT);
-
-            Console.Write(new Rule("[cyan]Logging in[/] with API"));
-            await ApiClient.LoginAsync(GoogleAuthenticator.JWT);
         }
 
         static async Task HandleCommentCommand(string args)
