@@ -6,6 +6,7 @@ namespace GalaxyWiki.Api.DTOs
         public string CommentText { get; set; }
         public string CreatedDate { get; set; }
         public string UserId { get; set; }
+        public string DisplayName { get; set; }
         public int CelestialBodyId { get; set; }
     }
 } 
