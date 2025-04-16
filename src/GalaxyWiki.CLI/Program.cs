@@ -453,73 +453,70 @@ namespace GalaxyWiki.CLI
     }
       
     static async Task HandleLsCommand(string args)
+    {
+        var pageNumber = 1;
+
+        var argParts = args.Split(new[] { ' ' }, 2, StringSplitOptions.RemoveEmptyEntries);
+        
+        if (argParts.Length < 2 || !argParts[0].Equals("--page-number", StringComparison.OrdinalIgnoreCase))
         {
-            var pageNumber = 1;
-
-            var argParts = args.Split(new[] { ' ' }, 2, StringSplitOptions.RemoveEmptyEntries);
-            
-            if (argParts.Length < 2 || !argParts[0].Equals("--page-number", StringComparison.OrdinalIgnoreCase))
+            pageNumber = 1;
+        }
+        else
+        {
+            try
             {
-                pageNumber = 1;
+                pageNumber = Convert.ToInt32(argParts[1]);
             }
-            else
+            catch
             {
-                try
-                {
-                    pageNumber = Convert.ToInt32(argParts[1]);
-                }
-                catch
-                {
-                    TUI.Err("LIST", "Invalid page number: " + argParts[1]);
-                    return; 
-                }
-            }
-
-            PaginatedCelestialBodiesResponse? response = await CommandLogic.ListDirectory(pageNumber);
-            
-            if (response.HasValue && !(response.Value.TotalCount == 0))
-            {
-                if (pageNumber > response.Value.TotalPages)
-                {
-                    AnsiConsole.MarkupLine("[yellow]Page number does not exist.[/]");
-                    return;
-                }
-
-                var table = new Table();
-                table.AddColumn("Type");
-                table.AddColumn("Name");
-                table.AddColumn("ID");
-                
-                foreach (var child in response.Value.Items)
-                {
-                    string emoji = TUI.BodyTypeToEmoji(child.BodyType);
-                    string id = child.Id.ToString();
-                    
-                    // If the name contains spaces, suggest using quotes
-                    string name = child.BodyName;
-                    if (name.Contains(" "))
-                    {
-                        name = $"{name} [grey](use: cd '{name}')[/]";
-                    }
-                    
-                    table.AddRow(
-                        new Text(emoji), 
-                        new Markup(name)
-                    );
-                }
-                
-                AnsiConsole.Write(table);
-                AnsiConsole.Write($"Showing: {Math.Min((response.Value.PageSize * (response.Value.PageNumber-1))+1, response.Value.TotalCount)} to {Math.Min(response.Value.PageSize * response.Value.PageNumber, response.Value.TotalCount)} of {response.Value.TotalCount}\n");
-                AnsiConsole.Write($"Page: {response.Value.PageNumber} of {response.Value.TotalPages}\n"); 
-            }
-            else
-            {
-                AnsiConsole.MarkupLine("[yellow]No celestial bodies found in this location.[/]");
-                return;
+                TUI.Err("LIST", "Invalid page number: " + argParts[1]);
+                return; 
             }
         }
+
+        PaginatedCelestialBodiesResponse? response = await CommandLogic.ListDirectory(pageNumber);
         
-        AnsiConsole.Write(table);
+        if (response.HasValue && !(response.Value.TotalCount == 0))
+        {
+            if (pageNumber > response.Value.TotalPages)
+            {
+                AnsiConsole.MarkupLine("[yellow]Page number does not exist.[/]");
+                return;
+            }
+
+            var table = new Table();
+            table.AddColumn("Type");
+            table.AddColumn("Name");
+            table.AddColumn("ID");
+            
+            foreach (var child in response.Value.Items)
+            {
+                string emoji = TUI.BodyTypeToEmoji(child.BodyType);
+                string id = child.Id.ToString();
+                
+                // If the name contains spaces, suggest using quotes
+                string name = child.BodyName;
+                if (name.Contains(" "))
+                {
+                    name = $"{name} [grey](use: cd '{name}')[/]";
+                }
+                
+                table.AddRow(
+                    new Text(emoji), 
+                    new Markup(name)
+                );
+            }
+            
+            AnsiConsole.Write(table);
+            AnsiConsole.Write($"Showing: {Math.Min((response.Value.PageSize * (response.Value.PageNumber-1))+1, response.Value.TotalCount)} to {Math.Min(response.Value.PageSize * response.Value.PageNumber, response.Value.TotalCount)} of {response.Value.TotalCount}\n");
+            AnsiConsole.Write($"Page: {response.Value.PageNumber} of {response.Value.TotalPages}\n"); 
+        }
+        else
+        {
+            AnsiConsole.MarkupLine("[yellow]No celestial bodies found in this location.[/]");
+            return;
+        }
     }
 
         static async Task HandleShowCommand(string args)
@@ -1146,12 +1143,6 @@ namespace GalaxyWiki.CLI
             if (newBody != null)
             {
                 AnsiConsole.MarkupLine($"[green]Successfully created celestial body:[/] [cyan]{newBody.BodyName}[/] (ID: {newBody.Id})");
-                
-                // Show the list of children to see the new body
-                if (orbitsId != null && CommandLogic.GetCurrentBody()?.Id == orbitsId)
-                {
-                    await HandleLsCommand();
-                }
             }
         }
         
@@ -1210,12 +1201,6 @@ namespace GalaxyWiki.CLI
             if (newBody != null)
             {
                 AnsiConsole.MarkupLine($"[green]Successfully created celestial body:[/] [cyan]{newBody.BodyName}[/] (ID: {newBody.Id})");
-                
-                // Show the list of children to see the new body
-                if (orbitsId != null && CommandLogic.GetCurrentBody()?.Id == orbitsId)
-                {
-                    await HandleLsCommand();
-                }
             }
         }
         
@@ -1279,15 +1264,6 @@ namespace GalaxyWiki.CLI
             if (updatedBody != null)
             {
                 AnsiConsole.MarkupLine($"[green]Successfully updated celestial body:[/] [cyan]{updatedBody.BodyName}[/] (ID: {updatedBody.Id})");
-                
-                // If we're in a directory that should show this body, refresh the view
-                var currentBody = CommandLogic.GetCurrentBody();
-                if (currentBody != null && 
-                    ((updatedBody.Orbits != null && updatedBody.Orbits.Id == currentBody.Id) || 
-                     currentBody.Id == updatedBody.Id))
-                {
-                    await HandleLsCommand();
-                }
             }
         }
         
@@ -1371,15 +1347,6 @@ namespace GalaxyWiki.CLI
             if (updatedBody != null)
             {
                 AnsiConsole.MarkupLine($"[green]Successfully updated celestial body:[/] [cyan]{updatedBody.BodyName}[/] (ID: {updatedBody.Id})");
-                
-                // If we're in a directory that should show this body, refresh the view
-                var currentBody = CommandLogic.GetCurrentBody();
-                if (currentBody != null && 
-                    ((updatedBody.Orbits != null && updatedBody.Orbits.Id == currentBody.Id) || 
-                     currentBody.Id == updatedBody.Id))
-                {
-                    await HandleLsCommand();
-                }
             }
         }
         
@@ -1421,9 +1388,6 @@ namespace GalaxyWiki.CLI
             if (success)
             {
                 AnsiConsole.MarkupLine($"[green]Successfully deleted celestial body with ID {bodyId}[/]");
-                
-                // Refresh the current view
-                await HandleLsCommand();
             }
         }
         
@@ -1481,12 +1445,6 @@ namespace GalaxyWiki.CLI
             if (success)
             {
                 AnsiConsole.MarkupLine($"[green]Successfully deleted celestial body:[/] [grey]{bodyToDelete.BodyName}[/] (ID: {bodyId})");
-                
-                // Refresh the current view if we're in the parent of the deleted body
-                if (currentBody != null && bodyToDelete.Orbits != null && currentBody.Id == bodyToDelete.Orbits.Id)
-                {
-                    await HandleLsCommand();
-                }
             }
         }
         
