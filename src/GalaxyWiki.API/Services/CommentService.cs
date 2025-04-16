@@ -119,19 +119,22 @@ namespace GalaxyWiki.API.Services
 
         public async Task Delete(int id, string userId)
         {
+            Console.WriteLine("in the service");
             if (await _authService.CheckUserHasAccessRight([UserRole.Admin, UserRole.Viewer], userId) == false)
             {
                 throw new UserDoesNotHaveAccess("You do not have access to perform this action.");
             }
 
             var user = await _userService.GetUserById(userId);
-
+            Console.WriteLine("goint to the repo to getById-----"+id);
             var comment = await _commentRepository.GetById(id);
             if (comment == null) 
                 throw new CommentDoesNotExist("The selected comment does not exist");
 
             if (user.Role.Id != (int)UserRole.Admin && user.Id != comment.Author.Id)
                 throw new UserDoesNotHaveAccess("Cannot delete a comment that is not your own."); 
+
+                Console.WriteLine("---------"+id+"-----------"+userId);
 
             await _commentRepository.Delete(comment);
         }

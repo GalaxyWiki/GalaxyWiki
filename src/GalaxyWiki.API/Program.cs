@@ -52,20 +52,20 @@ builder.Services.AddSingleton<ISessionFactory>(provider =>
 builder.Services.AddScoped<NHibernate.ISession>(provider =>
     provider.GetRequiredService<ISessionFactory>().OpenSession());
 
-builder.Services.AddScoped<UserRepository>();
-builder.Services.AddScoped<RoleRepository>();
-builder.Services.AddScoped<ContentRevisionRepository>();
-builder.Services.AddScoped<CommentRepository>();
-builder.Services.AddScoped<CelestialBodyRepository>();
-builder.Services.AddScoped<BodyTypeRepository>();
-builder.Services.AddScoped<StarSystemRepository>();
+builder.Services.AddScoped<IUserRepository,UserRepository>();
+builder.Services.AddScoped<IRoleRepository,RoleRepository>();
+builder.Services.AddScoped<IContentRevisionRepository,ContentRevisionRepository>();
+builder.Services.AddScoped<ICommentRepository,CommentRepository>();
+builder.Services.AddScoped<ICelestialBodyRepository,CelestialBodyRepository>();
+builder.Services.AddScoped<IBodyTypeRepository,BodyTypeRepository>();
+builder.Services.AddScoped<IStarSystemRepository,StarSystemRepository>();
 
-builder.Services.AddScoped<AuthService>();
-builder.Services.AddScoped<UserService>();
-builder.Services.AddScoped<ContentRevisionService>();
-builder.Services.AddScoped<CommentService>();
-builder.Services.AddScoped<StarSystemService>();
-builder.Services.AddScoped<CelestialBodyService>();
+builder.Services.AddScoped<IAuthService,AuthService>();
+builder.Services.AddScoped<IUserService,UserService>();
+builder.Services.AddScoped<IContentRevisionService,ContentRevisionService>();
+builder.Services.AddScoped<ICommentService,CommentService>();
+builder.Services.AddScoped<IStarSystemService,StarSystemService>();
+builder.Services.AddScoped<ICelestialBodyService,CelestialBodyService>();
 
 
 builder.Services

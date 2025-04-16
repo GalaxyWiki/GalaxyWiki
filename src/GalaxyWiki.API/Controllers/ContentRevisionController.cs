@@ -10,8 +10,8 @@ namespace GalaxyWiki.API.Controllers
     [ApiController]
     public class RevisionsController : ControllerBase
     {
-        private readonly ContentRevisionService _contentRevisionService;
-        public RevisionsController(ContentRevisionService contentRevisionService)
+        private readonly IContentRevisionService _contentRevisionService;
+        public RevisionsController(IContentRevisionService contentRevisionService)
         {
             _contentRevisionService = contentRevisionService;
         }

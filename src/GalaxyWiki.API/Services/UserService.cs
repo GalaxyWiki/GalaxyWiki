@@ -17,6 +17,7 @@ namespace GalaxyWiki.API.Services
 
         public async Task<Users> GetUserById(string googleSub)
         {
+            Console.WriteLine("In the user");
             return await _userRepository.GetById(googleSub);
         }
 

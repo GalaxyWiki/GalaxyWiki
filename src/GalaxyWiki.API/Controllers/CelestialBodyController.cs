@@ -13,9 +13,9 @@ namespace GalaxyWiki.API.Controllers
     [ApiController]
     public class CelestialBodyController : ControllerBase
     {
-        private readonly CelestialBodyService _celestialBodyService;
+        private readonly ICelestialBodyService _celestialBodyService;
 
-        public CelestialBodyController(CelestialBodyService celestialBodyService)
+        public CelestialBodyController(ICelestialBodyService celestialBodyService)
         {
             _celestialBodyService = celestialBodyService;
         }

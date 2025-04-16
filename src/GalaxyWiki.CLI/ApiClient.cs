@@ -7,6 +7,7 @@ using System.Text.Json;
 using GalaxyWiki.Core.Entities;
 using Spectre.Console;
 
+
 public static class ApiClient
 {
     private static readonly HttpClient httpClient = new HttpClient();
@@ -144,7 +145,7 @@ public static class ApiClient
     {
         try
         {
-            string endpoint = $"/comment/celestial_bodies/{celestialBodyId}";
+            string endpoint = $"/comment/celestial-body/{celestialBodyId}";
             return await GetDeserialized<List<Comment>>(endpoint);
         }
         catch (Exception ex)
@@ -222,6 +223,64 @@ public static class ApiClient
         catch (Exception ex)
         {
             Console.WriteLine($"Error retrieving user: {ex.Message}");
+            return null;
+        }
+    }
+
+    public static async Task<bool> DeleteCommentAsync(int commentId)
+    {
+        try
+        {
+            if (JWT == "")
+            {
+                TUI.Err("AUTH", "Please login to post a comment.");
+                return false;
+            }
+            var request = new HttpRequestMessage(HttpMethod.Delete, apiUrl+"/api/comment/"+commentId);
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", JWT);
+
+            var response = await httpClient.SendAsync(request);
+            Console.WriteLine($"{apiUrl}/api/comment/{commentId}-----------");
+            response.EnsureSuccessStatusCode();
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            TUI.Err("DELETE", "Couldn't delete comment", ex.Message);
+            return false;
+        }
+    }
+
+    public static async Task<Comment?> UpdateCommentAsync(int commentId, string commentText)
+    {
+        try
+        {
+            if (JWT == "")
+            {
+                TUI.Err("AUTH", "Please login to update a comment.");
+                return null;
+            }
+
+            var updateRequest = new UpdateCommentRequest { CommentText = commentText };
+            var request = new HttpRequestMessage(HttpMethod.Put, apiUrl + "/api/comment/" + commentId)
+            {
+                Content = JsonContent.Create(updateRequest)
+            };
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", JWT);
+
+            var response = await httpClient.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+
+            string jsonResponse = await response.Content.ReadAsStringAsync();
+            return JsonSerializer.Deserialize<Comment>(
+                jsonResponse,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
+            );
+        }
+        catch (Exception ex)
+        {
+            TUI.Err("PUT", "Couldn't update comment", ex.Message);
             return null;
         }
     }

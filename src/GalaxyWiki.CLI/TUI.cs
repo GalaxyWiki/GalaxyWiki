@@ -327,13 +327,14 @@ public static class TUI {
             .Border(TableBorder.Rounded)
             .BorderColor(Color.LightCoral)
             .HideHeaders();
-
+        table.AddColumn(new TableColumn("[cyan]ID[/]").Width(10));
         table.AddColumn(new TableColumn("[cyan]Author[/]").Width(15));
         table.AddColumn(new TableColumn("[cyan]Comment[/]"));
         table.AddColumn(new TableColumn("[cyan]Date[/]").Width(18));
         
         foreach (var comment in comments)
         {
+            string id = comment.CommentId.ToString().PadLeft(4);
             string author = string.IsNullOrEmpty(comment.DisplayName) ? 
                 $"[grey]Anonymous[/]" : 
                 $"[bold]{comment.DisplayName}[/]";
@@ -341,6 +342,7 @@ public static class TUI {
             string formattedComment = FormatCommentWithSpectre(comment.CommentText);
             
             table.AddRow(
+                new Markup(id),
                 new Markup(author), 
                 new Markup(formattedComment), 
                 new Markup($"[grey]{formattedDate}[/]")
