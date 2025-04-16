@@ -1,11 +1,13 @@
 ﻿using Spectre.Console;
 using dotenv.net;
 using GalaxyWiki.Core.Entities;
+using GalaxyWiki.CLI;
 using System.Text;
 using GalaxyWiki.Core.ResponseBodies;
 using System.Reflection.Metadata;
 using Npgsql.Replication.PgOutput.Messages;
 using System.Linq.Expressions;
+using GalaxyWiki.Cli;
 
 namespace GalaxyWiki.CLI
 {
@@ -93,7 +95,7 @@ namespace GalaxyWiki.CLI
 
                 case "render": await HandleRenderCommand(); break;
 
-                case "chat": LaunchChatbot(); break;
+                case "chat": await LaunchChatbot(); break;
 
                     case "login": await ApiClient.LoginAsync(); break;
 
@@ -264,6 +266,9 @@ namespace GalaxyWiki.CLI
             
             return (cmd, args);
         }
+
+
+        
 
     //==================== Commands ====================//
 
@@ -630,20 +635,41 @@ namespace GalaxyWiki.CLI
         }
     }
     
-    static void LaunchChatbot() {
-        var header = new Rule("[cyan] Galaxy Bot :robot: :sparkles: [/]");
-        AnsiConsole.Write(header);
+     static async Task LaunchChatbot() {
+            // Get current path and body before starting chat
+            string currentPath = CommandLogic.GetCurrentPath();
+            var currentBody = CommandLogic.GetCurrentBody();
+            string currentContext = currentBody?.BodyName ?? "the Universe";
+            
+            var header = new Rule($"[cyan] Galaxy Bot :robot: :sparkles:[/] [dim]at {currentPath}[/]");
+            AnsiConsole.Write(header);
+
+            // Ensure environment variables are loaded
+            DotEnv.Load(options: new DotEnvOptions(envFilePaths: new[] { ".env" }));
+            var apiKey = Environment.GetEnvironmentVariable("CLAUDE_API_KEY");
+            
+            if (string.IsNullOrEmpty(apiKey))
+            {
+                AnsiConsole.MarkupLine("[red]Error:[/] CLAUDE_API_KEY environment variable is not set.");
+                AnsiConsole.MarkupLine("Please check that your .env file contains a valid CLAUDE_API_KEY.");
+                return;
+            }
+
+            // Send initial message with current location
+            string initialMessage = $"Hey there! What would you like to know about {currentContext}?";
+            AnsiConsole.MarkupLine($"[green]Bot:[/] {initialMessage}");
 
             bool chatMode = true;
             while(chatMode) {
-                AnsiConsole.Markup("[lightcyan1]Enter a message[/] [gold3]❯❯[/] ");
-                var msg = ReadLineWithHistory();
-                
-                if (msg.Equals("quit", StringComparison.CurrentCultureIgnoreCase) || msg.Equals("exit", StringComparison.CurrentCultureIgnoreCase)) { 
+                var msg = AnsiConsole.Ask<string>("[lightcyan1]Enter a message[/] [orange1]❯❯[/]");
+                if (msg.ToLower() == "quit" || msg.ToLower() == "exit") { 
                     chatMode = false; 
                 }
                 else { 
-                    AnsiConsole.WriteLine("TODO: Bot response"); 
+                    AnsiConsole.MarkupLine("[yellow]Thinking...[/]");
+                    // Pass the current context to the ClaudeClient
+                    var response = await ClaudeClient.GetResponse(msg, currentContext);
+                    AnsiConsole.MarkupLine($"[green]Bot:[/] {response}");
                 }
             }
         }
@@ -1454,8 +1480,7 @@ namespace GalaxyWiki.CLI
             return CommandLogic.TrimQuotes(input);
         }
     }
-}
-/*
+}/*
  static async Task HandleEditCurrentRevision()
         {
             var body = CommandLogic.GetCurrentBody();
