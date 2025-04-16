@@ -795,12 +795,19 @@ namespace GalaxyWiki.CLI
             
             case "-u":
             case "--update":
-                if (argsList.Count < 3 || !int.TryParse(argsList[1], out int updateCommentId))
+                if (argsList.Count < 2 || !int.TryParse(argsList[1], out int updateCommentId))
                 {
-                    TUI.Err("COMMENT", "Invalid arguments.", "Usage: comment -u <commentId> \"Updated comment text\"");
+                    TUI.Err("COMMENT", "Invalid arguments.", "Usage: comment -u <commentId>");
                     return;
                 }
-                string updatedText = JoinArgs(argsList.Skip(2).ToList());
+                var comment = await CommandLogic.GetCommentById(updateCommentId);
+                (string updatedText, bool changed) = TUI.OpenExternalEditor(comment.CommentText ?? "");
+                if(!changed)
+                {
+                    TUI.Err("COMMENT", "No change in the comment.");
+                    return;
+                }
+                
                 await UpdateComment(updateCommentId, updatedText);
                 break;
             
@@ -932,6 +939,7 @@ namespace GalaxyWiki.CLI
     
     static async Task UpdateComment(int commentId, string commentText)
     {
+        
         var updatedComment = await CommandLogic.UpdateComment(commentId, commentText);
         
         if (updatedComment != null)
