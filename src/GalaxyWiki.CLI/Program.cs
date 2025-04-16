@@ -69,7 +69,7 @@ namespace GalaxyWiki.Cli
 
                     case "render": AnsiConsole.Write(TUI.Image("../../assets/earth.png")); break;
 
-                    case "chat": LaunchChatbot(); break;
+                    case "chat": await LaunchChatbot(); break;
 
                     case "login": await Login(); break;
 
@@ -447,11 +447,9 @@ namespace GalaxyWiki.Cli
                     chatMode = false; 
                 }
                 else { 
-                    await AnsiConsole.Status()
-                        .StartAsync("Thinking...", async ctx => {
-                            var response = await ClaudeClient.GetResponse(msg);
-                            AnsiConsole.MarkupLine($"[green]Bot:[/] {response}");
-                        });
+                    AnsiConsole.MarkupLine("[yellow]Thinking...[/]");
+                    var response = await ClaudeClient.GetResponse(msg);
+                    AnsiConsole.MarkupLine($"[green]Bot:[/] {response}");
                 }
             }
         }
