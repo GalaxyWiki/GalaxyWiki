@@ -42,8 +42,7 @@ namespace GalaxyWiki.API.Controllers
 
             if (revisions == null || !revisions.Any())
             {
-                // Returning an empty ContentRevisionDto or null
-                return NotFound(new ContentRevisionDto()); // Default values will be set, or you can manually set error messages as properties
+                return NotFound(new ContentRevisionDto());
             }
 
             return Ok(revisions.Select(r => new ContentRevisionDto
