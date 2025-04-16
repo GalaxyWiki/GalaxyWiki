@@ -8,6 +8,7 @@ using System.Reflection.Metadata;
 using Npgsql.Replication.PgOutput.Messages;
 using System.Linq.Expressions;
 using GalaxyWiki.Cli;
+using GalaxyWiki.Core.Services;
 
 namespace GalaxyWiki.CLI
 {
@@ -16,6 +17,7 @@ namespace GalaxyWiki.CLI
         // Command history to store previous commands
         private static List<string> _commandHistory = [];
         private static int _historyIndex = -1;
+        private static readonly SearchService _searchService = new SearchService();
 
     public static async Task<int> Main(string[] args)
     {
@@ -32,12 +34,19 @@ namespace GalaxyWiki.CLI
             while(running) {
                 // Get the current path to display in prompt
                 string promptPath = CommandLogic.GetCurrentPath();
-                
+                 AnsiConsole.Markup($"[lightcyan1]{promptPath}[/] [springgreen3_1]❯❯[/] ");
+                //var inp = AnsiConsole.Ask<string>("[lightcyan1]Enter a command[/] [springgreen3_1]❯❯[/]");
+                // Use custom input method with command history support
+                var inp = ReadLineWithHistory();
+                var parts = inp.Trim().Split(' ', 2);
+                //var cmd = parts[0].ToLower();
+                var searchTerm = parts.Length > 1 ? parts[1] : string.Empty;
+
+
                 // Display prompt
                 AnsiConsole.Markup($"[lightcyan1]{promptPath}[/] [springgreen3_1]❯❯[/] ");
                 
-                // Use custom input method with command history support
-                var inp = ReadLineWithHistory();
+                
                 
                 // Skip empty input
                 if (string.IsNullOrWhiteSpace(inp))
@@ -68,6 +77,11 @@ namespace GalaxyWiki.CLI
                 case "edit":        await HandleEditCurrentRevision(); break;
                 case "go":          await ShowCdAutocomplete(); break;
                 case "help":        PrintHelp(); break;
+                case "search": 
+                        if (string.IsNullOrWhiteSpace(searchTerm)) {
+                            AnsiConsole.MarkupLine("[yellow]Please provide a search term after 'search'.[/]");
+                        } else { await PerformSearch(searchTerm); }
+                        break;
                 case "list":
                 case "find":        await HandleListCommand(dat); break;
                 case "login":       await ApiClient.LoginAsync(); break;
@@ -77,7 +91,6 @@ namespace GalaxyWiki.CLI
                 case "exit":        running = false; break;
                 case "render":      await HandleRenderCommand(); break;
                 case "revision":    await HandleRevisionCommand(dat); break;
-                case "search":      AnsiConsole.WriteLine("TODO: Search wiki pages"); break;
                 case "show":
                 case "info":        await HandleShowCommand(dat); break;
                 case "tree":        await HandleTreeCommand(dat); break;
@@ -219,6 +232,72 @@ namespace GalaxyWiki.CLI
                         Console.SetCursorPosition(startLeft + cursorPos, startTop);
                     }
                 } catch {}
+            }
+        }
+
+        static async Task PerformSearch(string searchTerm)
+        {
+            AnsiConsole.MarkupLine($"[cyan]Searching for:[/] '{searchTerm}'...");
+
+            try
+            {
+                // Fetch data
+                var celestialBodiesMap = await GetAllCelestialBodies();
+              
+                var bodyResults = _searchService.SearchCelestialBodies(celestialBodiesMap.Values, searchTerm);
+             
+                var table = new Table().Expand();
+                // table.AddColumn(new TableColumn("[yellow]Type[/]").Width(15));
+                table.AddColumn(new TableColumn("[yellow]Celestial Body Name[/]"));
+                 
+
+                bool foundResults = false;
+
+                foreach (var result in bodyResults)
+                {
+                    table.AddRow(
+                        // "Celestial Body",
+                        Markup.Escape(result.Item.BodyName)
+                    );
+                    foundResults = true;
+                }
+
+                // foreach (var result in systemResults)
+                // {
+                //     table.AddRow(
+                //         "Star System",
+                //         Markup.Escape(result.Item.Name),
+                //         Markup.Escape(result.MatchType),
+                //         $"{result.MatchRatio}%"
+                //     );
+                //     foundResults = true;
+                // }
+                
+                // Uncomment to display comment results
+                // foreach (var result in commentResults)
+                // {
+                //     table.AddRow(
+                //         "Comment",
+                //         Markup.Escape($"On \"{result.Item.CelestialBody.BodyName}\": {result.Item.CommentText.Substring(0, Math.Min(50, result.Item.CommentText.Length))}..."),
+                //         Markup.Escape(result.MatchType),
+                //         $"{result.MatchRatio}%"
+                //     );
+                //     foundResults = true;
+                // }
+
+                if (foundResults)
+                {
+                    AnsiConsole.Write(table);
+                }
+                else
+                {
+                    AnsiConsole.MarkupLine($"[grey]No results found for '{Markup.Escape(searchTerm)}'.[/]");
+                }
+            }
+            catch (Exception ex)
+            {
+                AnsiConsole.MarkupLine($"[red]An error occurred during search:[/] {ex.Message}");
+                // Optionally log the full exception ex.ToString()
             }
         }
 
