@@ -7,8 +7,8 @@ using GalaxyWiki.Core.ResponseBodies;
 using System.Reflection.Metadata;
 using Npgsql.Replication.PgOutput.Messages;
 using System.Linq.Expressions;
-using GalaxyWiki.Cli;
 using GalaxyWiki.Core.Services;
+using System.Net.Http.Json;
 
 namespace GalaxyWiki.CLI
 {
@@ -691,60 +691,6 @@ namespace GalaxyWiki.CLI
         }
     }
     
-     static async Task LaunchChatbot() {
-            // Get current path and body before starting chat
-            string currentPath = CommandLogic.GetCurrentPath();
-            var currentBody = CommandLogic.GetCurrentBody();
-            string currentContext = currentBody?.BodyName ?? "the Universe";
-            
-            var header = new Rule($"[cyan] Galaxy Bot :robot: :sparkles:[/] [dim]at {currentPath}[/]");
-            AnsiConsole.Write(header);
-
-            // Ensure environment variables are loaded
-            DotEnv.Load(options: new DotEnvOptions(envFilePaths: new[] { ".env" }));
-            var apiKey = Environment.GetEnvironmentVariable("CLAUDE_API_KEY");
-            
-            if (string.IsNullOrEmpty(apiKey))
-            {
-                AnsiConsole.MarkupLine("[red]Error:[/] CLAUDE_API_KEY environment variable is not set.");
-                AnsiConsole.MarkupLine("Please check that your .env file contains a valid CLAUDE_API_KEY.");
-                return;
-            }
-
-            // Send initial message with current location
-            string initialMessage = $"Hey there! What would you like to know about {currentContext}?";
-            AnsiConsole.MarkupLine($"[green]Bot:[/] {initialMessage}");
-
-            bool chatMode = true;
-            while(chatMode) {
-                var msg = AnsiConsole.Ask<string>("[lightcyan1]Enter a message[/] [orange1]❯❯[/]");
-                if (msg.ToLower() == "quit" || msg.ToLower() == "exit") { 
-                    chatMode = false; 
-                }
-                else { 
-
-await AnsiConsole.Status()
-                        .StartAsync("[yellow]Thinking...[/]", async ctx => {
-                            var response = await ClaudeClient.GetResponse(msg,currentContext);
-                            AnsiConsole.MarkupLine($"[green]Bot:[/] {response}");
-                        });
-
-
-                    // AnsiConsole.MarkupLine("[yellow]Thinking...[/]");
-                    // AnsiConsole.MarkupLine("[yellow]● ● ●[/] Galaxy Bot is thinking...");
-                    // AnsiConsole.Status()
-                    //     .Spinner(Spinner.Known.Dots)
-                    //     .Start("[yellow]● ● ●[/] Galaxy Bot is thinking...", async ctx =>{
-                    //         // Omitted
-
-                    //         var response = await ClaudeClient.GetResponse(msg, currentContext);
-                    // AnsiConsole.MarkupLine($"[green]Bot:[/] {response}");
-                    //     });
-                    // Pass the current context to the ClaudeClient
-                    
-                }
-            }
-        }
 
     static async Task HandleCommentCommand(string args)
     {
@@ -1567,5 +1513,69 @@ await AnsiConsole.Status()
         {
             return CommandLogic.TrimQuotes(input);
         }
+
+    static async Task LaunchChatbot() {
+        // Get current path and body before starting chat
+        string currentPath = CommandLogic.GetCurrentPath();
+        var currentBody = CommandLogic.GetCurrentBody();
+        string currentContext = currentBody?.BodyName ?? "the Universe";
+        string apiUrl = Environment.GetEnvironmentVariable("API_URL")!;
+        
+        var header = new Rule($"[cyan] Galaxy Bot :robot: :sparkles:[/] [dim]at {currentPath}[/]");
+        AnsiConsole.Write(header);
+
+        // Initialize chat
+        var chat = new List<ChatMessage>();
+        string systemMessage = $"You are a helpful assistant with expertise in astronomy and space science. The user is currently exploring {currentContext}.";
+        string initialMessage = $"Hey there! What would you like to know about {currentContext}?";
+        chat.Add(new ChatMessage { Role = "assistant", Content = initialMessage });
+
+        AnsiConsole.MarkupLine($"[green]Bot:[/] {initialMessage}");
+
+        // Setup HTTP client
+        using var httpClient = new HttpClient();
+        
+        bool chatMode = true;
+        while(chatMode) {
+            var msg = AnsiConsole.Ask<string>("[lightcyan1]Enter a message[/] [orange1]❯❯[/]");
+
+            if (msg.ToLower() == "quit" || msg.ToLower() == "exit") { chatMode = false; }
+            else { 
+                // Add user message to history
+                chat.Add(new ChatMessage { Role = "user", Content = msg });
+
+                await AnsiConsole.Status()
+                .StartAsync("[yellow]Thinking...[/]", async ctx => {
+                    try {
+                        // Create request for the chat API
+                        var chatRequest = new ChatRequest {
+                            Messages = chat,
+                            System = systemMessage,
+                            MaxTokens = 1024
+                        };
+                        
+                        // Send request to our API endpoint
+                        var response = await httpClient.PostAsJsonAsync($"{apiUrl}/api/chat", chatRequest);
+                        
+                        if (response.IsSuccessStatusCode) {
+                            var chatResponse = await response.Content.ReadFromJsonAsync<ChatResponse>();
+                            if (chatResponse != null) {
+                                // Display the response
+                                AnsiConsole.MarkupLine($"[green]Bot:[/] {chatResponse.Message}");
+                                
+                                // Add assistant's response to history
+                                chat.Add(new ChatMessage { Role = "assistant", Content = chatResponse.Message });
+                            }
+                        } else {
+                            var errorContent = await response.Content.ReadAsStringAsync();
+                            AnsiConsole.MarkupLine($"[red]Error:[/] {response.StatusCode} - {errorContent}");
+                        }
+                    } catch (Exception ex) {
+                        AnsiConsole.MarkupLine($"[red]Error:[/] {ex.Message}");
+                    }
+                });
+            }
+        }
+    }
     }
 }

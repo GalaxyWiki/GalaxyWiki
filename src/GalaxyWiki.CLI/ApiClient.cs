@@ -8,8 +8,6 @@ using System.Text.Json.Serialization;
 using GalaxyWiki.Core.Entities;
 using Spectre.Console;
 
-
-
 namespace GalaxyWiki.CLI
 {
     public static class ApiClient
@@ -618,4 +616,22 @@ public class DateTimeConverterUsingDateTimeParse : JsonConverter<DateTime>
         writer.WriteStringValue(value.ToString("o"));
     }
 }
+
+    public class ChatMessage
+    {
+        public string Role { get; set; } = string.Empty;
+        public string Content { get; set; } = string.Empty;
+    }
+
+    public class ChatRequest
+    {
+        public List<ChatMessage> Messages { get; set; } = new();
+        public string? System { get; set; }
+        public int MaxTokens { get; set; } = 1024;
+    }
+
+    public class ChatResponse
+    {
+        public string Message { get; set; } = string.Empty;
+    }
 }
