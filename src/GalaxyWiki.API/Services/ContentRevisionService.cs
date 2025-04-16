@@ -7,12 +7,12 @@ namespace GalaxyWiki.API.Services
 {
     public class ContentRevisionService : IContentRevisionService
     {
-        private AuthService _authService;
-        private readonly ContentRevisionRepository _contentRevisionRepository;
-        private readonly CelestialBodyRepository _celestialBodyRepository;
-        private readonly UserRepository _userRepository;
+        private readonly IAuthService _authService;
+        private readonly IContentRevisionRepository _contentRevisionRepository;
+        private readonly ICelestialBodyRepository _celestialBodyRepository;
+        private readonly IUserRepository _userRepository;
 
-        public ContentRevisionService(AuthService authService, ContentRevisionRepository contentRevisionRepository, CelestialBodyRepository celestialBodyRepository, UserRepository userRepository)
+        public ContentRevisionService(IAuthService authService, IContentRevisionRepository contentRevisionRepository, ICelestialBodyRepository celestialBodyRepository, IUserRepository userRepository)
         {
             _authService = authService;
             _contentRevisionRepository = contentRevisionRepository;

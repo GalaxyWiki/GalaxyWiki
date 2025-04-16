@@ -4,7 +4,7 @@ using System.Text.Json;
 
 namespace GalaxyWiki.API.Services
 {
-    public class AuthService
+    public class AuthService : IAuthService
     {
         private readonly UserService _userService;
 
