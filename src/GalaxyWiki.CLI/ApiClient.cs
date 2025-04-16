@@ -57,7 +57,7 @@ namespace GalaxyWiki.CLI
             listener.Prefixes.Add(redirectUri!);
             listener.Start();
 
-            AnsiConsole.Write(new Rule("[gold3]Opening browser for google login...[/] "));
+            AnsiConsole.Write(new Rule("[orange1]Opening browser for google login...[/] "));
             Process.Start(new ProcessStartInfo(authUrl) { UseShellExecute = true });
 
             var context = await listener.GetContextAsync();
@@ -314,12 +314,12 @@ namespace GalaxyWiki.CLI
                     TUI.Err("AUTH", "Please login to delete a comment.");
                     return false;
                 }
-
+                
                 var request = new HttpRequestMessage(HttpMethod.Delete, apiUrl + $"/api/comment/{commentId}");
                 request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", JWT);
 
                 var response = await httpClient.SendAsync(request);
-
+                
                 response.EnsureSuccessStatusCode();
                 return true;
             }
@@ -378,6 +378,112 @@ namespace GalaxyWiki.CLI
             return null;
         }
     }
+
+        // Create a new celestial body
+        public static async Task<CelestialBodies?> CreateCelestialBodyAsync(string bodyName, int bodyTypeId, int? orbitsId)
+        {
+            try
+            {
+                if (JWT == "")
+                {
+                    TUI.Err("AUTH", "Please login to create a celestial body.");
+                    return null;
+                }
+                
+                var bodyRequest = new
+                {
+                    BodyName = bodyName,
+                    BodyTypeId = bodyTypeId,
+                    OrbitsId = orbitsId
+                };
+                
+                var request = new HttpRequestMessage(HttpMethod.Post, apiUrl + "/api/celestial-body")
+                {
+                    Content = JsonContent.Create(bodyRequest)
+                };
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", JWT);
+
+                var response = await httpClient.SendAsync(request);
+                response.EnsureSuccessStatusCode();
+                
+                string jsonResponse = await response.Content.ReadAsStringAsync();
+                return JsonSerializer.Deserialize<CelestialBodies>(
+                    jsonResponse, 
+                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
+                );
+            }
+            catch (Exception ex)
+            {
+                TUI.Err("POST", "Couldn't create celestial body", ex.Message);
+                return null;
+            }
+        }
+        
+        // Update an existing celestial body
+        public static async Task<CelestialBodies?> UpdateCelestialBodyAsync(int bodyId, string bodyName, int bodyTypeId, int? orbitsId)
+        {
+            try
+            {
+                if (JWT == "")
+                {
+                    TUI.Err("AUTH", "Please login to update a celestial body.");
+                    return null;
+                }
+                
+                var bodyRequest = new
+                {
+                    BodyName = bodyName,
+                    BodyTypeId = bodyTypeId,
+                    OrbitsId = orbitsId
+                };
+                
+                var request = new HttpRequestMessage(HttpMethod.Put, apiUrl + $"/api/celestial-body/{bodyId}")
+                {
+                    Content = JsonContent.Create(bodyRequest)
+                };
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", JWT);
+
+                var response = await httpClient.SendAsync(request);
+                response.EnsureSuccessStatusCode();
+                
+                string jsonResponse = await response.Content.ReadAsStringAsync();
+                return JsonSerializer.Deserialize<CelestialBodies>(
+                    jsonResponse, 
+                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
+                );
+            }
+            catch (Exception ex)
+            {
+                TUI.Err("PUT", $"Couldn't update celestial body with ID {bodyId}", ex.Message);
+                return null;
+            }
+        }
+        
+        // Delete a celestial body by ID
+        public static async Task<bool> DeleteCelestialBodyAsync(int bodyId)
+        {
+            try
+            {
+                if (JWT == "")
+                {
+                    TUI.Err("AUTH", "Please login to delete a celestial body.");
+                    return false;
+                }
+                
+                var request = new HttpRequestMessage(HttpMethod.Delete, apiUrl + $"/api/celestial-body/{bodyId}");
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", JWT);
+
+                var response = await httpClient.SendAsync(request);
+                response.EnsureSuccessStatusCode();
+                
+                return true;
+            }
+            catch (Exception ex)
+            {
+                TUI.Err("DELETE", $"Couldn't delete celestial body with ID {bodyId}", ex.Message);
+                return false;
+            }
+        }
 }
 
     // Simple DTO for comment data

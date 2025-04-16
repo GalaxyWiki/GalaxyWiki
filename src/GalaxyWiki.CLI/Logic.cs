@@ -595,6 +595,118 @@ public class BodyTypeInfo
         }
     }
 
+        // Create a new celestial body
+        public static async Task<CelestialBodies?> CreateCelestialBody(string bodyName, int bodyTypeId, int? orbitsId = null)
+        {
+            // Check if user is logged in (authenticated users only)
+            if (string.IsNullOrEmpty(ApiClient.JWT))
+            {
+                TUI.Err("AUTH", "You must be logged in to create celestial bodies.");
+                return null;
+            }
+            
+            // Validate body type
+            var bodyType = GetBodyTypeInfo(bodyTypeId.ToString());
+            if (bodyType == null)
+            {
+                TUI.Err("BODY", $"Invalid body type ID: {bodyTypeId}");
+                return null;
+            }
+            
+            // Create the celestial body via API
+            var newBody = await ApiClient.CreateCelestialBodyAsync(bodyName, bodyTypeId, orbitsId);
+            
+            if (newBody != null)
+            {
+                // Clear cache to ensure the new body appears in subsequent listings
+                _state.ChildrenCache.Clear();
+            }
+            
+            return newBody;
+        }
+        
+        // Update an existing celestial body
+        public static async Task<CelestialBodies?> UpdateCelestialBody(int bodyId, string bodyName, int bodyTypeId, int? orbitsId = null)
+        {
+            // Check if user is logged in (authenticated users only)
+            if (string.IsNullOrEmpty(ApiClient.JWT))
+            {
+                TUI.Err("AUTH", "You must be logged in to update celestial bodies.");
+                return null;
+            }
+            
+            // Validate body type
+            var bodyType = GetBodyTypeInfo(bodyTypeId.ToString());
+            if (bodyType == null)
+            {
+                TUI.Err("BODY", $"Invalid body type ID: {bodyTypeId}");
+                return null;
+            }
+            
+            // Update the celestial body via API
+            var updatedBody = await ApiClient.UpdateCelestialBodyAsync(bodyId, bodyName, bodyTypeId, orbitsId);
+            
+            if (updatedBody != null)
+            {
+                // Clear cache to ensure the updated body appears correctly in subsequent listings
+                _state.ChildrenCache.Clear();
+                
+                // If we updated the current body, update the state
+                if (_state.CurrentBody != null && _state.CurrentBody.Id == bodyId)
+                {
+                    _state.CurrentBody = updatedBody;
+                    
+                    // Update the path stack
+                    var newStack = new Stack<CelestialBodies>();
+                    foreach (var body in _state.PathStack.Reverse())
+                    {
+                        if (body.Id == bodyId)
+                        {
+                            newStack.Push(updatedBody);
+                        }
+                        else
+                        {
+                            newStack.Push(body);
+                        }
+                    }
+                    
+                    _state.PathStack = new Stack<CelestialBodies>(newStack.Reverse());
+                }
+            }
+            
+            return updatedBody;
+        }
+        
+        // Delete a celestial body
+        public static async Task<bool> DeleteCelestialBody(int bodyId)
+        {
+            // Check if user is logged in (authenticated users only)
+            if (string.IsNullOrEmpty(ApiClient.JWT))
+            {
+                TUI.Err("AUTH", "You must be logged in to delete celestial bodies.");
+                return false;
+            }
+            
+            // Check if trying to delete the current body
+            if (_state.CurrentBody != null && _state.CurrentBody.Id == bodyId)
+            {
+                TUI.Err("BODY", "Cannot delete the celestial body you're currently in.", 
+                    "Navigate to the parent body first using 'cd ..'");
+                return false;
+            }
+            
+            // Delete the celestial body via API
+            bool success = await ApiClient.DeleteCelestialBodyAsync(bodyId);
+            
+            if (success)
+            {
+                // Clear cache to ensure deleted body doesn't appear in subsequent listings
+                _state.ChildrenCache.Clear();
+            }
+            
+            return success;
+        }
+
         // Get a list of child celestial body names for autocomplete
         public static async Task<string[]> GetAvailableDestinations()
         {
