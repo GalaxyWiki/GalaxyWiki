@@ -54,15 +54,76 @@ public static class ApiClient
         listener.Prefixes.Add(redirectUri!);
         listener.Start();
 
-        AnsiConsole.Write(new Rule("[gold3]Opening browser for google login...[/] "));
+        AnsiConsole.Write(new Rule("[orange1]Opening browser for google login...[/] "));
         Process.Start(new ProcessStartInfo(authUrl) { UseShellExecute = true });
 
         var context = await listener.GetContextAsync();
         var authCode = context.Request.QueryString["code"];
-        var responseString = "<html><body>Login successful. You can close this window.</body></html>";
+        var responseString = """
+        <html>
+            <head>
+                <title>Login success</title>
+                <script> function closePage() { window.close(); } </script>
+                <style>
+                    body            { background: #140d1c; color: #f0ebf5; margin: 0; }
+                    #txt            { display: flex; center; width: 100%; height: 100%; justify-content: center; align-items: center; }
+                    #msg            { text-align: center; }
+                    h1              { font-family: monospace; font-size: 3em; }
+                    p               { font-family: sans-serif; }
+                    #space, .stars  { overflow: hidden; position: absolute; top: 0; bottom: 0; left: 0; right: 0; }
+
+                    .stars {
+                        background-image: 
+                            radial-gradient(2px 2px at 20px 30px, #eee, rgba(0,0,0,0)),
+                            radial-gradient(2px 2px at 40px 70px, #fff, rgba(0,0,0,0)),
+                            radial-gradient(2px 2px at 50px 160px, #ddd, rgba(0,0,0,0)),
+                            radial-gradient(2px 2px at 90px 40px, #fff, rgba(0,0,0,0)),
+                            radial-gradient(2px 2px at 130px 80px, #fff, rgba(0,0,0,0)),
+                            radial-gradient(2px 2px at 160px 120px, #ddd, rgba(0,0,0,0));
+                        background-repeat: repeat;
+                        background-size: 200px 200px;
+                        animation: zoom 2s infinite;
+                        opacity: 0;
+                    }
+
+                    .stars:nth-child(1) { background-position: 50% 50%; animation-delay: 0s; }
+                    .stars:nth-child(2) { background-position: 20% 60%; animation-delay: 500ms; }
+                    .stars:nth-child(3) { background-position: -20% -30%; animation-delay: 1s; }
+                    .stars:nth-child(4) { background-position: 40% -80%; animation-delay: 1500ms; }
+                    .stars:nth-child(5) { background-position: -20% 30%; animation-delay: 2s; }
+                    .stars:nth-child(6) { background-position: 40% -80%; animation-delay: 2500ms; }
+                    .stars:nth-child(7) { background-position: -20% 30%; animation-delay: 3s; }
+                    .stars:nth-child(8) { background-position: -20% 30%; animation-delay: 3500ms; }
+                    .stars:nth-child(9) { background-position: 40% -80%; animation-delay: 4s; }
+
+                    @keyframes zoom {
+                        0% { opacity: 0; transform: scale(0.5); animation-timing-function: ease-in; } 
+                        85% { opacity: 1; transform: scale(2.8); animation-timing-function: linear; }
+                        100% { opacity: 0; transform: scale(3.5); }
+                    }
+                </style>
+            </head>
+            <body>
+                <div id="txt">
+                    <div id="msg">
+                        <h1> Login successful &#128640; </h1>
+                        <p>You may now close this page</p>
+                        <br /><br /><br />
+                    </div>
+                </div>
+                <div id="space">
+                    <div class="stars"></div> <div class="stars"></div> <div class="stars"></div>
+                    <div class="stars"></div> <div class="stars"></div> <div class="stars"></div>
+                    <div class="stars"></div> <div class="stars"></div> <div class="stars"></div>
+                </div>
+
+            </body>
+        </html>
+        """;
         var buffer = Encoding.UTF8.GetBytes(responseString);
         context.Response.OutputStream.Write(buffer);
         context.Response.OutputStream.Close();
+        Thread.Sleep(1000);
         listener.Stop();
 
         Console.WriteLine($"Received auth code: {authCode}");
