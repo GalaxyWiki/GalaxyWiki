@@ -3,9 +3,9 @@ using GalaxyWiki.Core.Entities;
 using NHibernate.Linq;
 using ISession = NHibernate.ISession;
 
-namespace GalaxyWiki.Api.Repositories
+namespace GalaxyWiki.API.Repositories
 {
-    public class BodyTypeRepository
+    public class BodyTypeRepository : IBodyTypeRepository
     {
         private readonly ISession _session;
 

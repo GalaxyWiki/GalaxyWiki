@@ -1,4 +1,5 @@
-﻿namespace GalaxyWiki.Tests;
+﻿
+namespace GalaxyWiki.Tests;
 
 public class UnitTest1
 {

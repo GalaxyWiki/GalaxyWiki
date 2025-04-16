@@ -1,18 +1,18 @@
 using Microsoft.AspNetCore.Mvc;
-using GalaxyWiki.Api.DTOs;
-using GalaxyWiki.Api.Services;
+using GalaxyWiki.API.DTOs;
+using GalaxyWiki.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 
-namespace GalaxyWiki.Api.Controllers
+namespace GalaxyWiki.API.Controllers
 {
     [ApiController]
     [Route("api/comment")]
     public class CommentController : ControllerBase
     {
-        private readonly CommentService _commentService;
+        private readonly ICommentService _commentService;
 
-        public CommentController(CommentService commentService)
+        public CommentController(ICommentService commentService)
         {
             _commentService = commentService;
         }
@@ -36,7 +36,7 @@ namespace GalaxyWiki.Api.Controllers
         }
 
         // GET /comment/celestial_bodies/{celestialBodyId}
-        [HttpGet("celestial_bodies/{celestialBodyId}")]
+        [HttpGet("celestial-body/{celestialBodyId}")]
         public async Task<IActionResult> GetByCelestialBody(int celestialBodyId)
         {
             var comments = await _commentService.GetByCelestialBody(celestialBodyId);
@@ -44,7 +44,7 @@ namespace GalaxyWiki.Api.Controllers
         }
 
         // GET /comment/users/{userId}
-        [HttpGet("users/{userId}")]
+        [HttpGet("user/{userId}")]
         public async Task<IActionResult> GetByUser(string userId)
         {
             var comments = await _commentService.GetByUser(userId);
@@ -85,7 +85,7 @@ namespace GalaxyWiki.Api.Controllers
         // PUT /comment/{id}
         [HttpPut("{id}")]
         [Authorize]
-        public async Task<IActionResult> Update(int commentId, [FromBody] UpdateCommentRequest updateDto)
+        public async Task<IActionResult> Update([FromRoute(Name = "id")] int commentId, [FromBody] UpdateCommentRequest updateDto)
         {
             if (!ModelState.IsValid) 
                 return BadRequest(ModelState);
@@ -100,10 +100,10 @@ namespace GalaxyWiki.Api.Controllers
         // DELETE /comment/{id}
         [HttpDelete("{id}")]
         [Authorize]
-        public async Task<IActionResult> Delete(int commentId)
+        public async Task<IActionResult> Delete([FromRoute(Name = "id")] int commentId)
         {   
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
+            Console.WriteLine("in the controller-----"+commentId);
             await _commentService.Delete(commentId, userId!);
 
             return NoContent();

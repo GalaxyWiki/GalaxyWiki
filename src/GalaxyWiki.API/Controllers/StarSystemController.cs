@@ -10,9 +10,9 @@ namespace GalaxyWiki.API.Controllers
     [ApiController]
     public class StarSystemController : ControllerBase
     {
-        private readonly StarSystemService _starSystemService;
+        private readonly IStarSystemService _starSystemService;
 
-        public StarSystemController(StarSystemService starSystemService)
+        public StarSystemController(IStarSystemService starSystemService)
         {
             _starSystemService = starSystemService;
         }

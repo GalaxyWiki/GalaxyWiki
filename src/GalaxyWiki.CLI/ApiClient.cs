@@ -7,6 +7,8 @@ using System.Text.Json;
 using GalaxyWiki.Core.Entities;
 using Spectre.Console;
 
+
+
 namespace GalaxyWiki.CLI
 {
     public static class ApiClient
@@ -230,60 +232,60 @@ namespace GalaxyWiki.CLI
             }
         }
 
-        // Get comments for a celestial body
-        public static async Task<List<Comment>> GetCommentsByCelestialBodyAsync(int celestialBodyId)
+    // Get comments for a celestial body
+    public static async Task<List<Comment>> GetCommentsByCelestialBodyAsync(int celestialBodyId)
+    {
+        try
         {
-            try
-            {
-                string endpoint = $"/comment/celestial-body/{celestialBodyId}";
-                return await GetDeserialized<List<Comment>>(endpoint);
-            }
-            catch (Exception ex)
-            {
-                TUI.Err("GET", "Couldn't retrieve comments", ex.Message);
-                return new List<Comment>();
-            }
+            string endpoint = $"/comment/celestial-body/{celestialBodyId}";
+            return await GetDeserialized<List<Comment>>(endpoint);
         }
-
-        // Get comments by date range
-        public static async Task<List<Comment>> GetCommentsByDateRangeAsync(DateTime startDate, DateTime endDate, int celestialBodyId)
+        catch (Exception ex)
         {
-            try
-            {
-                string formattedStart = startDate.ToString("yyyy-MM-dd");
-                string formattedEnd = endDate.ToString("yyyy-MM-dd");
-                string endpoint = $"/comment/date-range?startDate={formattedStart}&endDate={formattedEnd}&celestialBodyId={celestialBodyId}";
-                return await GetDeserialized<List<Comment>>(endpoint);
-            }
-            catch (Exception ex)
-            {
-                TUI.Err("GET", "Couldn't retrieve comments by date range", ex.Message);
-                return new List<Comment>();
-            }
+            TUI.Err("GET", "Couldn't retrieve comments", ex.Message);
+            return new List<Comment>();
         }
-
-        // Create a new comment
-        public static async Task<Comment?> CreateCommentAsync(string commentText, int celestialBodyId)
+    }
+    
+    // Get comments by date range
+    public static async Task<List<Comment>> GetCommentsByDateRangeAsync(DateTime startDate, DateTime endDate, int celestialBodyId)
+    {
+        try
         {
-            try
+            string formattedStart = startDate.ToString("yyyy-MM-dd");
+            string formattedEnd = endDate.ToString("yyyy-MM-dd");
+            string endpoint = $"/comment/date-range?startDate={formattedStart}&endDate={formattedEnd}&celestialBodyId={celestialBodyId}";
+            return await GetDeserialized<List<Comment>>(endpoint);
+        }
+        catch (Exception ex)
+        {
+            TUI.Err("GET", "Couldn't retrieve comments by date range", ex.Message);
+            return new List<Comment>();
+        }
+    }
+    
+    // Create a new comment
+    public static async Task<Comment?> CreateCommentAsync(string commentText, int celestialBodyId)
+    {
+        try
+        {
+            if (JWT == "")
             {
-                if (JWT == "")
-                {
-                    TUI.Err("AUTH", "Please login to post a comment.");
-                    return null;
-                }
-
-                var commentRequest = new CreateCommentRequest
-                {
-                    CommentText = commentText,
-                    CelestialBodyId = celestialBodyId
-                };
-
-                var request = new HttpRequestMessage(HttpMethod.Post, apiUrl + "/api/comment")
-                {
-                    Content = JsonContent.Create(commentRequest)
-                };
-                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", JWT);
+                TUI.Err("AUTH", "Please login to post a comment.");
+                return null;
+            }
+            
+            var commentRequest = new CreateCommentRequest
+            {
+                CommentText = commentText,
+                CelestialBodyId = celestialBodyId
+            };
+            
+            var request = new HttpRequestMessage(HttpMethod.Post, apiUrl + "/api/comment")
+            {
+                Content = JsonContent.Create(commentRequest)
+            };
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", JWT);
 
                 var response = await httpClient.SendAsync(request);
 
@@ -327,6 +329,55 @@ namespace GalaxyWiki.CLI
                 return false;
             }
         }
+    
+    // Get user by ID
+    public static async Task<Users?> GetUserByIdAsync(string userId)
+    {
+        try
+        {
+            string endpoint = $"/user/{userId}";
+            return await GetDeserialized<Users>(endpoint);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error retrieving user: {ex.Message}");
+            return null;
+        }
+    }
+
+
+    public static async Task<Comment?> UpdateCommentAsync(int commentId, string commentText)
+    {
+        try
+        {
+            if (JWT == "")
+            {
+                TUI.Err("AUTH", "Please login to update a comment.");
+                return null;
+            }
+
+            var updateRequest = new UpdateCommentRequest { CommentText = commentText };
+            var request = new HttpRequestMessage(HttpMethod.Put, apiUrl + "/api/comment/" + commentId)
+            {
+                Content = JsonContent.Create(updateRequest)
+            };
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", JWT);
+
+            var response = await httpClient.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+
+            string jsonResponse = await response.Content.ReadAsStringAsync();
+            return JsonSerializer.Deserialize<Comment>(
+                jsonResponse,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
+            );
+        }
+        catch (Exception ex)
+        {
+            TUI.Err("PUT", "Couldn't update comment", ex.Message);
+            return null;
+        }
+    }
 
         // Create a new celestial body
         public static async Task<CelestialBodies?> CreateCelestialBodyAsync(string bodyName, int bodyTypeId, int? orbitsId)
@@ -433,7 +484,7 @@ namespace GalaxyWiki.CLI
                 return false;
             }
         }
-    }
+}
 
     // Simple DTO for comment data
     public class Comment
@@ -454,13 +505,27 @@ namespace GalaxyWiki.CLI
         public int CelestialBodyId { get; set; }
     }
 
-    // Simple DTO to hold revision data
-    public class Revision
-    {
-        public int Id { get; set; }
-        public string? Content { get; set; }
-        public DateTime CreatedAt { get; set; }
-        public string? CelestialBodyName { get; set; }
-        public string? AuthorDisplayName { get; set; }
-    }
+// Simple DTO to hold revision data
+public class Revision
+{
+    public int Id { get; set; }
+    public string? Content { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public string? CelestialBodyName { get; set; }
+    public string? AuthorDisplayName { get; set; }
+}
+
+// Simple DTO to hold user data
+public class Users
+{
+    public string Id { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string DisplayName { get; set; } = string.Empty;
+    public int RoleId { get; set; }
+}
+
+public class UpdateCommentRequest
+{
+    public string CommentText { get; set; }
+}
 }
