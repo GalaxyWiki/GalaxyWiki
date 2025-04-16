@@ -1,7 +1,6 @@
 using GalaxyWiki.Core.Entities;
 using Spectre.Console;
 using System.Text;
-using System.Text.RegularExpressions;
 
 namespace GalaxyWiki.CLI
 {

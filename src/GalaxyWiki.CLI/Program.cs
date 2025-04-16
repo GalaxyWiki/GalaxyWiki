@@ -1,18 +1,17 @@
 ﻿using Spectre.Console;
-using Spectre.Console.Cli;
-using Spectre.Console.Rendering;
 using dotenv.net;
 using GalaxyWiki.Core.Entities;
 using GalaxyWiki.CLI;
-using System.Text.RegularExpressions;
 using System.Text;
+using System.Reflection.Metadata;
+using Npgsql.Replication.PgOutput.Messages;
 
 namespace GalaxyWiki.CLI
 {
     public static class Program
     {
         // Command history to store previous commands
-        private static List<string> _commandHistory = new List<string>();
+        private static List<string> _commandHistory = [];
         private static int _historyIndex = -1;
 
         public static async Task<int> Main(string[] args)
@@ -43,7 +42,7 @@ namespace GalaxyWiki.CLI
                 
                 // Add command to history if not empty and not a duplicate of the most recent command
                 if (!string.IsNullOrWhiteSpace(inp) && 
-                    (_commandHistory.Count == 0 || inp != _commandHistory[_commandHistory.Count - 1])) {
+                    (_commandHistory.Count == 0 || inp != _commandHistory[^1])) {
                     _commandHistory.Add(inp);
                 }
                 
@@ -82,6 +81,8 @@ namespace GalaxyWiki.CLI
 
                     case "ls": await HandleLsCommand(); break;
 
+                    case "edit": await HandleEditCurrentRevision(); break;
+
                     case "list":
                     case "find": await HandleListCommand(dat); break;
 
@@ -106,7 +107,7 @@ namespace GalaxyWiki.CLI
         // Custom input method that supports command history with up/down arrows
         private static string ReadLineWithHistory()
         {
-            StringBuilder input = new StringBuilder();
+            StringBuilder input = new();
             int cursorPos = 0;
             
             // Starting position for editable area
@@ -246,10 +247,10 @@ namespace GalaxyWiki.CLI
                 return (input.ToLower(), "");
                 
             // Extract the command (everything before the first space)
-            string cmd = input.Substring(0, firstSpaceIndex).ToLower();
+            string cmd = input[..firstSpaceIndex].ToLower();
             
             // Extract arguments (everything after the first space)
-            string args = input.Substring(firstSpaceIndex + 1).Trim();
+            string args = input[(firstSpaceIndex + 1)..].Trim();
             
             return (cmd, args);
         }
@@ -346,7 +347,7 @@ namespace GalaxyWiki.CLI
         static async Task HandleListCommand(string args)
         {
             // Parse arguments
-            var argParts = args.Split(new[] { ' ' }, 2, StringSplitOptions.RemoveEmptyEntries);
+            var argParts = args.Split([' '], 2, StringSplitOptions.RemoveEmptyEntries);
             
             // If no arguments or not the right format, show all body types
             if (argParts.Length < 2 || !argParts[0].Equals("-t", StringComparison.OrdinalIgnoreCase))
@@ -477,7 +478,7 @@ namespace GalaxyWiki.CLI
         static async Task HandleShowCommand(string args)
         {
             // Parse arguments to check for -n or --name flag
-            var argParts = args.Split(new[] { ' ' }, 2, StringSplitOptions.RemoveEmptyEntries);
+            var argParts = args.Split([' '], 2, StringSplitOptions.RemoveEmptyEntries);
             
             // Check if a specific celestial body was requested
             if (argParts.Length == 2 && (argParts[0].Equals("-n", StringComparison.OrdinalIgnoreCase) || 
@@ -501,30 +502,23 @@ namespace GalaxyWiki.CLI
         static async Task ShowInfoForCurrentLocation()
         {
             var body = CommandLogic.GetCurrentBody();
+            if (body == null) { TUI.Err("INFO", "No celestial body found at current location."); return; }
             
-            if (body == null)
-            {
-                TUI.Err("INFO", "No celestial body found at current location.");
-                return;
-            }
+            var rev = await CommandLogic.GetCurrentRevision();
             
-            var revision = await CommandLogic.GetCurrentRevision();
-            
-            if (revision == null)
-            {
-                TUI.Err("INFO", "No content available for this celestial body.", 
-                    "This celestial body might not have an active revision.");
+            if (rev == null) {
+                TUI.Err("REV", "No content available for this celestial body.", "This celestial body might not have an active revision.");
                 return;
             }
             
             List<Comment> comments = [];
-            if (revision.CelestialBodyName != null) {
-                comments = await CommandLogic.GetCommentsForNamedBody(revision.CelestialBodyName);
+            if (rev.CelestialBodyName != null) {
+                comments = await CommandLogic.GetCommentsForNamedBody(rev.CelestialBodyName);
             }
 
             // AnsiConsole.Write(TUI.Article(revision.CelestialBodyName ?? "Unknown", revision.Content));
             // AnsiConsole.Write(TUI.AuthorInfo(revision.AuthorDisplayName ?? "Unknown", revision.CreatedAt));
-            AnsiConsole.Write(TUI.WikiPage(revision, body.BodyType, comments));
+            AnsiConsole.Write(TUI.WikiPage(rev, body.BodyType, comments));
             await TUI.RenderCelestialBody(body.BodyName, body.BodyType);
         }
         
@@ -601,7 +595,7 @@ namespace GalaxyWiki.CLI
                 AnsiConsole.Markup("[lightcyan1]Enter a message[/] [gold3]❯❯[/] ");
                 var msg = ReadLineWithHistory();
                 
-                if (msg.ToLower() == "quit" || msg.ToLower() == "exit") { 
+                if (msg.Equals("quit", StringComparison.CurrentCultureIgnoreCase) || msg.Equals("exit", StringComparison.CurrentCultureIgnoreCase)) { 
                     chatMode = false; 
                 }
                 else { 
@@ -648,7 +642,7 @@ namespace GalaxyWiki.CLI
                         TUI.Err("COMMENT", "No comment text provided.", "Usage: comment -a \"Your comment text\"");
                         return;
                     }
-                    await AddComment(JoinArgs(argsList.Skip(1).ToList()));
+                    await AddComment(JoinArgs([.. argsList.Skip(1)]));
                     break;
                 
                 case "-l":
@@ -860,10 +854,7 @@ namespace GalaxyWiki.CLI
                 var newComments = new List<Comment> { comment };
                 AnsiConsole.Write(TUI.CommentsPanel(newComments, "Your New Comment"));
             }
-            else
-            {
-                TUI.Err("COMMENT", "Failed to add comment.");
-            }
+            else { TUI.Err("COMMENT", "Failed to add comment."); }
         }
         
         static async Task DeleteComment(int commentId)
@@ -934,6 +925,25 @@ namespace GalaxyWiki.CLI
         static string JoinArgs(List<string> args)
         {
             return string.Join(" ", args);
+        }
+
+        static async Task HandleEditCurrentRevision()
+        {
+            var body = CommandLogic.GetCurrentBody();
+            
+            if (body == null) { TUI.Err("INFO", "No celestial body found at current location."); return; }
+            
+            var rev = await CommandLogic.GetCurrentRevision();
+            
+            if (rev == null) {
+                TUI.Err("REV", "No content available for this celestial body.", "This celestial body might not have an active revision.");
+                return;
+            }
+
+            (string newContent, bool changed) = TUI.OpenExternalEditor(rev.Content ?? "");
+            if (!changed) { AnsiConsole.Markup($"[purple]Nothing was changed[/]\n\n"); return; }
+
+            AnsiConsole.Markup($"[green]Content updated successfully[/]\n\t{newContent.Replace("\n", "\n\t")}\n\n");
         }
 
         static async Task HandleRevisionCommand(string args)

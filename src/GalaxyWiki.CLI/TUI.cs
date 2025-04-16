@@ -2,16 +2,13 @@ using FluentNHibernate.Conventions;
 using GalaxyWiki.CLI;
 using GalaxyWiki.Core.Entities;
 using NHibernate.Criterion;
-using NHibernate.Util;
 using Spectre.Console;
 using Spectre.Console.Rendering;
-using System.Diagnostics;
 using System.Text.RegularExpressions;
+using System.Diagnostics;
 
 namespace GalaxyWiki.CLI
 {
-
-
     public class IdMap<T> : Dictionary<int, T> { }
 
     public static class TUI
@@ -61,8 +58,11 @@ namespace GalaxyWiki.CLI
         // Format content with Spectre markup
         private static string FormatContentWithSpectre(string content)
         {
-            // Replace literal '\n' with actual newline characters
-            content = content.Replace("\\n", "\n");
+            // Decode & sanitize
+            content = content
+                .Replace("\\n", "\n")
+                .Replace("[", "[[")
+                .Replace("]", "]]");
 
             // Split text into paragraphs
             var paragraphs = content.Split('\n', StringSplitOptions.RemoveEmptyEntries);
@@ -149,7 +149,7 @@ namespace GalaxyWiki.CLI
         }
         public static void Warn(string name, string desc, string info = "")
         {
-            AnsiConsole.Markup($"[[[bold darkorange3]{name.ToUpper()} WARN[/]]]: [gold3]{desc}[/]");
+            AnsiConsole.Markup($"[[[bold orange1]{name.ToUpper()} WARN[/]]]: [orange3]{desc}[/]");
             if (!info.Trim().IsEmpty()) { AnsiConsole.Markup("\n\t" + info.Replace("\n", "\n\t") + "\n\n"); }
             AnsiConsole.Write("\n\n");
         }
@@ -248,16 +248,16 @@ namespace GalaxyWiki.CLI
                             double yn = 2.0 * (py / (double)canvasW) - 1.0;
                             double d2 = xn * xn + yn * yn;
                             if (d2 >= 1.0)
-                            {
+                            { // Background
                                 if (glow)
                                 {
                                     float bg = (float)Math.Pow(d2, 2) / 2.0f;
                                     c.SetPixel(px, py, Color.Orange1.Blend(Color.Black, Math.Clamp(bg, 0.0f, 1.0f)));
                                 }
-                                continue; // Background
+                                continue;
                             }
 
-                            // Compute z so that (xn, yn, z) lies on a unit sphere.
+                            // Compute z so that (xn, yn, z) lies on a unit sphere
                             double z = Math.Sqrt(1.0 - xn * xn - yn * yn);
 
                             // Apply rotation matrix
@@ -512,6 +512,48 @@ namespace GalaxyWiki.CLI
             );
 
             return selection;
+        }
+
+        // Returns (newContent, changed) tuple
+        public static (string, bool) OpenExternalEditor(string originalContent)
+        {
+            string tempFilePath = System.IO.Path.GetTempFileName();
+            File.WriteAllText(tempFilePath, originalContent);
+
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = "explorer",
+                Arguments = $"\"{tempFilePath}\""
+            };
+
+            Process? editorProcess = null;
+            try { editorProcess = Process.Start(startInfo); }
+            catch (Exception ex) { Err("LAUNCH", "Failed to launch editor", ex.Message); }
+            if (editorProcess == null) return (originalContent, false);
+
+            var rule = new Rule("[green bold]Content opened in default editor[/]");
+            rule.Style = Style.Parse("green");
+            AnsiConsole.Write(rule);
+
+            bool done = false;
+            while (!done) { done = AnsiConsole.Prompt(new ConfirmationPrompt("Are you done editing?")); }
+
+            // Try to close the editor if it's still open
+            try
+            {
+                if (editorProcess != null && !editorProcess.HasExited)
+                {
+                    editorProcess.Kill(true);
+                    editorProcess.WaitForExit();
+                }
+            }
+            catch { }
+
+            string newContent = File.ReadAllText(tempFilePath);
+            try { File.Delete(tempFilePath); } catch { } // Cleanup
+
+            bool contentChanged = !string.Equals(originalContent, newContent, StringComparison.Ordinal);
+            return (newContent, contentChanged);
         }
 
         public static void ShowHelp()
