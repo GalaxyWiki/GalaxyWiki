@@ -286,25 +286,37 @@ jobs:
             --command-id "$DOWNLOAD_CMD_ID" \
             --instance-id "${{ env.INSTANCE_ID }}" \
             --query "Status"
+
+          # Create a script file for the Docker commands
+          cat > docker_commands.sh << 'EOF'
+          cd /tmp
+          sudo docker system prune --force
+          sudo gunzip -c galaxywiki-api-image.tar.gz | sudo docker load
+          sudo docker rm -f galaxywiki-api-container || true
+          sudo docker run -d \
+            -e CLIENT_ID='CLIENT_ID_VALUE' \
+            -e CLIENT_SECRET='CLIENT_SECRET_VALUE' \
+            -e DB_CONNECTION_STRING='DB_CONNECTION_VALUE' \
+            -e REDIRECT_URI='REDIRECT_URI_VALUE' \
+            -p 80:80 -p 443:443 \
+            --name galaxywiki-api-container \
+            galaxywiki-api-image
+          EOF
+
+          # Replace placeholders with actual values
+          sed -i "s|CLIENT_ID_VALUE|${{ env.GOOGLE_CLIENT_ID }}|g" docker_commands.sh
+          sed -i "s|CLIENT_SECRET_VALUE|${{ env.GOOGLE_CLIENT_SECRET }}|g" docker_commands.sh
+          sed -i "s|DB_CONNECTION_VALUE|Host=${{ needs.terraform.outputs.dbhost }};Port=5432;Database=galaxy;Username=${{ env.DB_USERNAME }};Password=${{ env.DB_PASSWORD }};|g" docker_commands.sh
+          sed -i "s|REDIRECT_URI_VALUE|https://${{ needs.terraform.outputs.ec2host }}/|g" docker_commands.sh
           
-          # Step 2: Load and run the Docker container
+          # Upload the script to S3
+          aws s3 cp docker_commands.sh s3://galaxywiki-artifacts/docker_commands.sh
+          
+          # Step 2: Execute the deployment script
           DOCKER_CMD_ID=$(aws ssm send-command \
             --instance-ids "${{ env.INSTANCE_ID }}" \
             --document-name "AWS-RunShellScript" \
-            --parameters 'commands=["
-              cd /tmp && 
-              sudo docker system prune --force && 
-              sudo gunzip -c galaxywiki-api-image.tar.gz | sudo docker load &&
-              sudo docker rm -f galaxywiki-api-container || true &&
-              sudo docker run -d \
-                -e CLIENT_ID=\"${{ env.GOOGLE_CLIENT_ID }}\" \
-                -e CLIENT_SECRET=\"${{ env.GOOGLE_CLIENT_SECRET }}\" \
-                -e DB_CONNECTION_STRING=\"Host=${{ needs.terraform.outputs.dbhost }};Port=5432;Database=galaxy;Username=${{ env.DB_USERNAME }};Password=${{ env.DB_PASSWORD }};\" \
-                -e REDIRECT_URI=\"https://${{ needs.terraform.outputs.ec2host }}/\" \
-                -p 80:80 -p 443:443 \
-                --name galaxywiki-api-container \
-                galaxywiki-api-image
-            "]' \
+            --parameters 'commands=["sudo aws s3 cp s3://galaxywiki-artifacts/docker_commands.sh /tmp/ && sudo chmod +x /tmp/docker_commands.sh && sudo /tmp/docker_commands.sh"]' \
             --query "Command.CommandId" \
             --output text)
           
