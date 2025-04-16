@@ -383,6 +383,8 @@ namespace GalaxyWiki.CLI
             }
 
             return Boxed(table, $"[bold cyan] {title} ({comments.Count}) [/]", Color.DarkOrange);
+
+            // Panel panel = new()
         }
 
         //---------- Wiki Page ----------//

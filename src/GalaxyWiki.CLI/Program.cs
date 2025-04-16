@@ -464,28 +464,28 @@ namespace GalaxyWiki.CLI
             var table = new Table();
             table.AddColumn("Type");
             table.AddColumn("Name");
-            table.AddColumn("ID");
+            // table.AddColumn("ID");
             
             foreach (var child in children)
             {
                 string emoji = TUI.BodyTypeToEmoji(child.BodyType);
-                string id = child.Id.ToString();
+                // string id = child.Id.ToString();
                 
                 // If the name contains spaces, suggest using quotes
                 string name = child.BodyName;
-                if (name.Contains(" "))
+                if (name.Contains(' '))
                 {
                     name = $"{name} [grey](use: cd '{name}')[/]";
                 }
                 
                 table.AddRow(
                     new Text(emoji), 
-                    new Markup(name), 
-                    new Text(id)
+                    new Markup(name)
+                    // new Text(id)
                 );
             }
             
-            AnsiConsole.Write(table);
+            AnsiConsole.Write(table.RoundedBorder());
         }
 
         static async Task HandleShowCommand(string args)
