@@ -34,8 +34,10 @@ namespace GalaxyWiki.CLI
             while(running) {
                 // Get the current path to display in prompt
                 string promptPath = CommandLogic.GetCurrentPath();
-                
-                var inp = AnsiConsole.Ask<string>("[lightcyan1]Enter a command[/] [springgreen3_1]❯❯[/]");
+                 AnsiConsole.Markup($"[lightcyan1]{promptPath}[/] [springgreen3_1]❯❯[/] ");
+                //var inp = AnsiConsole.Ask<string>("[lightcyan1]Enter a command[/] [springgreen3_1]❯❯[/]");
+                // Use custom input method with command history support
+                var inp = ReadLineWithHistory();
                 var parts = inp.Trim().Split(' ', 2);
                 //var cmd = parts[0].ToLower();
                 var searchTerm = parts.Length > 1 ? parts[1] : string.Empty;
@@ -44,8 +46,7 @@ namespace GalaxyWiki.CLI
                 // Display prompt
                 AnsiConsole.Markup($"[lightcyan1]{promptPath}[/] [springgreen3_1]❯❯[/] ");
                 
-                // Use custom input method with command history support
-                // var inp = ReadLineWithHistory();
+                
                 
                 // Skip empty input
                 if (string.IsNullOrWhiteSpace(inp))
@@ -279,8 +280,8 @@ namespace GalaxyWiki.CLI
                 // var commentResults = _searchService.SearchCommentDtos(commentDtos, searchTerm); // Uncomment for comments
 
                 var table = new Table().Expand();
-                table.AddColumn(new TableColumn("[yellow]Type[/]").Width(15));
-                table.AddColumn(new TableColumn("[yellow]Name[/]"));
+                // table.AddColumn(new TableColumn("[yellow]Type[/]").Width(15));
+                table.AddColumn(new TableColumn("[yellow]Celestial Body Name[/]"));
                  
 
                 bool foundResults = false;
@@ -288,7 +289,7 @@ namespace GalaxyWiki.CLI
                 foreach (var result in bodyResults)
                 {
                     table.AddRow(
-                        "Celestial Body",
+                        // "Celestial Body",
                         Markup.Escape(result.Item.BodyName)
                     );
                     foundResults = true;
