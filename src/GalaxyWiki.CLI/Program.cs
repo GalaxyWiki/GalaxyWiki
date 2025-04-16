@@ -272,13 +272,9 @@ namespace GalaxyWiki.CLI
             {
                 // Fetch data
                 var celestialBodiesMap = await GetAllCelestialBodies();
-                //var starSystems = await ApiClient.GetAllStarSystems(); // Assuming this works or handles errors
-                // var commentDtos = await ApiClient.GetAllCommentDtos(); // Uncomment if you want to search comments too
-
+              
                 var bodyResults = _searchService.SearchCelestialBodies(celestialBodiesMap.Values, searchTerm);
-                //var systemResults = _searchService.SearchStarSystems(starSystems, searchTerm);
-                // var commentResults = _searchService.SearchCommentDtos(commentDtos, searchTerm); // Uncomment for comments
-
+             
                 var table = new Table().Expand();
                 // table.AddColumn(new TableColumn("[yellow]Type[/]").Width(15));
                 table.AddColumn(new TableColumn("[yellow]Celestial Body Name[/]"));
