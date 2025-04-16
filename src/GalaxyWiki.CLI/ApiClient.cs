@@ -155,7 +155,7 @@ public static class ApiClient
             List<Revision>? revisions = JsonSerializer
                 .Deserialize<List<Revision>>(jsonString, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
-            return revisions ?? new List<Revision>();
+            return revisions ?? [];
         }
         catch (Exception ex)
         {

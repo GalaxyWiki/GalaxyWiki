@@ -904,7 +904,7 @@ namespace GalaxyWiki.Cli
         static async Task HandleRevisionCommand(string args)
         {
             // Parse arguments to check for -n or --name flag
-            var argParts = args.Split(new[] { ' ' }, 2, StringSplitOptions.RemoveEmptyEntries);
+            var argParts = args.Split([' '], 2, StringSplitOptions.RemoveEmptyEntries);
             
             // Check if a specific celestial body was requested
             if (argParts.Length == 2 && (argParts[0].Equals("-n", StringComparison.OrdinalIgnoreCase) || 
@@ -938,7 +938,7 @@ namespace GalaxyWiki.Cli
             {
                 var revisions = await ApiClient.GetRevisionsByBodyNameAsync(bodyName);
                 
-                if (revisions == null || !revisions.Any())
+                if (revisions == null || revisions.Count == 0)
                 {
                     TUI.Err("REVISION", $"No revisions found for '{bodyName}'.");
                     return;
@@ -955,7 +955,7 @@ namespace GalaxyWiki.Cli
                 foreach (var revision in revisions.OrderByDescending(r => r.CreatedAt))
                 {
                     var previewContent = revision.Content?.Length > 50 
-                        ? revision.Content.Substring(0, 50) + "..." 
+                        ? revision.Content[..50] + "..." 
                         : revision.Content ?? "";
                     
                     table.AddRow(
