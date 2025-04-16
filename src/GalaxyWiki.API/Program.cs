@@ -17,14 +17,8 @@ builder.Services.AddControllers();
 // Configure NHibernate
 builder.Services.AddSingleton<ISessionFactory>(provider =>
 {
-    // First try to get connection string from environment variables
-    var connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING");
-    
-    // Fall back to configuration if environment variable is not set
-    if (string.IsNullOrEmpty(connectionString))
-    {
-        connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-    }
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
 
     return Fluently.Configure()
         .Database(PostgreSQLConfiguration.Standard
@@ -62,7 +56,7 @@ builder.Services.AddScoped<StarSystemRepository>();
 
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<UserService>();
-builder.Services.AddScoped<IContentRevisionService, ContentRevisionService>();
+builder.Services.AddScoped<ContentRevisionService>();
 builder.Services.AddScoped<CommentService>();
 builder.Services.AddScoped<StarSystemService>();
 builder.Services.AddScoped<CelestialBodyService>();

@@ -1,19 +1,15 @@
 using FluentNHibernate.Conventions;
 using GalaxyWiki.Core.Entities;
 using NHibernate.Criterion;
+using NHibernate.Util;
 using Spectre.Console;
 using Spectre.Console.Rendering;
 using System.Text.RegularExpressions;
-using System.Diagnostics;
 
 public class IdMap<T> : Dictionary<int, T> {}
 
 public static class TUI {
     //==================== Utils ====================//
-
-    static int Mod(int x, int m) => (x%m + m)%m;
-
-    static Color Shade(Color col, float amt) => Color.Default.Blend(col, amt);
 
     // Wrap an arbitrary element in a TUI box
     public static Panel Boxed(IRenderable elem, String title = "", Color? color = null, Justify headAlign = Justify.Center) {
@@ -49,11 +45,8 @@ public static class TUI {
 
     // Format content with Spectre markup
     private static string FormatContentWithSpectre(string content) {
-        // Decode & sanitize
-        content = content
-            .Replace("\\n", "\n")
-            .Replace("[", "[[")
-            .Replace("]", "]]");
+        // Replace literal '\n' with actual newline characters
+        content = content.Replace("\\n", "\n");
         
         // Split text into paragraphs
         var paragraphs = content.Split('\n', StringSplitOptions.RemoveEmptyEntries);
@@ -136,7 +129,7 @@ public static class TUI {
         AnsiConsole.Write("\n\n");
     }
     public static void Warn(string name, string desc, string info = "") {
-        AnsiConsole.Markup($"[[[bold orange1]{name.ToUpper()} WARN[/]]]: [orange3]{desc}[/]");
+        AnsiConsole.Markup($"[[[bold darkorange3]{name.ToUpper()} WARN[/]]]: [gold3]{desc}[/]");
         if (!info.Trim().IsEmpty()) { AnsiConsole.Markup("\n\t" + info.Replace("\n", "\n\t") + "\n\n"); }
         AnsiConsole.Write("\n\n");
     }
@@ -167,108 +160,11 @@ public static class TUI {
     //---------- Image ----------//
     public static Panel Image(string path, string? title = null) {
         return Boxed(
-            new CanvasImage(path).MaxWidth(40),
+            new CanvasImage(path).MaxWidth(12),
             title ?? "[cyan] :camera: Image [/]",
             Color.SkyBlue1
         );
     }
-
-    public static async Task RenderCelestialBody(string bodyName, int bodyType, int canvasW = 50) {
-        bool isAnim = false;
-        bool glow = false;
-        string img;
-
-        switch(bodyType) {
-            case 4: // Moon
-            case 2: // Star
-            case 3: // Planet
-            case 7: // Dwarf planet
-                string fileName = Regex.Replace(bodyName.ToLower(), @"\s+", "_");
-                string filePath = $"..\\..\\assets\\maps\\{fileName}.png";
-                img = File.Exists(filePath) ? filePath : "<generate>";
-                glow = bodyType == 2; // Star
-                isAnim = true;
-            break;
-
-            case 1:  img = "..\\..\\assets\\sprites\\galaxy.png";       break;
-            case 5:  img = "..\\..\\assets\\sprites\\satellite.png";    break;
-            case 6:  img = "..\\..\\assets\\sprites\\black_hole.png";   break;
-            case 8:  img = "..\\..\\assets\\sprites\\asteroid.png";     break;
-            case 9:  img = "..\\..\\assets\\sprites\\comet.png";        break;
-            case 10: img = "..\\..\\assets\\sprites\\nebula.png";       break;
-            case 11: img = "..\\..\\assets\\sprites\\universe.png";     break;
-            default: img = "..\\..\\assets\\sprites\\default.png";      break;
-        };
-
-        string title = $"[cyan] {BodyTypeToEmoji(bodyType)} {bodyName} [/]";
-        if (isAnim) { // Display anim sphere
-            Color[,] tex;
-            if (img == "<generate>") { tex = TextureUtils.GenerateTextureFromSeed(bodyName); }      // Generate texture
-            else                     { tex = TextureUtils.LoadSphericalTexture(img, 200, 100); }    // Load texture
-
-            await AnimSphere(tex, title, glow, canvasW);
-        }
-        else { AnsiConsole.Write(Align.Center(Image(img, title))); } // Display static image
-    }
-
-    public static async Task AnimSphere(Color[,] tex, string title, bool glow = false, int canvasW = 50) {
-        int tw = tex.GetLength(0), th = tex.GetLength(1);
-        var c = new Canvas(canvasW, canvasW);
-
-        // Render
-        await AnsiConsole.Live(Boxed(c, title)).StartAsync(async ctx => {
-            for (float frame = 0.0f; frame < 10.0f; frame += 0.1f) {
-                for (int px = 0; px < canvasW; px++)
-                for (int py = 0; py < canvasW; py++) {
-                    double xn = 2.0 * (px / (double)canvasW) - 1.0;
-                    double yn = 2.0 * (py / (double)canvasW) - 1.0;
-                    double d2 = xn * xn + yn * yn;
-                    if (d2 >= 1.0) { // Background
-                        if (glow) {
-                            float bg = (float)Math.Pow(d2, 2) / 2.0f;
-                            c.SetPixel(px, py, Color.Orange1.Blend(Color.Black, Math.Clamp(bg, 0.0f, 1.0f)));
-                        }
-                        continue;
-                    }
-
-                    // Compute z so that (xn, yn, z) lies on a unit sphere
-                    double z = Math.Sqrt(1.0 - xn * xn - yn * yn);
-
-                    // Apply rotation matrix
-                    double cosF = Math.Cos(frame);
-                    double sinF = Math.Sin(frame);
-                    double rx = cosF * xn + sinF * z;
-                    double ry = yn;
-                    double rz = -sinF * xn + cosF * z;
-
-                    // Compute spherical coords
-                    double u = 0.5 + Math.Atan2(rz, rx) / (2 * Math.PI);    // Theta about y-axis
-                    double v = Math.Acos(ry) / Math.PI;                     // Phi around y-axis
-
-                    // Map uv to tex
-                    int tx = ((int)(u * tw)) % tw;
-                    int ty = th - ((int)(v * th)) % th;
-                    if (tx < 0) tx += tw;
-                    if (ty < 0) ty += th;
-
-                    // Lighting
-                    double lx = -0.25, ly = -0.4 + 0.2*Math.Sin(frame), lz = 1;
-                    double len = Math.Sqrt(lx*lx + ly*ly + lz*lz);
-                    lx /= len; ly /= len; lz /= len;
-                    double dot = xn*lx + yn*ly + z*lz;
-                    double light = glow ? 1 : Math.Sqrt(Math.Max(0.05, dot));
-
-                    Color p = Shade(tex[tx, ty], (float)light);
-                    c.SetPixel(px, py, p);
-                }
-
-                // Update
-                ctx.Refresh();
-                await Task.Delay(10);
-            }
-        });
-    }
-
 
     //---------- Article ----------//
     public static Panel Article(string bodyName, int? bodyType, string? content) {
@@ -336,9 +232,9 @@ public static class TUI {
         
         foreach (var comment in comments)
         {
-            string author = string.IsNullOrEmpty(comment.DisplayName) ? 
+            string author = string.IsNullOrEmpty(comment.UserDisplayName) ? 
                 $"[grey]Anonymous[/]" : 
-                $"[bold]{comment.DisplayName}[/]";
+                $"[bold]{comment.UserDisplayName}[/]";
             string formattedDate = comment.CreatedDate.ToString("MMM d, yyyy HH:mm");
             string formattedComment = FormatCommentWithSpectre(comment.CommentText);
             
@@ -360,12 +256,16 @@ public static class TUI {
         var layout = new Layout("Page")
             .SplitRows(
                 new Layout("Title").Ratio(1),
-                new Layout("Article").Ratio(10),
+                new Layout("Content").SplitColumns(
+                    new Layout("Article").Ratio(2),
+                    new Layout("Meta").Ratio(1)
+                ).Ratio(10),
                 new Layout("Comments").Ratio(10)
             );
         
         layout["Title"].Update(AuthorInfo(rev.AuthorDisplayName ?? "Unknown", rev.CreatedAt));
         layout["Article"].Update(Article(rev.CelestialBodyName ?? "Unknown", bodyType, rev.Content));
+        layout["Meta"].Update(Image("../../assets/earth.png"));
         layout["Comments"].Update(CommentsPanel(comments));
 
         return Boxed(layout);
@@ -472,74 +372,6 @@ public static class TUI {
         );
         
         return selection;
-    }
-
-    // Returns (newContent, changed) tuple
-    public static (string, bool) OpenExternalEditor(string originalContent)
-    {
-        string tempFilePath = System.IO.Path.GetTempFileName();
-        File.WriteAllText(tempFilePath, originalContent);
-
-        var startInfo = new ProcessStartInfo {
-            FileName = "explorer",
-            Arguments = $"\"{tempFilePath}\""
-        };
-
-        Process? editorProcess = null;
-        try                  { editorProcess = Process.Start(startInfo); }
-        catch (Exception ex) { Err("LAUNCH", "Failed to launch editor", ex.Message); }
-        if (editorProcess == null) return (originalContent, false); 
-
-        var rule = new Rule("[green bold]Content opened in default editor[/]");
-        rule.Style = Style.Parse("green");
-        AnsiConsole.Write(rule);
-
-        bool done = false;
-        while (!done) { done = AnsiConsole.Prompt(new ConfirmationPrompt("Are you done editing?")); }
-
-        // Try to close the editor if it's still open
-        try {
-            if (editorProcess != null && !editorProcess.HasExited) {
-                editorProcess.Kill(true);
-                editorProcess.WaitForExit();
-            }
-        } catch {}
-
-        string newContent = File.ReadAllText(tempFilePath);
-        try { File.Delete(tempFilePath); } catch {} // Cleanup
-
-        bool contentChanged = !string.Equals(originalContent, newContent, StringComparison.Ordinal);
-        return (newContent, contentChanged);
-    }
-
-    public static void ShowHelp()
-    {
-        AnsiConsole.Clear();
-        AnsiConsole.Write(new FigletText("GalaxyWiki CLI").Centered());
-        AnsiConsole.WriteLine();
-        
-        var table = new Table()
-            .Border(TableBorder.Rounded)
-            .BorderColor(Color.Grey)
-            .AddColumn(new TableColumn("Command").LeftAligned())
-            .AddColumn(new TableColumn("Description").LeftAligned());
-            
-        table.AddRow("cd <path>", "Navigate to a celestial body");
-        table.AddRow("ls", "List bodies in current location");
-        table.AddRow("info, show", "Show info about current location");
-        table.AddRow("show -n <name>", "Show info about a specific body");
-        table.AddRow("render", "Show visual representation of current body");
-        table.AddRow("pwd", "Print current path");
-        table.AddRow("comment <text>", "Add a comment to the current body");
-        table.AddRow("revision", "Show revision history for current body");
-        table.AddRow("revision -n <name>", "Show revision history for a specific body");
-        table.AddRow("find <term>", "Search for celestial bodies");
-        table.AddRow("create", "Create a new revision for current body");
-        table.AddRow("edit", "Edit the current body's content");
-        table.AddRow("login", "Login to the system");
-        table.AddRow("exit, quit", "Exit the application");
-        
-        AnsiConsole.Write(table);
     }
 
 }

@@ -7,18 +7,11 @@ using System.Threading.Tasks;
 
 namespace GalaxyWiki.API.Services
 {
-    public class CelestialBodyService
+    public class CelestialBodyService(CelestialBodyRepository celestialBodyRepository, AuthService authService, BodyTypeRepository bodyTypesRepository)
     {
-        private readonly CelestialBodyRepository _celestialBodyRepository;
-        private readonly AuthService _authService;
-        private readonly BodyTypeRepository _bodyTypeRepository;
-
-        public CelestialBodyService(CelestialBodyRepository celestialBodyRepository, AuthService authService, BodyTypeRepository bodyTypesRepository)
-        {
-            _celestialBodyRepository = celestialBodyRepository;
-            _authService = authService;
-            _bodyTypeRepository = bodyTypesRepository;
-        }
+        private readonly CelestialBodyRepository _celestialBodyRepository = celestialBodyRepository;
+        private readonly AuthService _authService = authService;
+        private readonly BodyTypeRepository _bodyTypeRepository = bodyTypesRepository;
 
         public async Task<IEnumerable<(CelestialBodies CelestialBody, BodyTypes? BodyType)>> GetAll()
         {

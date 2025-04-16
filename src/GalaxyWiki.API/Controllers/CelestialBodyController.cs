@@ -11,14 +11,9 @@ namespace GalaxyWiki.Api.Controllers
 {
     [Route("api/celestial-body")]
     [ApiController]
-    public class CelestialBodyController : ControllerBase
+    public class CelestialBodyController(CelestialBodyService celestialBodyService) : ControllerBase
     {
-        private readonly CelestialBodyService _celestialBodyService;
-
-        public CelestialBodyController(CelestialBodyService celestialBodyService)
-        {
-            _celestialBodyService = celestialBodyService;
-        }
+        private readonly CelestialBodyService _celestialBodyService = celestialBodyService;
 
         // GET: api/celestial-body
         [HttpGet]

@@ -33,7 +33,7 @@ namespace GalaxyWiki.Api.Repositories
         public async Task<IEnumerable<Comments>> GetByUser(string userId)
         {
             return await _session.Query<Comments>()
-                .Where(c => c.Author.Id == userId)
+                .Where(c => c.UserId == userId)
                 .ToListAsync();
         }
 

@@ -1,97 +1,33 @@
-using System.Diagnostics;
-using System.Net;
-using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using System.Text;
 using System.Text.Json;
 using GalaxyWiki.Core.Entities;
-using Spectre.Console;
 
 public static class ApiClient
 {
     private static readonly HttpClient httpClient = new HttpClient();
 
-    public static string JWT { get; set;} = "";
-    private static string? clientId;
-    private static string? apiUrl;
-    private static string? redirectUri;
-
-    static ApiClient()
-    {
-        clientId = Environment.GetEnvironmentVariable("CLIENT_ID");
-        apiUrl = Environment.GetEnvironmentVariable("API_URL");
-        redirectUri = Environment.GetEnvironmentVariable("REDIRECT_URI");
-
-        if (string.IsNullOrEmpty(clientId))
-        {
-            TUI.Err("ENV", "API_URL environment variable is not set.");
-            throw new Exception("API_URL environment variable is not set.");
-        }   
-        if (string.IsNullOrEmpty(apiUrl))
-        {
-            TUI.Err("ENV", "API_URL environment variable is not set.");
-            throw new Exception("API_URL environment variable is not set.");
-        }
-        if (string.IsNullOrEmpty(redirectUri))
-        {
-            TUI.Err("ENV", "REDIRECT_URL environment variable is not set.");
-            throw new Exception("REDIRECT_URL environment variable is not set.");
-        }
-    }
-        
     //==================== Auth ====================//
-    public static async Task LoginAsync()
+    public static async Task LoginAsync(string jwt)
     {
-        var scopes = "openid email profile";
+        var baseUrl = Environment.GetEnvironmentVariable("API_URL");
 
-        var authUrl = $"https://accounts.google.com/o/oauth2/v2/auth?" +
-                    $"response_type=code&client_id={clientId}&" +
-                    $"redirect_uri={Uri.EscapeDataString(redirectUri!)}&" +
-                    $"scope={Uri.EscapeDataString(scopes)}&" +
-                    $"access_type=offline";
-
-        using var listener = new HttpListener();
-        listener.Prefixes.Add(redirectUri!);
-        listener.Start();
-
-        AnsiConsole.Write(new Rule("[gold3]Opening browser for google login...[/] "));
-        Process.Start(new ProcessStartInfo(authUrl) { UseShellExecute = true });
-
-        var context = await listener.GetContextAsync();
-        var authCode = context.Request.QueryString["code"];
-        var responseString = "<html><body>Login successful. You can close this window.</body></html>";
-        var buffer = Encoding.UTF8.GetBytes(responseString);
-        context.Response.OutputStream.Write(buffer);
-        context.Response.OutputStream.Close();
-        listener.Stop();
-
-        Console.WriteLine($"Received auth code: {authCode}");
-
-        AnsiConsole.Write(new Rule("[cyan]Logging into GalaxyWiki api...[/]"));
-
-        using var http = new HttpClient();
-        var res = await http.PostAsync(apiUrl+"/login",
-            new StringContent(JsonSerializer.Serialize(new { authCode }), Encoding.UTF8, "application/json"));
-
-        var json = await res.Content.ReadAsStringAsync();
-        JWT = JsonDocument.Parse(json).RootElement.GetProperty("idToken").GetString()?? "";
-        if (JWT == "")
+        if (string.IsNullOrEmpty(baseUrl))
         {
-            TUI.Err("JWT", "Error getting JWT. Response did not contain a token.");
+            TUI.Err("ENV", "API_URL environment variable is not set.");
             return;
         }
-        var userName = JsonDocument.Parse(json).RootElement.GetProperty("name").GetString();
 
-        Console.WriteLine($"JWT from API: \n{JWT}");
+        var loginResponse = await httpClient.PostAsJsonAsync($"{baseUrl}/login", new { idToken = jwt });
+        var loginResult = await loginResponse.Content.ReadAsStringAsync();
 
-        AnsiConsole.Write(new Rule("[green]Logged in successfully. Welcome " + userName + ".[/]"));
+        Console.WriteLine($"Login response: {loginResult}");
     }
 
     //==================== Getters ====================//
     // Get a JSON string from the given API endpoint
     public static async Task<string> GetJson(string endpoint) {
         // Fetch
-        HttpResponseMessage resp = await httpClient.GetAsync($"{apiUrl}/api{endpoint}");
+        HttpResponseMessage resp = await httpClient.GetAsync($"http://localhost:5216/api{endpoint}");
         resp.EnsureSuccessStatusCode();
         return await resp.Content.ReadAsStringAsync();
     }
@@ -115,12 +51,12 @@ public static class ApiClient
         return res;
     }
     
-    public static async Task<Revision?> GetRevisionAsync(string endpoint)
+    public static async Task<Revision?> GetRevisionAsync(string apiUrl)
     {
         try
         {
             // Perform the HTTP GET request
-            HttpResponseMessage response = await httpClient.GetAsync(apiUrl + endpoint);
+            HttpResponseMessage response = await httpClient.GetAsync(apiUrl);
             response.EnsureSuccessStatusCode();
 
             // Read the JSON response string
@@ -136,31 +72,6 @@ public static class ApiClient
         {
             TUI.Err("GET", "Couldn't retrieve revision", ex.Message);
             return null;
-        }
-    }
-
-    public static async Task<List<Revision>> GetRevisionsByBodyNameAsync(string bodyName)
-    {
-        try
-        {
-            // Performing the HTTP GET request
-            string endpoint = $"/api/revision/by-name/{Uri.EscapeDataString(bodyName)}";
-            HttpResponseMessage response = await httpClient.GetAsync(apiUrl + endpoint);
-            response.EnsureSuccessStatusCode();
-
-            // Reading the JSON response string
-            string jsonString = await response.Content.ReadAsStringAsync();
-
-            // Deserialising the JSON into a List<Revision> object
-            List<Revision>? revisions = JsonSerializer
-                .Deserialize<List<Revision>>(jsonString, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-
-            return revisions ?? [];
-        }
-        catch (Exception ex)
-        {
-            TUI.Err("GET", "Couldn't retrieve revisions", ex.Message);
-            return new List<Revision>();
         }
     }
 
@@ -201,26 +112,17 @@ public static class ApiClient
     {
         try
         {
-            if (JWT == "")
-            {
-                TUI.Err("AUTH", "Please login to post a comment.");
-                return null;
-            }
-            
             var commentRequest = new CreateCommentRequest
             {
                 CommentText = commentText,
                 CelestialBodyId = celestialBodyId
             };
             
-            var request = new HttpRequestMessage(HttpMethod.Post, apiUrl + "/api/comment")
-            {
-                Content = JsonContent.Create(commentRequest)
-            };
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", JWT);
-
-            var response = await httpClient.SendAsync(request);
-
+            HttpResponseMessage response = await httpClient.PostAsJsonAsync(
+                "http://localhost:5216/api/comment", 
+                commentRequest
+            );
+            
             response.EnsureSuccessStatusCode();
             
             string jsonResponse = await response.Content.ReadAsStringAsync();
@@ -244,7 +146,7 @@ public class Comment
     public string CommentText { get; set; } = string.Empty;
     public DateTime CreatedDate { get; set; }
     public string UserId { get; set; } = string.Empty;
-    public string DisplayName { get; set; } = string.Empty;
+    public string UserDisplayName { get; set; } = string.Empty;
     public int CelestialBodyId { get; set; }
     public string CelestialBodyName { get; set; } = string.Empty;
 }

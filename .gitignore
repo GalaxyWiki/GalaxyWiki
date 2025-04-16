@@ -14,4 +14,3 @@ appsettings*
 !.vscode/launch.json
 
 *.pem
-publish

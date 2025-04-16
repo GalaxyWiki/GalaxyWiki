@@ -10,8 +10,8 @@ namespace GalaxyWiki.API.Controllers
     [ApiController]
     public class RevisionsController : ControllerBase
     {
-        private readonly IContentRevisionService _contentRevisionService;
-        public RevisionsController(IContentRevisionService contentRevisionService)
+        private readonly ContentRevisionService _contentRevisionService;
+        public RevisionsController(ContentRevisionService contentRevisionService)
         {
             _contentRevisionService = contentRevisionService;
         }
@@ -20,19 +20,17 @@ namespace GalaxyWiki.API.Controllers
         public async Task<IActionResult> GetById(int id)
         {
             var revision = await _contentRevisionService.GetRevisionByIdAsync(id);
+            if (revision == null)
+                return NotFound(new { error = "Revision not found." });
 
-            if (revision == null) 
-                return NotFound();
-
-            var result = new ContentRevisionDto
-            {
-                Id = revision.Id,
-                Content = revision.Content,
+            return Ok(new
+            {   
+                revision.Id,
+                revision.Content,
+                revision.CreatedAt,
                 CelestialBodyName = revision.CelestialBody.BodyName,
                 AuthorDisplayName = revision.Author.DisplayName
-            };
-
-            return Ok(result);
+            });
         }
 
         [HttpGet("by-name/{celestialBodyPath}")]
@@ -41,17 +39,15 @@ namespace GalaxyWiki.API.Controllers
             var revisions = await _contentRevisionService.GetRevisionsByCelestialBodyAsync(celestialBodyPath);
 
             if (revisions == null || !revisions.Any())
-            {
-                return NotFound(new ContentRevisionDto());
-            }
+                return NotFound(new { error = "No revisions found for the specified celestial body." });
 
-            return Ok(revisions.Select(r => new ContentRevisionDto
+            return Ok(revisions.Select(r => new
             {
-                Id = r.Id,
-                Content = r.Content,
+                r.Id,
+                r.Content,
+                r.CreatedAt,
                 CelestialBodyName = r.CelestialBody.BodyName,
-                AuthorDisplayName = r.Author.DisplayName,
-                CreatedAt = r.CreatedAt
+                AuthorDisplayName = r.Author.DisplayName
             }));
         }
 
@@ -63,17 +59,12 @@ namespace GalaxyWiki.API.Controllers
 
             var revision = await _contentRevisionService.CreateRevision(request, authorId);
 
-            var dto = new ContentRevisionDto
+            return CreatedAtAction(nameof(GetById), new { id = revision.Id }, new
             {
-                Id = revision.Id,
-                Content = revision.Content,
-                CreatedAt = revision.CreatedAt,
-                CelestialBodyName = revision.CelestialBody.BodyName,
-                AuthorDisplayName = revision.Author.DisplayName
-            };
-
-            return CreatedAtAction(nameof(GetById), new { id = dto.Id }, dto);
+                revision.Id,
+                revision.CreatedAt,
+                revision.Content
+            });
         }
-
     }
 }

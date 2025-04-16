@@ -18,16 +18,14 @@ namespace GalaxyWiki.API.Controllers
       [HttpPost("/login")]
       public async Task<IActionResult> Login([FromBody] LoginRequest request)
       {
-        if (string.IsNullOrWhiteSpace(request.AuthCode))
-            return BadRequest("Auth code is required.");
+        if (string.IsNullOrWhiteSpace(request.IdToken))
+            return BadRequest("ID token is required.");
 
-        var result = await _authService.Login(request.AuthCode);
-        
+        var userName = await _authService.Login(request.IdToken);
         return Ok(new
         {
             message = "Login successful",
-            idToken = result[0],
-            name = result[1]
+            name = userName
         });
       }
   }
