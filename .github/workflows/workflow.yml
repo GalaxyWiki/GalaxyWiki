@@ -1,0 +1,284 @@
+name: "GalaxyWiki Deployment Pipeline"
+
+on:
+  push:
+    branches:
+      - main
+      - tevlen-prod
+
+jobs:
+  terraform:
+    permissions:
+      id-token: write
+      contents: read
+    name: "Manage AWS Resources"
+    runs-on: ubuntu-latest
+    outputs:
+      dbhost: ${{ steps.tf_outputs.outputs.dbhost }}
+      ec2host: ${{ steps.tf_outputs.outputs.ec2host }}
+    defaults:
+      run:
+        working-directory: infra
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: arn:aws:iam::179530787873:role/gh-actions-role
+          aws-region: eu-west-1
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.0.1
+          terraform_wrapper: false
+
+      - name: Terraform Init
+        id: init
+        run: terraform init
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve
+
+      - name: Capture Terraform Outputs
+        id: tf_outputs
+        run: |
+          echo "dbhost=$(terraform output -raw database_host)" >> $GITHUB_OUTPUT
+          echo "ec2host=$(terraform output -raw ec2_host)" >> $GITHUB_OUTPUT
+
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        
+      - name: Setup .NET 9.0
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 9.0.203
+
+      - name: Run Unit Tests
+        run: dotnet test
+        working-directory: src/GalaxyWiki.Tests
+          
+  build-api:
+    name: Build API
+    runs-on: ubuntu-latest
+    needs: 
+      - terraform
+      - unit-tests
+    
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 9.0
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 9.0.203
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: arn:aws:iam::179530787873:role/gh-actions-role
+          aws-region: eu-west-1
+
+      - name: Get secrets from AWS Key Store
+        uses: aws-actions/aws-secretsmanager-get-secrets@v2
+        with:
+          secret-ids: |
+            DB_USERNAME, dbusername
+            DB_PASSWORD, dbpassword
+            GOOGLE_CLIENT_SECRET, googleclientsecret
+            GOOGLE_CLIENT_ID, googleclientid
+            EC2_PRIV_KEY, ec2privatekey
+
+      - name: Generate .env file
+        working-directory: src/GalaxyWiki.API
+        run: |
+          echo "CLIENT_ID=${{ env.GOOGLE_CLIENT_ID }}" > .env
+          echo "CLIENT_SECRET=${{ env.GOOGLE_CLIENT_SECRET }}" >> .env
+          echo "DB_CONNECTION_STRING=Host=${{ needs.terraform.outputs.dbhost }};Port=5432;Database=galaxy;Username=${{ env.DB_USERNAME }};Password=${{ env.DB_PASSWORD }};" >> .env
+          echo "REDIRECT_URI=https://${{ needs.terraform.outputs.ec2host }}/" >> .env
+
+      - name: Generate appsettings.Production.json
+        working-directory: src/GalaxyWiki.API
+        run: |
+          cat > appsettings.Production.json << EOF
+          {
+            "ConnectionStrings": {
+              "DefaultConnection": "Host=${{ needs.terraform.outputs.dbhost }};Port=5432;Database=galaxy;Username=${{ env.DB_USERNAME }};Password=${{ env.DB_PASSWORD }}"
+            },
+            "Logging": {
+              "LogLevel": {
+                "Default": "Information",
+                "Microsoft.AspNetCore": "Warning"
+              }
+            },
+            "AllowedHosts": "*"
+          }
+          EOF
+
+      - name: Write private key
+        run: |
+          echo "${{ env.EC2_PRIV_KEY }}" > galaxywiki-key.pem
+          chmod 600 galaxywiki-key.pem
+
+      - name: SSH into EC2 and Install Docker
+        run: |
+          ssh -o StrictHostKeyChecking=no -i galaxywiki-key.pem ec2-user@${{ needs.terraform.outputs.ec2host }} "sudo dnf update -y && sudo dnf install docker -y && sudo systemctl enable docker && sudo systemctl start docker"
+
+      - name: Create Dockerfile
+        run: |
+          cat > Dockerfile << EOF
+          FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS base
+          WORKDIR /app
+          EXPOSE 80
+          EXPOSE 443
+
+          FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+          WORKDIR /src
+          COPY ["src/GalaxyWiki.API/GalaxyWiki.API.csproj", "GalaxyWiki.API/"]
+          COPY ["src/GalaxyWiki.Core/GalaxyWiki.Core.csproj", "GalaxyWiki.Core/"]
+          RUN dotnet restore "GalaxyWiki.API/GalaxyWiki.API.csproj"
+          COPY src/ .
+          WORKDIR "/src/GalaxyWiki.API"
+          RUN dotnet build "GalaxyWiki.API.csproj" -c Release -o /app/build
+
+          FROM build AS publish
+          RUN dotnet publish "GalaxyWiki.API.csproj" -c Release -o /app/publish
+
+          FROM base AS final
+          WORKDIR /app
+          COPY --from=publish /app/publish .
+          ENTRYPOINT ["dotnet", "GalaxyWiki.API.dll"]
+          EOF
+
+      - name: Build the Docker image
+        run: |
+          docker build -t galaxywiki-api-image -f Dockerfile .
+
+      - name: Save Docker image as an artifact
+        run: |
+          docker save galaxywiki-api-image | gzip > galaxywiki-api-image.tar.gz
+
+      - name: Upload Docker image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: galaxywiki-api-image
+          path: galaxywiki-api-image.tar.gz
+
+  deploy-api:
+     name: Deploy API to EC2
+     permissions:
+      id-token: write
+      contents: read
+     needs: build-api
+     runs-on: ubuntu-latest
+     steps:
+      - name: Download Docker image artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: galaxywiki-api-image
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: arn:aws:iam::179530787873:role/gh-actions-role
+          aws-region: eu-west-1
+
+      - name: Get secrets from AWS Key Store
+        uses: aws-actions/aws-secretsmanager-get-secrets@v2
+        with:
+          secret-ids: |
+            EC2_PRIV_KEY, ec2privatekey
+            GOOGLE_CLIENT_SECRET, googleclientsecret
+            GOOGLE_CLIENT_ID, googleclientid
+            DB_USERNAME, dbusername
+            DB_PASSWORD, dbpassword
+
+      - name: Write private key
+        run: |
+          echo "${{ env.EC2_PRIV_KEY }}" > galaxywiki-key.pem
+          chmod 600 galaxywiki-key.pem
+
+      - name: Transfer Docker image to EC2
+        run: |
+          scp -o StrictHostKeyChecking=no -i galaxywiki-key.pem galaxywiki-api-image.tar.gz ec2-user@${{ needs.terraform.outputs.ec2host }}:~
+
+      - name: Deploy container on EC2
+        run: |
+          ssh -o StrictHostKeyChecking=no -i galaxywiki-key.pem ec2-user@${{ needs.terraform.outputs.ec2host }} "
+            sudo docker system prune --force
+            gunzip -c galaxywiki-api-image.tar.gz | sudo docker load
+            sudo docker rm -f galaxywiki-api-container || true
+            sudo docker run -d \
+              -e CLIENT_ID='${{ env.GOOGLE_CLIENT_ID }}' \
+              -e CLIENT_SECRET='${{ env.GOOGLE_CLIENT_SECRET }}' \
+              -e DB_CONNECTION_STRING='Host=${{ needs.terraform.outputs.dbhost }};Port=5432;Database=galaxy;Username=${{ env.DB_USERNAME }};Password=${{ env.DB_PASSWORD }};' \
+              -e REDIRECT_URI='https://${{ needs.terraform.outputs.ec2host }}/' \
+              -p 80:80 -p 443:443 \
+              --name galaxywiki-api-container \
+              galaxywiki-api-image
+          "
+        
+  flyway:
+    needs:
+      - terraform
+      - deploy-api
+    permissions:
+      id-token: write
+      contents: read
+    name: Flyway Migrations
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: arn:aws:iam::179530787873:role/gh-actions-role
+          aws-region: eu-west-1
+      
+      - name: Get secrets from AWS Key Store
+        uses: aws-actions/aws-secretsmanager-get-secrets@v2
+        with:
+          secret-ids: |
+            DB_USERNAME, dbusername
+            DB_PASSWORD, dbpassword
+
+      - name: Run Flyway migrations
+        run: |
+          echo "Running Flyway migrations..."
+          # Print Flyway version
+          docker run --rm flyway/flyway:latest -v
+          
+          echo "Attempting database connection..."
+          docker run --rm \
+          -v $(pwd):/flyway/sql \
+          flyway/flyway:latest \
+          -url=jdbc:postgresql://${{ secrets.DB_HOST }}:${{ secrets.DB_PORT }}/${{ secrets.DB_NAME }} \
+          -user=${{ secrets.DB_USERNAME }} \
+          -password=${{ secrets.DB_PASSWORD }} \
+          -connectRetries=3 \
+          -connectRetriesInterval=10 \
+          info
+
+          echo "Running migrations..."
+          docker run --rm \
+          -v $(pwd):/flyway/sql \
+          flyway/flyway:latest \
+          -url=jdbc:postgresql://${{ secrets.DB_HOST }}:${{ secrets.DB_PORT }}/${{ secrets.DB_NAME }} \
+          -user=${{ secrets.DB_USERNAME }} \
+          -password=${{ secrets.DB_PASSWORD }} \
+          -connectRetries=3 \
+          -connectRetriesInterval=10 \
+          -locations=filesystem:/flyway/sql/Migrations \
+          migrate

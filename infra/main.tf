@@ -59,11 +59,11 @@ output "api_endpoint" {
   value       = module.ec2.api_endpoint
 }
 
-# output "ssh_private_key" {
-#   description = "The private key for SSH access (sensitive)"
-#   value       = module.ec2.ssh_private_key
-#   sensitive   = true
-# }
+output "ssh_private_key" {
+  description = "The private key for SSH access (sensitive)"
+  value       = module.ec2.ssh_private_key
+  sensitive   = true
+}
 
 output "ssh_username" {
   description = "The username for SSH access"

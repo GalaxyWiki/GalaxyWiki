@@ -392,6 +392,30 @@ namespace GalaxyWiki.CLI
         }
     }
 
+    public static async Task<ContentRevisions?> CreateRevisionAsync(string celestialBodyPath, string newContent)
+    {
+        try
+        {
+            if (JWT == "") { TUI.Err("AUTH", "Please login to create a revision."); return null; }
+            var createRequest = new CreateRevisionRequest { CelestialBodyPath = celestialBodyPath, Content = newContent };
+
+            var request = new HttpRequestMessage(HttpMethod.Post, apiUrl + "/api/revision") {
+                Content = JsonContent.Create(createRequest)
+            };
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", JWT);
+
+            var response = await httpClient.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+
+            string jsonResponse = await response.Content.ReadAsStringAsync();
+            return JsonSerializer.Deserialize<ContentRevisions>(
+                jsonResponse,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
+            );
+        }
+        catch (Exception ex) { TUI.Err("POST", "Couldn't create revision", ex.Message); return null; }
+    }
+
         // Create a new celestial body
         public static async Task<CelestialBodies?> CreateCelestialBodyAsync(string bodyName, int bodyTypeId, int? orbitsId)
         {
@@ -428,6 +452,27 @@ namespace GalaxyWiki.CLI
             catch (Exception ex)
             {
                 TUI.Err("POST", "Couldn't create celestial body", ex.Message);
+                return null;
+            }
+        }
+
+        public static async Task<CelestialBodies?> GetCelestialBodyAsync(int bodyId)
+        {
+            try
+            {
+                var request = new HttpRequestMessage(HttpMethod.Get, apiUrl + $"/api/celestial-body/{bodyId}") {};
+
+                var response = await httpClient.SendAsync(request);
+                response.EnsureSuccessStatusCode();
+                
+                string jsonResponse = await response.Content.ReadAsStringAsync();
+                return JsonSerializer.Deserialize<CelestialBodies>(
+                    jsonResponse, 
+                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
+                );
+            }
+            catch (Exception ex) {
+                TUI.Err("GET", $"Couldn't get celestial body with ID {bodyId}", ex.Message);
                 return null;
             }
         }
@@ -537,9 +582,10 @@ public class Users
     public int RoleId { get; set; }
 }
 
-public class UpdateCommentRequest
-{
-    public string CommentText { get; set; }
+public class UpdateCommentRequest { public string CommentText { get; set; } }
+public class CreateRevisionRequest {
+    public string CelestialBodyPath { get; set; }
+    public string Content { get; set; }
 }
 
 // Add this class at the end of the file, after all other class definitions

@@ -66,8 +66,7 @@ namespace GalaxyWiki.API.Services
 
         public async Task<CommentRequest> Create(CreateCommentRequest commentDto, string userId)
         {
-            if (await _authService.CheckUserHasAccessRight([UserRole.Admin, UserRole.Viewer], userId) == false)
-            {
+            if (await _authService.CheckUserHasAccessRight([UserRole.Admin, UserRole.Viewer], userId) == false) {
                 throw new UserDoesNotHaveAccess("You do not have access to perform this action.");
             }
 
