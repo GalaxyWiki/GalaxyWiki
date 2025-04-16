@@ -43,8 +43,8 @@ namespace GalaxyWiki.Tests
             // Arrange
             var comments = new List<Comments>
             {
-                new Comments { CommentId = 1, CommentText = "Test 1" },
-                new Comments { CommentId = 2, CommentText = "Test 2" }
+                new Comments { CommentId = 1, CommentText = "Test 1", Author = _user },
+                new Comments { CommentId = 2, CommentText = "Test 2", Author = _user }
             };
             _mockCommentRepository.Setup(r => r.GetAll()).ReturnsAsync(comments);
 
@@ -60,7 +60,7 @@ namespace GalaxyWiki.Tests
         public async Task GetById_ExistingComment_ReturnsComment()
         {
             // Arrange
-            var comment = new Comments { CommentId = 1, CommentText = "Test" };
+            var comment = new Comments { CommentId = 1, CommentText = "Test", Author = _user };
             _mockCommentRepository.Setup(r => r.GetById(1)).ReturnsAsync(comment);
 
             // Act
@@ -93,8 +93,8 @@ namespace GalaxyWiki.Tests
             // Arrange
             var comments = new List<Comments>
             {
-                new Comments { CommentId = 1, CommentText = "Test 1", CelestialBodyId = 1 },
-                new Comments { CommentId = 2, CommentText = "Test 2", CelestialBodyId = 1 }
+                new Comments { CommentId = 1, CommentText = "Test 1", CelestialBodyId = 1, Author = _user },
+                new Comments { CommentId = 2, CommentText = "Test 2", CelestialBodyId = 1, Author = _user }
             };
             _mockCommentRepository.Setup(r => r.GetByCelestialBody(1)).ReturnsAsync(comments);
 
@@ -114,8 +114,8 @@ namespace GalaxyWiki.Tests
             var userId = "user123";
             var comments = new List<Comments>
             {
-                new Comments { CommentId = 1, CommentText = "Test 1", UserId = userId },
-                new Comments { CommentId = 2, CommentText = "Test 2", UserId = userId }
+                new Comments { CommentId = 1, CommentText = "Test 1",Author = _user },
+                new Comments { CommentId = 2, CommentText = "Test 2",Author = _user }
             };
             _mockCommentRepository.Setup(r => r.GetByUser(userId)).ReturnsAsync(comments);
 
@@ -136,8 +136,8 @@ namespace GalaxyWiki.Tests
             var endDate = DateTime.UtcNow;
             var comments = new List<Comments>
             {
-                new Comments { CommentId = 1, CommentText = "Test 1", CreatedAt = startDate.AddDays(1) },
-                new Comments { CommentId = 2, CommentText = "Test 2", CreatedAt = endDate.AddDays(-1) }
+                new Comments { CommentId = 1, CommentText = "Test 1", CreatedAt = startDate.AddDays(1), Author = _user },
+                new Comments { CommentId = 2, CommentText = "Test 2", CreatedAt = endDate.AddDays(-1), Author = _user }
             };
             _mockCommentRepository.Setup(r => r.GetByDateRange(startDate, endDate, null)).ReturnsAsync(comments);
 
@@ -218,7 +218,7 @@ namespace GalaxyWiki.Tests
             { 
                 CommentId = commentId, 
                 CommentText = "Original", 
-                UserId = userId,
+               Author = _user,
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -269,7 +269,7 @@ namespace GalaxyWiki.Tests
             { 
                 CommentId = commentId, 
                 CommentText = "Original", 
-                UserId = userId,
+               Author = _user,
                 CreatedAt = DateTime.UtcNow.AddMonths(-2)
             };
 
@@ -291,7 +291,7 @@ namespace GalaxyWiki.Tests
             var existingComment = new Comments 
             { 
                 CommentId = commentId, 
-                UserId = userId
+               Author = _user
             };
 
             _mockAuthService.Setup(a => a.CheckUserHasAccessRight(new[] { UserRole.Admin, UserRole.Viewer }, userId))
