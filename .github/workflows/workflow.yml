@@ -138,8 +138,13 @@ jobs:
 
       - name: Write private key
         run: |
-          echo "${{ env.EC2_PRIV_KEY }}" > galaxywiki-key.pem
+          # Extract the key value from the JSON response and decode any escaped characters
+          PRIVATE_KEY=$(echo '${{ env.EC2_PRIV_KEY }}' | sed 's/^{.*:"//;s/"}$//' | sed 's/\\n/\n/g')
+          echo -e "$PRIVATE_KEY" > galaxywiki-key.pem
           chmod 600 galaxywiki-key.pem
+          # Debug - check key format (but don't print the actual key)
+          head -n 1 galaxywiki-key.pem
+          echo "Key size: $(wc -c < galaxywiki-key.pem) bytes"
 
       - name: SSH into EC2 and Install Docker
         run: |
@@ -216,8 +221,13 @@ jobs:
 
       - name: Write private key
         run: |
-          echo "${{ env.EC2_PRIV_KEY }}" > galaxywiki-key.pem
+          # Extract the key value from the JSON response and decode any escaped characters
+          PRIVATE_KEY=$(echo '${{ env.EC2_PRIV_KEY }}' | sed 's/^{.*:"//;s/"}$//' | sed 's/\\n/\n/g')
+          echo -e "$PRIVATE_KEY" > galaxywiki-key.pem
           chmod 600 galaxywiki-key.pem
+          # Debug - check key format (but don't print the actual key)
+          head -n 1 galaxywiki-key.pem
+          echo "Key size: $(wc -c < galaxywiki-key.pem) bytes"
 
       - name: Transfer Docker image to EC2
         run: |
