@@ -26,7 +26,7 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
-          role-to-assume: arn:aws:iam::179530787873:role/gh-actions-role
+          role-to-assume: arn:aws:iam::958933916692:role/gh-actions-role
           aws-region: eu-west-1
 
       - name: Setup Terraform
@@ -86,7 +86,7 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
-          role-to-assume: arn:aws:iam::179530787873:role/gh-actions-role
+          role-to-assume: arn:aws:iam::958933916692:role/gh-actions-role
           aws-region: eu-west-1
 
       - name: Get secrets from AWS Key Store
@@ -190,7 +190,7 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
-          role-to-assume: arn:aws:iam::179530787873:role/gh-actions-role
+          role-to-assume: arn:aws:iam::958933916692:role/gh-actions-role
           aws-region: eu-west-1
 
       - name: Get secrets from AWS Key Store
@@ -244,7 +244,7 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
-          role-to-assume: arn:aws:iam::179530787873:role/gh-actions-role
+          role-to-assume: arn:aws:iam::958933916692:role/gh-actions-role
           aws-region: eu-west-1
       
       - name: Get secrets from AWS Key Store
