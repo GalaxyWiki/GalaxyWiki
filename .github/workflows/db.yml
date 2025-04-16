@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - deployment
 jobs:
   migrate:
     runs-on: ubuntu-latest
