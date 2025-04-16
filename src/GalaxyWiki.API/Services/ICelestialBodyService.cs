@@ -10,7 +10,6 @@ namespace GalaxyWiki.API.Services
     public interface ICelestialBodyService
     {
         Task<IEnumerable<(CelestialBodies CelestialBody, BodyTypes? BodyType)>> GetAll();
-        Task<PagedResult<(CelestialBodies CelestialBody, BodyTypes? BodyType)>> GetAllPaginated(PaginationParameters parameters);
         Task<(CelestialBodies? CelestialBody, BodyTypes? BodyType)> GetById(int id);
         Task<(CelestialBodies? CelestialBody, BodyTypes? BodyType)> GetOrbitsById(int id);
         Task<CelestialBodies> CreateCelestialBody(CreateCelestialBodyRequest request, string authorId);
