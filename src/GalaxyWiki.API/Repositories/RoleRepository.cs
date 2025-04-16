@@ -1,9 +1,9 @@
 using GalaxyWiki.Core.Entities;
 using ISession = NHibernate.ISession;
 
-namespace GalaxyWiki.Api.Repositories
+namespace GalaxyWiki.API.Repositories
 {
-    public class RoleRepository
+    public class RoleRepository : IRoleRepository
     {
         private readonly ISession _session;
 

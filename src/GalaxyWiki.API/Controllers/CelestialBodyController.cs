@@ -5,15 +5,15 @@ using GalaxyWiki.API.Services;
 using System.Security.Claims;
 using NHibernate.Criterion;
 
-namespace GalaxyWiki.Api.Controllers
+namespace GalaxyWiki.API.Controllers
 {
     [Route("api/celestial-body")]
     [ApiController]
     public class CelestialBodyController : ControllerBase
     {
-        private readonly CelestialBodyService _celestialBodyService;
+        private readonly ICelestialBodyService _celestialBodyService;
 
-        public CelestialBodyController(CelestialBodyService celestialBodyService)
+        public CelestialBodyController(ICelestialBodyService celestialBodyService)
         {
             _celestialBodyService = celestialBodyService;
         }

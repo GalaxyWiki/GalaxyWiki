@@ -1,4 +1,4 @@
-namespace GalaxyWiki.Api.DTOs
+namespace GalaxyWiki.API.DTOs
 {
     public class CommentRequest
     {

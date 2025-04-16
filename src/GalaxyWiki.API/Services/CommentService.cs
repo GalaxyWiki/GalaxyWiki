@@ -1,19 +1,19 @@
-using GalaxyWiki.Api.DTOs;
+using GalaxyWiki.API.DTOs;
 using GalaxyWiki.Core.Entities;
-using GalaxyWiki.Api.Repositories;
+using GalaxyWiki.API.Repositories;
 using GalaxyWiki.API.Services;
 using GalaxyWiki.Core.Enums;
 
-namespace GalaxyWiki.Api.Services
-{
-    public class CommentService
+namespace GalaxyWiki.API.Services
+{   
+    public class CommentService : ICommentService
     {
-        private AuthService _authService;
-        private UserService _userService;
-        private readonly CommentRepository _commentRepository;
-        private readonly CelestialBodyRepository _celestialBodyRepository;
+        private IAuthService _authService;  
+        private IUserService _userService;
+        private readonly ICommentRepository _commentRepository;
+        private readonly ICelestialBodyRepository _celestialBodyRepository;
 
-        public CommentService(AuthService authService, UserService userService, CommentRepository commentRepository, CelestialBodyRepository celestialBodyRepository)
+        public CommentService(IAuthService authService, IUserService userService, ICommentRepository commentRepository, ICelestialBodyRepository celestialBodyRepository)
         {
             _authService = authService;
             _userService = userService;
@@ -119,19 +119,22 @@ namespace GalaxyWiki.Api.Services
 
         public async Task Delete(int id, string userId)
         {
+            Console.WriteLine("in the service");
             if (await _authService.CheckUserHasAccessRight([UserRole.Admin, UserRole.Viewer], userId) == false)
             {
                 throw new UserDoesNotHaveAccess("You do not have access to perform this action.");
             }
 
             var user = await _userService.GetUserById(userId);
-
+            Console.WriteLine("goint to the repo to getById-----"+id);
             var comment = await _commentRepository.GetById(id);
             if (comment == null) 
                 throw new CommentDoesNotExist("The selected comment does not exist");
 
             if (user.Role.Id != (int)UserRole.Admin && user.Id != comment.Author.Id)
                 throw new UserDoesNotHaveAccess("Cannot delete a comment that is not your own."); 
+
+                Console.WriteLine("---------"+id+"-----------"+userId);
 
             await _commentRepository.Delete(comment);
         }
