@@ -17,8 +17,14 @@ builder.Services.AddControllers();
 // Configure NHibernate
 builder.Services.AddSingleton<ISessionFactory>(provider =>
 {
-    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-
+    // First try to get connection string from environment variables
+    var connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING");
+    
+    // Fall back to configuration if environment variable is not set
+    if (string.IsNullOrEmpty(connectionString))
+    {
+        connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+    }
 
     return Fluently.Configure()
         .Database(PostgreSQLConfiguration.Standard
