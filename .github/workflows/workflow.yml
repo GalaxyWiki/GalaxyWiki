@@ -146,9 +146,42 @@ jobs:
           head -n 1 galaxywiki-key.pem
           echo "Key size: $(wc -c < galaxywiki-key.pem) bytes"
 
-      - name: SSH into EC2 and Install Docker
+      - name: Install AWS CLI
         run: |
-          ssh -o StrictHostKeyChecking=no -i galaxywiki-key.pem ec2-user@${{ needs.terraform.outputs.ec2host }} "sudo dnf update -y && sudo dnf install docker -y && sudo systemctl enable docker && sudo systemctl start docker"
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip awscliv2.zip
+          sudo ./aws/install
+          aws --version
+
+      - name: Get EC2 instance ID
+        run: |
+          INSTANCE_ID=$(aws ec2 describe-instances \
+            --filters "Name=dns-name,Values=${{ needs.terraform.outputs.ec2host }}" \
+            --query "Reservations[0].Instances[0].InstanceId" \
+            --output text)
+          echo "INSTANCE_ID=$INSTANCE_ID" >> $GITHUB_ENV
+          echo "Instance ID: $INSTANCE_ID"
+      
+      - name: Install Docker on EC2 via SSM
+        run: |
+          # Send command via SSM
+          CMD_ID=$(aws ssm send-command \
+            --instance-ids "${{ env.INSTANCE_ID }}" \
+            --document-name "AWS-RunShellScript" \
+            --parameters "commands=['sudo dnf update -y && sudo dnf install docker -y && sudo systemctl enable docker && sudo systemctl start docker']" \
+            --query "Command.CommandId" \
+            --output text)
+          
+          echo "Command ID: $CMD_ID"
+          
+          # Wait for command to complete
+          aws ssm wait command-executed --command-id "$CMD_ID" --instance-id "${{ env.INSTANCE_ID }}"
+          
+          # Get command output
+          aws ssm get-command-invocation \
+            --command-id "$CMD_ID" \
+            --instance-id "${{ env.INSTANCE_ID }}" \
+            --query "StandardOutputContent"
 
       - name: Create Dockerfile
         run: |
@@ -184,75 +217,59 @@ jobs:
         run: |
           docker save galaxywiki-api-image | gzip > galaxywiki-api-image.tar.gz
 
-      - name: Upload Docker image artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: galaxywiki-api-image
-          path: galaxywiki-api-image.tar.gz
-
-  deploy-api:
-     name: Deploy API to EC2
-     permissions:
-      id-token: write
-      contents: read
-     needs: build-api
-     runs-on: ubuntu-latest
-     steps:
-      - name: Download Docker image artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: galaxywiki-api-image
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          role-to-assume: arn:aws:iam::958933916692:role/gh-actions-role
-          aws-region: eu-west-1
-
-      - name: Get secrets from AWS Key Store
-        uses: aws-actions/aws-secretsmanager-get-secrets@v2
-        with:
-          secret-ids: |
-            EC2_PRIV_KEY, EC2_PRIV_KEY
-            GOOGLE_CLIENT_SECRET, GOOGLE_CLIENT_SECRET
-            GOOGLE_CLIENT_ID, GOOGLE_CLIENT_ID
-            DB_USERNAME, DB_USERNAME
-            DB_PASSWORD, DB_PASSWORD
-
-      - name: Write private key
+      - name: Upload Docker image to S3
         run: |
-          # Extract the key value from the JSON response and decode any escaped characters
-          PRIVATE_KEY=$(echo '${{ env.EC2_PRIV_KEY }}' | sed 's/^{.*:"//;s/"}$//' | sed 's/\\n/\n/g')
-          echo -e "$PRIVATE_KEY" > galaxywiki-key.pem
-          chmod 600 galaxywiki-key.pem
-          # Debug - check key format (but don't print the actual key)
-          head -n 1 galaxywiki-key.pem
-          echo "Key size: $(wc -c < galaxywiki-key.pem) bytes"
+          # Create a temporary S3 bucket or use existing one
+          BUCKET_NAME="galaxywiki-artifacts"
+          aws s3api head-bucket --bucket $BUCKET_NAME || aws s3 mb s3://$BUCKET_NAME
+          
+          # Upload the Docker image to S3
+          aws s3 cp galaxywiki-api-image.tar.gz s3://$BUCKET_NAME/
+          
+          echo "Docker image uploaded to S3://$BUCKET_NAME/galaxywiki-api-image.tar.gz"
 
-      - name: Transfer Docker image to EC2
+      - name: Deploy Docker image via SSM
         run: |
-          scp -o StrictHostKeyChecking=no -i galaxywiki-key.pem galaxywiki-api-image.tar.gz ec2-user@${{ needs.terraform.outputs.ec2host }}:~
+          # Command to download from S3 and deploy
+          DEPLOY_COMMANDS='
+          sudo aws s3 cp s3://galaxywiki-artifacts/galaxywiki-api-image.tar.gz /tmp/
+          cd /tmp
+          sudo docker system prune --force
+          sudo gunzip -c galaxywiki-api-image.tar.gz | sudo docker load
+          sudo docker rm -f galaxywiki-api-container || true
+          sudo docker run -d \
+            -e CLIENT_ID="${{ env.GOOGLE_CLIENT_ID }}" \
+            -e CLIENT_SECRET="${{ env.GOOGLE_CLIENT_SECRET }}" \
+            -e DB_CONNECTION_STRING="Host=${{ needs.terraform.outputs.dbhost }};Port=5432;Database=galaxy;Username=${{ env.DB_USERNAME }};Password=${{ env.DB_PASSWORD }};" \
+            -e REDIRECT_URI="https://${{ needs.terraform.outputs.ec2host }}/" \
+            -p 80:80 -p 443:443 \
+            --name galaxywiki-api-container \
+            galaxywiki-api-image
+          '
 
-      - name: Deploy container on EC2
-        run: |
-          ssh -o StrictHostKeyChecking=no -i galaxywiki-key.pem ec2-user@${{ needs.terraform.outputs.ec2host }} "
-            sudo docker system prune --force
-            gunzip -c galaxywiki-api-image.tar.gz | sudo docker load
-            sudo docker rm -f galaxywiki-api-container || true
-            sudo docker run -d \
-              -e CLIENT_ID='${{ env.GOOGLE_CLIENT_ID }}' \
-              -e CLIENT_SECRET='${{ env.GOOGLE_CLIENT_SECRET }}' \
-              -e DB_CONNECTION_STRING='Host=${{ needs.terraform.outputs.dbhost }};Port=5432;Database=galaxy;Username=${{ env.DB_USERNAME }};Password=${{ env.DB_PASSWORD }};' \
-              -e REDIRECT_URI='https://${{ needs.terraform.outputs.ec2host }}/' \
-              -p 80:80 -p 443:443 \
-              --name galaxywiki-api-container \
-              galaxywiki-api-image
-          "
-        
+          # Send command via SSM
+          CMD_ID=$(aws ssm send-command \
+            --instance-ids "${{ env.INSTANCE_ID }}" \
+            --document-name "AWS-RunShellScript" \
+            --parameters "commands=['$DEPLOY_COMMANDS']" \
+            --query "Command.CommandId" \
+            --output text)
+          
+          echo "Command ID: $CMD_ID"
+          
+          # Wait for command to complete
+          aws ssm wait command-executed --command-id "$CMD_ID" --instance-id "${{ env.INSTANCE_ID }}"
+          
+          # Get command output
+          aws ssm get-command-invocation \
+            --command-id "$CMD_ID" \
+            --instance-id "${{ env.INSTANCE_ID }}" \
+            --query "StandardOutputContent"
+
   flyway:
     needs:
       - terraform
-      - deploy-api
+      - build-api
     permissions:
       id-token: write
       contents: read

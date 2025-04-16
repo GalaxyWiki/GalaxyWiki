@@ -122,6 +122,12 @@ resource "aws_iam_role_policy_attachment" "ec2_instance_connect_policy" {
   policy_arn = "arn:aws:iam::aws:policy/EC2InstanceConnect"
 }
 
+# Add S3 access for artifacts
+resource "aws_iam_role_policy_attachment" "s3_access_policy" {
+  role       = aws_iam_role.ec2_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess"
+}
+
 resource "aws_iam_instance_profile" "ec2_profile" {
   name = "galaxy-ec2-profile"
   role = aws_iam_role.ec2_role.name
@@ -151,6 +157,13 @@ locals {
     
     # Install required packages
     yum install -y git
+    
+    # Install AWS CLI
+    curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+    yum install -y unzip
+    unzip awscliv2.zip
+    ./aws/install
+    aws --version
 
     # Install .NET 9.0
     rpm -Uvh https://packages.microsoft.com/config/centos/7/packages-microsoft-prod.rpm
