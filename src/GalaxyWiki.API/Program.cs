@@ -56,7 +56,7 @@ builder.Services.AddScoped<StarSystemRepository>();
 
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<UserService>();
-builder.Services.AddScoped<ContentRevisionService>();
+builder.Services.AddScoped<IContentRevisionService, ContentRevisionService>();
 builder.Services.AddScoped<CommentService>();
 builder.Services.AddScoped<StarSystemService>();
 builder.Services.AddScoped<CelestialBodyService>();
