@@ -17,7 +17,9 @@ namespace GalaxyWiki.CLI
 
         static int Mod(int x, int m) => (x % m + m) % m;
 
-        static Color Shade(Color col, float amt) => Color.Default.Blend(col, amt);
+    static string Sanitize(string s) => s.Replace("[", "[[").Replace("]", "]]");
+
+    static Color Shade(Color col, float amt) => Color.Default.Blend(col, amt);
 
         // Wrap an arbitrary element in a TUI box
         public static Panel Boxed(IRenderable elem, String title = "", Color? color = null, Justify headAlign = Justify.Center)
@@ -140,25 +142,23 @@ namespace GalaxyWiki.CLI
             AnsiConsole.WriteLine("\n     Welcome to\n");
             AnsiConsole.Write(banner);
         }
-        //---------- Error ----------//
-        public static void Err(string name, string desc, string info = "")
-        {
-            AnsiConsole.Markup($"[[[bold red]{name.ToUpper()} ERR[/]]]: [red]{desc}[/]");
-            if (!info.Trim().IsEmpty()) { AnsiConsole.Markup("\n\t" + info.Replace("\n", "\n\t")); }
-            AnsiConsole.Write("\n\n");
-        }
-        public static void Warn(string name, string desc, string info = "")
-        {
-            AnsiConsole.Markup($"[[[bold orange1]{name.ToUpper()} WARN[/]]]: [orange3]{desc}[/]");
-            if (!info.Trim().IsEmpty()) { AnsiConsole.Markup("\n\t" + info.Replace("\n", "\n\t") + "\n\n"); }
-            AnsiConsole.Write("\n\n");
-        }
 
+        //---------- Error ----------//
+    public static void Err(string name, string desc, string info = "") {
+        AnsiConsole.Markup($"[[[bold red]{name.ToUpper()} ERR[/]]]: [red]{desc}[/]");
+        if (!info.Trim().IsEmpty()) { AnsiConsole.Markup("\n\t" + Sanitize(info).Replace("\n", "\n\t")); }
+        AnsiConsole.Write("\n\n");
+    }
+    public static void Warn(string name, string desc, string info = "") {
+        AnsiConsole.Markup($"[[[bold darkorange3]{name.ToUpper()} WARN[/]]]: [gold3]{desc}[/]");
+        if (!info.Trim().IsEmpty()) { AnsiConsole.Markup("\n\t" + Sanitize(info).Replace("\n", "\n\t") + "\n\n"); }
+        AnsiConsole.Write("\n\n");
+    }
+      
         //---------- Path ----------//
         public static Panel Path(string path)
         {
             var elem = new TextPath(path);
-
             elem.RootStyle = new Style(foreground: Color.Red);
             elem.SeparatorStyle = new Style(foreground: Color.Green);
             elem.StemStyle = new Style(foreground: Color.Blue);

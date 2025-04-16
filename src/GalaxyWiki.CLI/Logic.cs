@@ -1,3 +1,4 @@
+using GalaxyWiki.Core.ResponseBodies;
 using GalaxyWiki.Core.Entities;
 using Spectre.Console;
 using System.Text;
@@ -168,23 +169,26 @@ public class BodyTypeInfo
     }
 
         // List children of current directory
-        public static async Task<List<CelestialBodies>> ListDirectory()
+        public static async Task<PaginatedCelestialBodiesResponse?> ListDirectory(int page = 1, int size = 10)
         {
             if (_state.CurrentBody == null)
             {
                 TUI.Err("LS", "Navigation system not initialized.");
-                return [];
+                return null;
             }
 
             try
             {
-                var children = await GetChildren(_state.CurrentBody.Id);
-                return children;
+                // Call API
+                string endpoint = $"/celestial-body/{_state.CurrentBody.Id}/children?pageNumber={page}&pageSize={size}";
+                PaginatedCelestialBodiesResponse paginatedResponse = await ApiClient.GetDeserialized<PaginatedCelestialBodiesResponse>(endpoint);
+
+                return paginatedResponse;
             }
             catch (Exception ex)
             {
                 TUI.Err("LS", "Failed to list directory.", ex.Message);
-                return [];
+                return null;
             }
         }
 
