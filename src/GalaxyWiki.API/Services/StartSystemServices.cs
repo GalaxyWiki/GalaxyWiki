@@ -5,13 +5,13 @@ using GalaxyWiki.API.DTOs;
 
 namespace GalaxyWiki.API.Services
 {
-    public class StarSystemService
+    public class StarSystemService : IStarSystemService
     {
-        private readonly AuthService _authService;
-        private readonly StarSystemRepository _starSystemRepository;
-        private readonly CelestialBodyRepository _celestialBodyRepository;
+        private readonly IAuthService _authService;
+        private readonly IStarSystemRepository _starSystemRepository;
+        private readonly ICelestialBodyRepository _celestialBodyRepository;
 
-        public StarSystemService(AuthService authService, StarSystemRepository starSystemRepository, CelestialBodyRepository celestialBodyRepository)
+        public StarSystemService(IAuthService authService, IStarSystemRepository starSystemRepository, ICelestialBodyRepository celestialBodyRepository)
         {
             _authService = authService;
             _starSystemRepository = starSystemRepository;

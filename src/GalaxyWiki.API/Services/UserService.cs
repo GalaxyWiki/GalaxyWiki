@@ -4,12 +4,12 @@ using GalaxyWiki.API.Repositories;
 
 namespace GalaxyWiki.API.Services
 {
-    public class UserService
+    public class UserService : IUserService
     {
-        private readonly UserRepository _userRepository;
-        private readonly RoleRepository _roleRepository;
+        private readonly IUserRepository _userRepository;
+        private readonly IRoleRepository _roleRepository;
 
-        public UserService(UserRepository userRepository, RoleRepository roleRepository)
+        public UserService(IUserRepository userRepository, IRoleRepository roleRepository)
         {
             _userRepository = userRepository;
             _roleRepository = roleRepository;

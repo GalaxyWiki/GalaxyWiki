@@ -4,7 +4,7 @@ using ISession = NHibernate.ISession;
 
 namespace GalaxyWiki.API.Repositories
 {
-    public class ContentRevisionRepository
+    public class ContentRevisionRepository : IContentRevisionRepository
     {
         private readonly ISession _session;
 

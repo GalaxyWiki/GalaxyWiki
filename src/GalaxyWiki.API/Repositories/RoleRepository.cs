@@ -3,7 +3,7 @@ using ISession = NHibernate.ISession;
 
 namespace GalaxyWiki.API.Repositories
 {
-    public class RoleRepository
+    public class RoleRepository : IRoleRepository
     {
         private readonly ISession _session;
 

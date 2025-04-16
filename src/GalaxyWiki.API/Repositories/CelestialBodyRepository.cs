@@ -5,7 +5,7 @@ using ISession = NHibernate.ISession;
 
 namespace GalaxyWiki.API.Repositories
 {
-    public class CelestialBodyRepository
+    public class CelestialBodyRepository : ICelestialBodyRepository
     {
         private readonly ISession _session;
 
