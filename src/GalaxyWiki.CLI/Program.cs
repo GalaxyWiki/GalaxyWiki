@@ -96,6 +96,12 @@ namespace GalaxyWiki.CLI
                     case "login": await ApiClient.LoginAsync(); break;
 
                     case "revision": await HandleRevisionCommand(dat); break;
+                    
+                    case "create-body": await HandleCreateBodyCommand(dat); break;
+                    
+                    case "update-body": await HandleUpdateBodyCommand(dat); break;
+                    
+                    case "delete-body": await HandleDeleteBodyCommand(dat); break;
 
                     default: HandleUnknownCommand(cmd); break;
                 }
@@ -290,6 +296,10 @@ namespace GalaxyWiki.CLI
             grid.AddRow(new Text("comment \"text\""), new Text("Add a new comment to current celestial body"));
             grid.AddRow(new Text("comment --help"), new Text("Show detailed comment command options"));
             grid.AddRow(new Text("render"), new Text("Render the current celestial body"));
+            grid.AddRow(new Text("revision"), new Text("Show revision history for current celestial body"));
+            grid.AddRow(new Text("create-body"), new Text("Create a new celestial body"));
+            grid.AddRow(new Text("update-body"), new Text("Update an existing celestial body"));
+            grid.AddRow(new Text("delete-body"), new Text("Delete a celestial body"));
             grid.AddRow(new Text("pwd"), new Text("Display current location path"));
             grid.AddRow(new Text("clear/cls"), new Text("Clear the screen"));
             grid.AddRow(new Text("exit/quit"), new Text("Exit the application"));
@@ -1018,6 +1028,414 @@ namespace GalaxyWiki.CLI
             {
                 TUI.Err("REVISION", $"Failed to retrieve revisions for '{bodyName}'", ex.Message);
             }
+        }
+
+        static async Task HandleCreateBodyCommand(string args)
+        {
+            // Check if user is logged in
+            if (string.IsNullOrEmpty(ApiClient.JWT))
+            {
+                TUI.Err("AUTH", "You must be logged in to create celestial bodies.");
+                AnsiConsole.MarkupLine("[grey]Use the 'login' command to authenticate first.[/]");
+                return;
+            }
+            
+            // Interactive mode if no arguments are provided
+            if (string.IsNullOrWhiteSpace(args))
+            {
+                await CreateBodyInteractive();
+                return;
+            }
+            
+            // Parse arguments (name, type, orbits)
+            var argParts = SplitArgumentsRespectingQuotes(args);
+            
+            if (argParts.Count < 2)
+            {
+                TUI.Err("BODY", "Insufficient arguments.", 
+                    "Usage: create-body \"Name\" <body-type-id> [parent-id]");
+                return;
+            }
+            
+            string bodyName = TrimQuotes(argParts[0]);
+            
+            if (!int.TryParse(argParts[1], out int bodyTypeId))
+            {
+                TUI.Err("BODY", "Invalid body type ID.", 
+                    "Body type ID must be a number. Use 'list' command to see available types.");
+                return;
+            }
+            
+            int? orbitsId = null;
+            if (argParts.Count >= 3 && int.TryParse(argParts[2], out int parsedOrbitsId))
+            {
+                orbitsId = parsedOrbitsId;
+            }
+            else if (argParts.Count >= 3)
+            {
+                TUI.Err("BODY", "Invalid parent ID.", 
+                    "Parent ID must be a number or omitted.");
+                return;
+            }
+            else if (CommandLogic.GetCurrentBody() != null)
+            {
+                // If no parent ID is specified, use the current body as parent
+                orbitsId = CommandLogic.GetCurrentBody().Id;
+            }
+            
+            var newBody = await CommandLogic.CreateCelestialBody(bodyName, bodyTypeId, orbitsId);
+            
+            if (newBody != null)
+            {
+                AnsiConsole.MarkupLine($"[green]Successfully created celestial body:[/] [cyan]{newBody.BodyName}[/] (ID: {newBody.Id})");
+                
+                // Show the list of children to see the new body
+                if (orbitsId != null && CommandLogic.GetCurrentBody()?.Id == orbitsId)
+                {
+                    await HandleLsCommand();
+                }
+            }
+        }
+        
+        static async Task CreateBodyInteractive()
+        {
+            // Get body name
+            string bodyName = AnsiConsole.Ask<string>("Enter celestial body [cyan]name[/]:");
+            
+            // List available body types for selection
+            var bodyTypes = CommandLogic.GetBodyTypes();
+            var bodyTypeOptions = bodyTypes.Select(t => $"{t.Id}: {t.Emoji} {t.Name}").ToArray();
+            
+            var selectedTypeOption = AnsiConsole.Prompt(
+                new SelectionPrompt<string>()
+                    .Title("Select the [cyan]body type[/]:")
+                    .PageSize(20)
+                    .AddChoices(bodyTypeOptions)
+            );
+            
+            int bodyTypeId = int.Parse(selectedTypeOption.Split(':')[0]);
+            
+            // Determine parent (orbits) options
+            int? orbitsId = null;
+            
+            bool useCurrentAsParent = AnsiConsole.Confirm("Use current location as parent?", true);
+            if (useCurrentAsParent && CommandLogic.GetCurrentBody() != null)
+            {
+                orbitsId = CommandLogic.GetCurrentBody().Id;
+            }
+            else
+            {
+                // Get all bodies
+                var allBodies = await ApiClient.GetCelestialBodies();
+                
+                if (allBodies.Count > 0)
+                {
+                    // Create options for selection
+                    var bodyOptions = allBodies.Select(b => $"{b.Id}: {TUI.BodyTypeToEmoji(b.BodyType)} {b.BodyName}").ToArray();
+                    bodyOptions = bodyOptions.Prepend("0: None (Root level)").ToArray();
+                    
+                    var selectedBodyOption = AnsiConsole.Prompt(
+                        new SelectionPrompt<string>()
+                            .Title("Select the [cyan]parent body[/]:")
+                            .PageSize(20)
+                            .AddChoices(bodyOptions)
+                    );
+                    
+                    int selectedId = int.Parse(selectedBodyOption.Split(':')[0]);
+                    orbitsId = selectedId > 0 ? selectedId : null;
+                }
+            }
+            
+            // Create the celestial body
+            var newBody = await CommandLogic.CreateCelestialBody(bodyName, bodyTypeId, orbitsId);
+            
+            if (newBody != null)
+            {
+                AnsiConsole.MarkupLine($"[green]Successfully created celestial body:[/] [cyan]{newBody.BodyName}[/] (ID: {newBody.Id})");
+                
+                // Show the list of children to see the new body
+                if (orbitsId != null && CommandLogic.GetCurrentBody()?.Id == orbitsId)
+                {
+                    await HandleLsCommand();
+                }
+            }
+        }
+        
+        static async Task HandleUpdateBodyCommand(string args)
+        {
+            // Check if user is logged in
+            if (string.IsNullOrEmpty(ApiClient.JWT))
+            {
+                TUI.Err("AUTH", "You must be logged in to update celestial bodies.");
+                AnsiConsole.MarkupLine("[grey]Use the 'login' command to authenticate first.[/]");
+                return;
+            }
+            
+            // Interactive mode if no arguments are provided
+            if (string.IsNullOrWhiteSpace(args))
+            {
+                await UpdateBodyInteractive();
+                return;
+            }
+            
+            // Parse arguments (id, name, type, orbits)
+            var argParts = SplitArgumentsRespectingQuotes(args);
+            
+            if (argParts.Count < 3)
+            {
+                TUI.Err("BODY", "Insufficient arguments.", 
+                    "Usage: update-body <id> \"Name\" <body-type-id> [parent-id]");
+                return;
+            }
+            
+            if (!int.TryParse(argParts[0], out int bodyId))
+            {
+                TUI.Err("BODY", "Invalid body ID.", 
+                    "Body ID must be a number.");
+                return;
+            }
+            
+            string bodyName = TrimQuotes(argParts[1]);
+            
+            if (!int.TryParse(argParts[2], out int bodyTypeId))
+            {
+                TUI.Err("BODY", "Invalid body type ID.", 
+                    "Body type ID must be a number. Use 'list' command to see available types.");
+                return;
+            }
+            
+            int? orbitsId = null;
+            if (argParts.Count >= 4 && int.TryParse(argParts[3], out int parsedOrbitsId))
+            {
+                orbitsId = parsedOrbitsId;
+            }
+            else if (argParts.Count >= 4)
+            {
+                TUI.Err("BODY", "Invalid parent ID.", 
+                    "Parent ID must be a number or omitted.");
+                return;
+            }
+            
+            var updatedBody = await CommandLogic.UpdateCelestialBody(bodyId, bodyName, bodyTypeId, orbitsId);
+            
+            if (updatedBody != null)
+            {
+                AnsiConsole.MarkupLine($"[green]Successfully updated celestial body:[/] [cyan]{updatedBody.BodyName}[/] (ID: {updatedBody.Id})");
+                
+                // If we're in a directory that should show this body, refresh the view
+                var currentBody = CommandLogic.GetCurrentBody();
+                if (currentBody != null && 
+                    ((updatedBody.Orbits != null && updatedBody.Orbits.Id == currentBody.Id) || 
+                     currentBody.Id == updatedBody.Id))
+                {
+                    await HandleLsCommand();
+                }
+            }
+        }
+        
+        static async Task UpdateBodyInteractive()
+        {
+            // First, select the body to update
+            var allBodies = await ApiClient.GetCelestialBodies();
+            
+            if (allBodies.Count == 0)
+            {
+                TUI.Err("BODY", "No celestial bodies found to update.");
+                return;
+            }
+            
+            // Create options for selection
+            var bodyOptions = allBodies.Select(b => $"{b.Id}: {TUI.BodyTypeToEmoji(b.BodyType)} {b.BodyName}").ToArray();
+            
+            var selectedBodyOption = AnsiConsole.Prompt(
+                new SelectionPrompt<string>()
+                    .Title("Select the celestial body to [cyan]update[/]:")
+                    .PageSize(20)
+                    .AddChoices(bodyOptions)
+            );
+            
+            int bodyId = int.Parse(selectedBodyOption.Split(':')[0]);
+            var bodyToUpdate = allBodies.FirstOrDefault(b => b.Id == bodyId);
+            
+            if (bodyToUpdate == null)
+            {
+                TUI.Err("BODY", "Selected celestial body not found.");
+                return;
+            }
+            
+            // Get new name (use current as default)
+            string bodyName = AnsiConsole.Ask("Enter new name:", bodyToUpdate.BodyName);
+            
+            // List available body types for selection
+            var bodyTypes = CommandLogic.GetBodyTypes();
+            var bodyTypeOptions = bodyTypes.Select(t => $"{t.Id}: {t.Emoji} {t.Name}").ToArray();
+            
+            var currentBodyType = bodyTypes.FirstOrDefault(t => t.Id == bodyToUpdate.BodyType);
+            string currentBodyTypeOption = $"{currentBodyType?.Id}: {currentBodyType?.Emoji} {currentBodyType?.Name}";
+            
+            var selectedTypeOption = AnsiConsole.Prompt(
+                new SelectionPrompt<string>()
+                    .Title("Select the new [cyan]body type[/]:")
+                    .PageSize(20)
+                    .AddChoices(bodyTypeOptions)
+                    .HighlightStyle(new Style(Color.Green))
+            );
+            
+            int bodyTypeId = int.Parse(selectedTypeOption.Split(':')[0]);
+            
+            // Determine parent (orbits) options
+            int? orbitsId = bodyToUpdate.Orbits?.Id;
+            
+            bool changeParent = AnsiConsole.Confirm("Change parent body?", false);
+            if (changeParent)
+            {
+                // Get all potential parent bodies (excluding self and children)
+                var potentialParents = allBodies.Where(b => b.Id != bodyId).ToList();
+                
+                // Create options for selection
+                var parentOptions = potentialParents.Select(b => $"{b.Id}: {TUI.BodyTypeToEmoji(b.BodyType)} {b.BodyName}").ToArray();
+                parentOptions = parentOptions.Prepend("0: None (Root level)").ToArray();
+                
+                var selectedParentOption = AnsiConsole.Prompt(
+                    new SelectionPrompt<string>()
+                        .Title("Select the new [cyan]parent body[/]:")
+                        .PageSize(20)
+                        .AddChoices(parentOptions)
+                );
+                
+                int selectedId = int.Parse(selectedParentOption.Split(':')[0]);
+                orbitsId = selectedId > 0 ? selectedId : null;
+            }
+            
+            // Update the celestial body
+            var updatedBody = await CommandLogic.UpdateCelestialBody(bodyId, bodyName, bodyTypeId, orbitsId);
+            
+            if (updatedBody != null)
+            {
+                AnsiConsole.MarkupLine($"[green]Successfully updated celestial body:[/] [cyan]{updatedBody.BodyName}[/] (ID: {updatedBody.Id})");
+                
+                // If we're in a directory that should show this body, refresh the view
+                var currentBody = CommandLogic.GetCurrentBody();
+                if (currentBody != null && 
+                    ((updatedBody.Orbits != null && updatedBody.Orbits.Id == currentBody.Id) || 
+                     currentBody.Id == updatedBody.Id))
+                {
+                    await HandleLsCommand();
+                }
+            }
+        }
+        
+        static async Task HandleDeleteBodyCommand(string args)
+        {
+            // Check if user is logged in
+            if (string.IsNullOrEmpty(ApiClient.JWT))
+            {
+                TUI.Err("AUTH", "You must be logged in to delete celestial bodies.");
+                AnsiConsole.MarkupLine("[grey]Use the 'login' command to authenticate first.[/]");
+                return;
+            }
+            
+            // Interactive mode if no arguments are provided
+            if (string.IsNullOrWhiteSpace(args))
+            {
+                await DeleteBodyInteractive();
+                return;
+            }
+            
+            // Parse arguments (id)
+            if (!int.TryParse(args.Trim(), out int bodyId))
+            {
+                TUI.Err("BODY", "Invalid body ID.", 
+                    "Usage: delete-body <id>");
+                return;
+            }
+            
+            // Confirm deletion
+            bool confirmed = AnsiConsole.Confirm($"Are you sure you want to delete celestial body with ID {bodyId}?", false);
+            if (!confirmed)
+            {
+                AnsiConsole.MarkupLine("[grey]Deletion cancelled.[/]");
+                return;
+            }
+            
+            bool success = await CommandLogic.DeleteCelestialBody(bodyId);
+            
+            if (success)
+            {
+                AnsiConsole.MarkupLine($"[green]Successfully deleted celestial body with ID {bodyId}[/]");
+                
+                // Refresh the current view
+                await HandleLsCommand();
+            }
+        }
+        
+        static async Task DeleteBodyInteractive()
+        {
+            // First, select the body to delete
+            var allBodies = await ApiClient.GetCelestialBodies();
+            
+            if (allBodies.Count == 0)
+            {
+                TUI.Err("BODY", "No celestial bodies found to delete.");
+                return;
+            }
+            
+            // Create options for selection
+            var bodyOptions = allBodies.Select(b => $"{b.Id}: {TUI.BodyTypeToEmoji(b.BodyType)} {b.BodyName}").ToArray();
+            
+            var selectedBodyOption = AnsiConsole.Prompt(
+                new SelectionPrompt<string>()
+                    .Title("Select the celestial body to [red]delete[/]:")
+                    .PageSize(20)
+                    .AddChoices(bodyOptions)
+            );
+            
+            int bodyId = int.Parse(selectedBodyOption.Split(':')[0]);
+            var bodyToDelete = allBodies.FirstOrDefault(b => b.Id == bodyId);
+            
+            if (bodyToDelete == null)
+            {
+                TUI.Err("BODY", "Selected celestial body not found.");
+                return;
+            }
+            
+            // Check if this is the current body
+            var currentBody = CommandLogic.GetCurrentBody();
+            if (currentBody != null && currentBody.Id == bodyId)
+            {
+                TUI.Err("BODY", "Cannot delete the celestial body you're currently in.", 
+                    "Navigate to the parent body first using 'cd ..'");
+                return;
+            }
+            
+            // Confirm deletion with more details
+            bool confirmed = AnsiConsole.Confirm(
+                $"Are you sure you want to delete [bold red]{bodyToDelete.BodyName}[/] (ID: {bodyId})?", false);
+            
+            if (!confirmed)
+            {
+                AnsiConsole.MarkupLine("[grey]Deletion cancelled.[/]");
+                return;
+            }
+            
+            bool success = await CommandLogic.DeleteCelestialBody(bodyId);
+            
+            if (success)
+            {
+                AnsiConsole.MarkupLine($"[green]Successfully deleted celestial body:[/] [grey]{bodyToDelete.BodyName}[/] (ID: {bodyId})");
+                
+                // Refresh the current view if we're in the parent of the deleted body
+                if (currentBody != null && bodyToDelete.Orbits != null && currentBody.Id == bodyToDelete.Orbits.Id)
+                {
+                    await HandleLsCommand();
+                }
+            }
+        }
+        
+        // Helper to trim quotes
+        private static string TrimQuotes(string input)
+        {
+            return CommandLogic.TrimQuotes(input);
         }
     }
 }
