@@ -7,7 +7,7 @@ using GalaxyWiki.CLI;
 using System.Text.RegularExpressions;
 using System.Text;
 
-namespace GalaxyWiki.Cli
+namespace GalaxyWiki.CLI
 {
     public static class Program
     {
@@ -517,7 +517,7 @@ namespace GalaxyWiki.Cli
                 return;
             }
             
-            List<Comment> comments = new List<Comment>();
+            List<Comment> comments = [];
             if (revision.CelestialBodyName != null) {
                 comments = await CommandLogic.GetCommentsForNamedBody(revision.CelestialBodyName);
             }
@@ -745,6 +745,16 @@ namespace GalaxyWiki.Cli
                     await ViewCommentsByDateRange(startDate, endDate, dateLimit, dateSortOrder);
                     break;
                 
+                case "-del":
+                case "--delete":
+                    if (argsList.Count < 2 || !int.TryParse(argsList[1], out int commentId))
+                    {
+                        TUI.Err("COMMENT", "Invalid comment ID.", "Usage: comment -del <id>");
+                        return;
+                    }
+                    await DeleteComment(commentId);
+                    break;
+                
                 case "-h":
                 case "--help":
                     DisplayCommentHelp();
@@ -778,6 +788,7 @@ namespace GalaxyWiki.Cli
             grid.AddRow(new Text("comment -n \"Body Name\""), new Text("View comments for the specified celestial body"));
             grid.AddRow(new Text("comment -d <start> <end>"), new Text("View comments within date range (YYYY-MM-DD format)"));
             grid.AddRow(new Text("comment -n \"Body\" -l 5 -s oldest"), new Text("Combine flags for specific queries"));
+            grid.AddRow(new Text("comment -del <id>"), new Text("Delete a comment by ID"));
             
             AnsiConsole.Write(grid);
             AnsiConsole.WriteLine();
@@ -852,6 +863,30 @@ namespace GalaxyWiki.Cli
             else
             {
                 TUI.Err("COMMENT", "Failed to add comment.");
+            }
+        }
+        
+        static async Task DeleteComment(int commentId)
+        {
+            if (AnsiConsole.Confirm($"Are you sure you want to delete comment with ID {commentId}?"))
+            {
+                bool success = await CommandLogic.DeleteComment(commentId);
+                
+                if (success)
+                {
+                    AnsiConsole.MarkupLine($"[green]Comment with ID {commentId} deleted successfully![/]");
+                    
+                    await ViewCommentsForCurrentBody();
+                }
+                else
+                {
+                    TUI.Err("COMMENT", $"Failed to delete comment with ID {commentId}.", 
+                        "You might not have permission to delete this comment, or it doesn't exist.");
+                }
+            }
+            else
+            {
+                AnsiConsole.MarkupLine("[grey]Comment deletion cancelled.[/]");
             }
         }
         

@@ -562,11 +562,26 @@ namespace GalaxyWiki.CLI
         {
             if (_state.CurrentBody == null)
             {
-                TUI.Err("COMMENT", "Navigation system not initialized.");
+                TUI.Err("COMMENT", "No celestial body selected.");
                 return null;
             }
             
+            // Create the comment via API
             return await ApiClient.CreateCommentAsync(commentText, _state.CurrentBody.Id);
+        }
+
+        // Delete a comment by its ID
+        public static async Task<bool> DeleteComment(int commentId)
+        {
+            // Check if user is logged in (authenticated users only)
+            if (string.IsNullOrEmpty(ApiClient.JWT))
+            {
+                TUI.Err("AUTH", "You must be logged in to delete comments.");
+                return false;
+            }
+            
+            // Delete the comment via API
+            return await ApiClient.DeleteCommentAsync(commentId);
         }
 
         // Get a list of child celestial body names for autocomplete
