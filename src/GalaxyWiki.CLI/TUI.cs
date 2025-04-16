@@ -357,34 +357,96 @@ namespace GalaxyWiki.CLI
             }
 
             var table = new Table()
-                .Border(TableBorder.Rounded)
-                .BorderColor(Color.LightCoral)
-                .HideHeaders();
-
-            table.AddColumn(new TableColumn("[cyan]ID[/]").Width(5));
-            table.AddColumn(new TableColumn("[cyan]Author[/]").Width(15));
-            table.AddColumn(new TableColumn("[cyan]Comment[/]"));
-            table.AddColumn(new TableColumn("[cyan]Date[/]").Width(18));
-
+                .Border(TableBorder.None)
+                .BorderColor(Color.DarkOrange)
+                .HideHeaders()
+                .Expand();
+            
+            // Create a 3-column layout (ID is hidden in author column)
+            // table.AddColumn(new TableColumn("").Width(3)); // Visual spacer/indentation
+            table.AddColumn(new TableColumn("").Width(75)); // Author and content
+            table.AddColumn(new TableColumn("").Width(25)); // Date and controls
+            
             foreach (var comment in comments)
             {
-                string author = string.IsNullOrEmpty(comment.DisplayName) ?
-                    $"[grey]Anonymous[/]" :
-                    $"[bold]{comment.DisplayName}[/]";
-                string formattedDate = comment.CreatedDate.ToString("MMM d, yyyy HH:mm");
+                // // YouTube-style user icon (first letter of name in colored circle)
+                // string userIcon = string.IsNullOrEmpty(comment.DisplayName) ? 
+                //     "[grey]?[/]" : 
+                //     $"[yellow on blue]{comment.DisplayName[..1].ToUpper()}[/]";
+                
+                // Username/display name with ID in small text
+                string author = string.IsNullOrEmpty(comment.DisplayName) ? 
+                    $"[grey]Anonymous[/]" : 
+                    $"[bold aqua]{comment.DisplayName}[/]";
+                string idText = $"[dim grey](#{comment.CommentId})[/]";
+                
+                // Format date like YouTube
+                string formattedDate = FormatRelativeTime(comment.CreatedDate);
+                
+                // Format the comment text with indentation for content
                 string formattedComment = FormatCommentWithSpectre(comment.CommentText);
-
+                
+                // Create YouTube-style comment header
+                string headerLine = $"{author} {idText}";
+                
+                // Create the main content column that combines username and comment
+                string contentText = $"{headerLine}\n{formattedComment}";
+                
+                // Add the row to the table
                 table.AddRow(
-                    new Markup($"[grey]{comment.CommentId}[/]"),
-                    new Markup(author),
-                    new Markup(formattedComment),
+                    // new Markup(userIcon),
+                    new Markup(contentText),
                     new Markup($"[grey]{formattedDate}[/]")
                 );
+                
+                // Add a separator row
+                table.AddRow(
+                    // new Text(""),
+                    new Rule().RuleStyle(Style.Parse("dim grey")),
+                    new Text("")
+                );
             }
-
+            
             return Boxed(table, $"[bold cyan] {title} ({comments.Count}) [/]", Color.DarkOrange);
+        }
 
-            // Panel panel = new()
+        // Format relative time similar to YouTube
+        private static string FormatRelativeTime(DateTime date)
+        {
+            var span = DateTime.Now - date;
+            
+            if (span.TotalDays > 365)
+            {
+                int years = (int)(span.TotalDays / 365);
+                return years == 1 ? "1 year ago" : $"{years} years ago";
+            }
+            if (span.TotalDays > 30)
+            {
+                int months = (int)(span.TotalDays / 30);
+                return months == 1 ? "1 month ago" : $"{months} months ago";
+            }
+            if (span.TotalDays > 7)
+            {
+                int weeks = (int)(span.TotalDays / 7);
+                return weeks == 1 ? "1 week ago" : $"{weeks} weeks ago";
+            }
+            if (span.TotalDays >= 1)
+            {
+                int days = (int)span.TotalDays;
+                return days == 1 ? "1 day ago" : $"{days} days ago";
+            }
+            if (span.TotalHours >= 1)
+            {
+                int hours = (int)span.TotalHours;
+                return hours == 1 ? "1 hour ago" : $"{hours} hours ago";
+            }
+            if (span.TotalMinutes >= 1)
+            {
+                int minutes = (int)span.TotalMinutes;
+                return minutes == 1 ? "1 minute ago" : $"{minutes} minutes ago";
+            }
+            
+            return "just now";
         }
 
         //---------- Wiki Page ----------//

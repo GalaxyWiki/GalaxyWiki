@@ -235,7 +235,7 @@ namespace GalaxyWiki.CLI
         {
             try
             {
-                string endpoint = $"/comment/celestial_bodies/{celestialBodyId}";
+                string endpoint = $"/comment/celestial-body/{celestialBodyId}";
                 return await GetDeserialized<List<Comment>>(endpoint);
             }
             catch (Exception ex)
