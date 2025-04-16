@@ -550,6 +550,7 @@ namespace GalaxyWiki.CLI
 
             // Find all children that orbit this body
             var children = bodyMap.Values.Where(b => b.Orbits != null && b.Orbits.Id == body.Id).ToList();
+            children.Sort((a, b) => a.Id.CompareTo(b.Id));
 
             // Recursively add children
             foreach (var child in children)
