@@ -61,6 +61,9 @@ namespace GalaxyWiki.API.Services
 
             await _contentRevisionRepository.Create(revision);
 
+            celestialBody.ActiveRevision = revision.Id;
+            await _celestialBodyRepository.Update(celestialBody);
+            
             return revision;
         }
     }
