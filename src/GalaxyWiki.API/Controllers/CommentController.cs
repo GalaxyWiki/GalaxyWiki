@@ -52,7 +52,6 @@ namespace GalaxyWiki.API.Controllers
         }
 
         // GET /comment/date-range?startDate={startDate}&endDate={endDate}&celestialBodyId={celestialBodyId}
-        // Example: /comment/date-range?startDate=2024-01-01&endDate=2024-12-31&celestialBodyId=123e4567-e89b-12d3-a456-426614174000
         [HttpGet("date-range")]
         public async Task<IActionResult> GetByDateRange([FromQuery] string startDate, [FromQuery] string endDate, [FromQuery] int? celestialBodyId)
         {

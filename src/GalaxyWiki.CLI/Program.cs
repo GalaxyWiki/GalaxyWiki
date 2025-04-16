@@ -1,17 +1,17 @@
 ﻿using Spectre.Console;
-using Spectre.Console.Cli;
-using Spectre.Console.Rendering;
 using dotenv.net;
 using GalaxyWiki.Core.Entities;
-using System.Text.RegularExpressions;
 using System.Text;
+using System.Reflection.Metadata;
+using Npgsql.Replication.PgOutput.Messages;
 
-
-public static class Program
+namespace GalaxyWiki.CLI
 {
-    // Command history to store previous commands
-    private static List<string> _commandHistory = new List<string>();
-    private static int _historyIndex = -1;
+    public static class Program
+    {
+        // Command history to store previous commands
+        private static List<string> _commandHistory = [];
+        private static int _historyIndex = -1;
 
     public static async Task<int> Main(string[] args)
     {
@@ -21,35 +21,35 @@ public static class Program
         DotEnv.Load();
         TUI.ShowBanner();
 
-        // Initialize the navigation system
-        await CommandLogic.Initialize();
-        
-        bool running = true;
-        while(running) {
-            // Get the current path to display in prompt
-            string promptPath = CommandLogic.GetCurrentPath();
+            // Initialize the navigation system
+            await CommandLogic.Initialize();
             
-            // Display prompt
-            AnsiConsole.Markup($"[lightcyan1]{promptPath}[/] [springgreen3_1]❯❯[/] ");
-            
-            // Use custom input method with command history support
-            var inp = ReadLineWithHistory();
-            
-            // Skip empty input
-            if (string.IsNullOrWhiteSpace(inp))
-                continue;
-            
-            // Add command to history if not empty and not a duplicate of the most recent command
-            if (!string.IsNullOrWhiteSpace(inp) && 
-                (_commandHistory.Count == 0 || inp != _commandHistory[_commandHistory.Count - 1])) {
-                _commandHistory.Add(inp);
-            }
-            
-            // Reset history navigation index
-            _historyIndex = -1;
-            
-            // Parse command and arguments, handling quoted strings
-            var (cmd, dat) = ParseCommand(inp);
+            bool running = true;
+            while(running) {
+                // Get the current path to display in prompt
+                string promptPath = CommandLogic.GetCurrentPath();
+                
+                // Display prompt
+                AnsiConsole.Markup($"[lightcyan1]{promptPath}[/] [springgreen3_1]❯❯[/] ");
+                
+                // Use custom input method with command history support
+                var inp = ReadLineWithHistory();
+                
+                // Skip empty input
+                if (string.IsNullOrWhiteSpace(inp))
+                    continue;
+                
+                // Add command to history if not empty and not a duplicate of the most recent command
+                if (!string.IsNullOrWhiteSpace(inp) && 
+                    (_commandHistory.Count == 0 || inp != _commandHistory[^1])) {
+                    _commandHistory.Add(inp);
+                }
+                
+                // Reset history navigation index
+                _historyIndex = -1;
+                
+                // Parse command and arguments, handling quoted strings
+                var (cmd, dat) = ParseCommand(inp);
 
             switch(cmd) {
                 case "quit":
@@ -78,7 +78,10 @@ public static class Program
 
                 case "pwd": AnsiConsole.Write(TUI.Path(CommandLogic.GetCurrentPath())); break;
 
-                case "ls": await HandleLsCommand(); break;
+                    case "ls": await HandleLsCommand(); break;
+
+                    case "edit": await HandleEditCurrentRevision(); break;
+
 
                 case "list":
                 case "find": await HandleListCommand(dat); break;
@@ -90,7 +93,9 @@ public static class Program
 
                 case "chat": LaunchChatbot(); break;
 
-                case "login": await ApiClient.LoginAsync(); break;
+                    case "login": await ApiClient.LoginAsync(); break;
+
+                    case "revision": await HandleRevisionCommand(dat); break;
 
                 default: HandleUnknownCommand(cmd); break;
             }
@@ -99,156 +104,156 @@ public static class Program
         return 0;
     }
 
-    // Custom input method that supports command history with up/down arrows
-    private static string ReadLineWithHistory()
-    {
-        StringBuilder input = new StringBuilder();
-        int cursorPos = 0;
-        
-        // Starting position for editable area
-        int startLeft = Console.CursorLeft;
-        int startTop = Console.CursorTop;
-        
-        while (true)
+        // Custom input method that supports command history with up/down arrows
+        private static string ReadLineWithHistory()
         {
-            ConsoleKeyInfo keyInfo = Console.ReadKey(true);
+            StringBuilder input = new();
+            int cursorPos = 0;
             
-            if (keyInfo.Key == ConsoleKey.Enter)
+            // Starting position for editable area
+            int startLeft = Console.CursorLeft;
+            int startTop = Console.CursorTop;
+            
+            while (true)
             {
-                Console.WriteLine(); // Move to next line after Enter
-                return input.ToString();
-            }
-            else if (keyInfo.Key == ConsoleKey.Backspace && cursorPos > 0)
-            {
-                input.Remove(cursorPos - 1, 1);
-                cursorPos--;
+                ConsoleKeyInfo keyInfo = Console.ReadKey(true);
                 
-                // Redraw the input line
-                Console.SetCursorPosition(startLeft, startTop);
-                Console.Write(new string(' ', input.Length + 1)); // Clear the line
-                Console.SetCursorPosition(startLeft, startTop);
-                Console.Write(input.ToString());
-                Console.SetCursorPosition(startLeft + cursorPos, startTop);
-            }
-            else if (keyInfo.Key == ConsoleKey.Delete && cursorPos < input.Length)
-            {
-                input.Remove(cursorPos, 1);
-                
-                // Redraw the input line
-                Console.SetCursorPosition(startLeft, startTop);
-                Console.Write(new string(' ', input.Length + 1)); // Clear the line
-                Console.SetCursorPosition(startLeft, startTop);
-                Console.Write(input.ToString());
-                Console.SetCursorPosition(startLeft + cursorPos, startTop);
-            }
-            else if (keyInfo.Key == ConsoleKey.LeftArrow && cursorPos > 0)
-            {
-                cursorPos--;
-                Console.SetCursorPosition(startLeft + cursorPos, startTop);
-            }
-            else if (keyInfo.Key == ConsoleKey.RightArrow && cursorPos < input.Length)
-            {
-                cursorPos++;
-                Console.SetCursorPosition(startLeft + cursorPos, startTop);
-            }
-            else if (keyInfo.Key == ConsoleKey.Home)
-            {
-                cursorPos = 0;
-                Console.SetCursorPosition(startLeft, startTop);
-            }
-            else if (keyInfo.Key == ConsoleKey.End)
-            {
-                cursorPos = input.Length;
-                Console.SetCursorPosition(startLeft + cursorPos, startTop);
-            }
-            else if (keyInfo.Key == ConsoleKey.UpArrow)
-            {
-                // Navigate backward in history
-                if (_commandHistory.Count > 0)
+                if (keyInfo.Key == ConsoleKey.Enter)
                 {
-                    // Move to the previous command in history (if possible)
-                    _historyIndex = Math.Min(_commandHistory.Count - 1, _historyIndex + 1);
-                    string historyCommand = _commandHistory[_commandHistory.Count - 1 - _historyIndex];
+                    Console.WriteLine(); // Move to next line after Enter
+                    return input.ToString();
+                }
+                else if (keyInfo.Key == ConsoleKey.Backspace && cursorPos > 0)
+                {
+                    input.Remove(cursorPos - 1, 1);
+                    cursorPos--;
                     
-                    // Clear current input
+                    // Redraw the input line
                     Console.SetCursorPosition(startLeft, startTop);
-                    Console.Write(new string(' ', input.Length));
+                    Console.Write(new string(' ', input.Length + 1)); // Clear the line
                     Console.SetCursorPosition(startLeft, startTop);
-                    
-                    // Replace with command from history
-                    input.Clear();
-                    input.Append(historyCommand);
                     Console.Write(input.ToString());
-                    cursorPos = input.Length;
                     Console.SetCursorPosition(startLeft + cursorPos, startTop);
                 }
-            }
-            else if (keyInfo.Key == ConsoleKey.DownArrow)
-            {
-                // Navigate forward in history
-                if (_historyIndex > 0)
+                else if (keyInfo.Key == ConsoleKey.Delete && cursorPos < input.Length)
                 {
-                    _historyIndex--;
-                    string historyCommand = _commandHistory[_commandHistory.Count - 1 - _historyIndex];
+                    input.Remove(cursorPos, 1);
                     
-                    // Clear current input
+                    // Redraw the input line
                     Console.SetCursorPosition(startLeft, startTop);
-                    Console.Write(new string(' ', input.Length));
+                    Console.Write(new string(' ', input.Length + 1)); // Clear the line
                     Console.SetCursorPosition(startLeft, startTop);
-                    
-                    // Replace with command from history
-                    input.Clear();
-                    input.Append(historyCommand);
                     Console.Write(input.ToString());
-                    cursorPos = input.Length;
                     Console.SetCursorPosition(startLeft + cursorPos, startTop);
                 }
-                else if (_historyIndex == 0)
+                else if (keyInfo.Key == ConsoleKey.LeftArrow && cursorPos > 0)
                 {
-                    // Clear the input when navigating past the newest history entry
-                    _historyIndex = -1;
-                    Console.SetCursorPosition(startLeft, startTop);
-                    Console.Write(new string(' ', input.Length));
-                    Console.SetCursorPosition(startLeft, startTop);
-                    input.Clear();
+                    cursorPos--;
+                    Console.SetCursorPosition(startLeft + cursorPos, startTop);
+                }
+                else if (keyInfo.Key == ConsoleKey.RightArrow && cursorPos < input.Length)
+                {
+                    cursorPos++;
+                    Console.SetCursorPosition(startLeft + cursorPos, startTop);
+                }
+                else if (keyInfo.Key == ConsoleKey.Home)
+                {
                     cursorPos = 0;
+                    Console.SetCursorPosition(startLeft, startTop);
                 }
-            }
-            else if (!char.IsControl(keyInfo.KeyChar))
-            {
-                // Insert character at cursor position
-                input.Insert(cursorPos, keyInfo.KeyChar);
-                cursorPos++;
-                
-                // Redraw the input line
-                Console.SetCursorPosition(startLeft, startTop);
-                Console.Write(input.ToString());
-                Console.SetCursorPosition(startLeft + cursorPos, startTop);
+                else if (keyInfo.Key == ConsoleKey.End)
+                {
+                    cursorPos = input.Length;
+                    Console.SetCursorPosition(startLeft + cursorPos, startTop);
+                }
+                else if (keyInfo.Key == ConsoleKey.UpArrow)
+                {
+                    // Navigate backward in history
+                    if (_commandHistory.Count > 0)
+                    {
+                        // Move to the previous command in history (if possible)
+                        _historyIndex = Math.Min(_commandHistory.Count - 1, _historyIndex + 1);
+                        string historyCommand = _commandHistory[_commandHistory.Count - 1 - _historyIndex];
+                        
+                        // Clear current input
+                        Console.SetCursorPosition(startLeft, startTop);
+                        Console.Write(new string(' ', input.Length));
+                        Console.SetCursorPosition(startLeft, startTop);
+                        
+                        // Replace with command from history
+                        input.Clear();
+                        input.Append(historyCommand);
+                        Console.Write(input.ToString());
+                        cursorPos = input.Length;
+                        Console.SetCursorPosition(startLeft + cursorPos, startTop);
+                    }
+                }
+                else if (keyInfo.Key == ConsoleKey.DownArrow)
+                {
+                    // Navigate forward in history
+                    if (_historyIndex > 0)
+                    {
+                        _historyIndex--;
+                        string historyCommand = _commandHistory[_commandHistory.Count - 1 - _historyIndex];
+                        
+                        // Clear current input
+                        Console.SetCursorPosition(startLeft, startTop);
+                        Console.Write(new string(' ', input.Length));
+                        Console.SetCursorPosition(startLeft, startTop);
+                        
+                        // Replace with command from history
+                        input.Clear();
+                        input.Append(historyCommand);
+                        Console.Write(input.ToString());
+                        cursorPos = input.Length;
+                        Console.SetCursorPosition(startLeft + cursorPos, startTop);
+                    }
+                    else if (_historyIndex == 0)
+                    {
+                        // Clear the input when navigating past the newest history entry
+                        _historyIndex = -1;
+                        Console.SetCursorPosition(startLeft, startTop);
+                        Console.Write(new string(' ', input.Length));
+                        Console.SetCursorPosition(startLeft, startTop);
+                        input.Clear();
+                        cursorPos = 0;
+                    }
+                }
+                else if (!char.IsControl(keyInfo.KeyChar))
+                {
+                    // Insert character at cursor position
+                    input.Insert(cursorPos, keyInfo.KeyChar);
+                    cursorPos++;
+                    
+                    // Redraw the input line
+                    Console.SetCursorPosition(startLeft, startTop);
+                    Console.Write(input.ToString());
+                    Console.SetCursorPosition(startLeft + cursorPos, startTop);
+                }
             }
         }
-    }
 
-    // Parse command and arguments, handling quoted strings
-    private static (string cmd, string args) ParseCommand(string input)
-    {
-        input = input.Trim();
-        
-        if (string.IsNullOrEmpty(input))
-            return ("", "");
+        // Parse command and arguments, handling quoted strings
+        private static (string cmd, string args) ParseCommand(string input)
+        {
+            input = input.Trim();
             
-        // Handle the case where the entire input is just the command
-        int firstSpaceIndex = input.IndexOf(' ');
-        if (firstSpaceIndex < 0)
-            return (input.ToLower(), "");
+            if (string.IsNullOrEmpty(input))
+                return ("", "");
+                
+            // Handle the case where the entire input is just the command
+            int firstSpaceIndex = input.IndexOf(' ');
+            if (firstSpaceIndex < 0)
+                return (input.ToLower(), "");
+                
+            // Extract the command (everything before the first space)
+            string cmd = input[..firstSpaceIndex].ToLower();
             
-        // Extract the command (everything before the first space)
-        string cmd = input.Substring(0, firstSpaceIndex).ToLower();
-        
-        // Extract arguments (everything after the first space)
-        string args = input.Substring(firstSpaceIndex + 1).Trim();
-        
-        return (cmd, args);
-    }
+            // Extract arguments (everything after the first space)
+            string args = input[(firstSpaceIndex + 1)..].Trim();
+            
+            return (cmd, args);
+        }
 
     //==================== Commands ====================//
 
@@ -339,34 +344,34 @@ public static class Program
         await CommandLogic.DisplayTree(useCurrentAsRoot);
     }
 
-    static async Task HandleListCommand(string args)
-    {
-        // Parse arguments
-        var argParts = args.Split(new[] { ' ' }, 2, StringSplitOptions.RemoveEmptyEntries);
-        
-        // If no arguments or not the right format, show all body types
-        if (argParts.Length < 2 || !argParts[0].Equals("-t", StringComparison.OrdinalIgnoreCase))
+        static async Task HandleListCommand(string args)
         {
-            // Display all body types
-            DisplayBodyTypes();
-            return;
+            // Parse arguments
+            var argParts = args.Split([' '], 2, StringSplitOptions.RemoveEmptyEntries);
+            
+            // If no arguments or not the right format, show all body types
+            if (argParts.Length < 2 || !argParts[0].Equals("-t", StringComparison.OrdinalIgnoreCase))
+            {
+                // Display all body types
+                DisplayBodyTypes();
+                return;
+            }
+            
+            // Get the type identifier (name or ID)
+            string typeIdentifier = CommandLogic.TrimQuotes(argParts[1]);
+            
+            // Get body type info
+            var bodyType = CommandLogic.GetBodyTypeInfo(typeIdentifier);
+            if (bodyType == null)
+            {
+                TUI.Err("LIST", $"Unknown body type: {typeIdentifier}", 
+                    "Use 'list' without arguments to see available types.");
+                return;
+            }
+            
+            // Get and display bodies of the specified type
+            await DisplayBodiesByType(bodyType);
         }
-        
-        // Get the type identifier (name or ID)
-        string typeIdentifier = CommandLogic.TrimQuotes(argParts[1]);
-        
-        // Get body type info
-        var bodyType = CommandLogic.GetBodyTypeInfo(typeIdentifier);
-        if (bodyType == null)
-        {
-            TUI.Err("LIST", $"Unknown body type: {typeIdentifier}", 
-                "Use 'list' without arguments to see available types.");
-            return;
-        }
-        
-        // Get and display bodies of the specified type
-        await DisplayBodiesByType(bodyType);
-    }
 
     static void DisplayBodyTypes()
     {
@@ -470,74 +475,67 @@ public static class Program
         AnsiConsole.Write(table);
     }
 
-    static async Task HandleShowCommand(string args)
-    {
-        // Parse arguments to check for -n or --name flag
-        var argParts = args.Split(new[] { ' ' }, 2, StringSplitOptions.RemoveEmptyEntries);
-        
-        // Check if a specific celestial body was requested
-        if (argParts.Length == 2 && (argParts[0].Equals("-n", StringComparison.OrdinalIgnoreCase) || 
-                                        argParts[0].Equals("--name", StringComparison.OrdinalIgnoreCase)))
+        static async Task HandleShowCommand(string args)
         {
-            string bodyName = CommandLogic.TrimQuotes(argParts[1]);
-            await ShowInfoForNamedBody(bodyName);
-            return;
-        }
-        
-        // If no specific body was requested, show info for current location
-        await ShowInfoForCurrentLocation();
-    }
-
-    static async Task HandleRenderCommand()
-    {
-        var body = CommandLogic.GetCurrentBody();
-        await TUI.RenderCelestialBody(body?.BodyName ?? "", body?.BodyType ?? -1);
-    }
-    
-    static async Task ShowInfoForCurrentLocation()
-    {
-        var body = CommandLogic.GetCurrentBody();
-        
-        if (body == null)
-        {
-            TUI.Err("INFO", "No celestial body found at current location.");
-            return;
-        }
-        
-        var revision = await CommandLogic.GetCurrentRevision();
-        
-        if (revision == null)
-        {
-            TUI.Err("INFO", "No content available for this celestial body.", 
-                "This celestial body might not have an active revision.");
-            return;
-        }
-        
-        List<Comment> comments = new List<Comment>();
-        if (revision.CelestialBodyName != null) {
-            comments = await CommandLogic.GetCommentsForNamedBody(revision.CelestialBodyName);
+            // Parse arguments to check for -n or --name flag
+            var argParts = args.Split([' '], 2, StringSplitOptions.RemoveEmptyEntries);
+            
+            // Check if a specific celestial body was requested
+            if (argParts.Length == 2 && (argParts[0].Equals("-n", StringComparison.OrdinalIgnoreCase) || 
+                                         argParts[0].Equals("--name", StringComparison.OrdinalIgnoreCase)))
+            {
+                string bodyName = CommandLogic.TrimQuotes(argParts[1]);
+                await ShowInfoForNamedBody(bodyName);
+                return;
+            }
+            
+            // If no specific body was requested, show info for current location
+            await ShowInfoForCurrentLocation();
         }
 
-        // AnsiConsole.Write(TUI.Article(revision.CelestialBodyName ?? "Unknown", revision.Content));
-        // AnsiConsole.Write(TUI.AuthorInfo(revision.AuthorDisplayName ?? "Unknown", revision.CreatedAt));
-        AnsiConsole.Write(TUI.WikiPage(revision, body.BodyType, comments));
-        await TUI.RenderCelestialBody(body.BodyName, body.BodyType);
-    }
-    
-    static async Task ShowInfoForNamedBody(string bodyName)
-    {
-        var revision = await CommandLogic.GetRevisionByBodyName(bodyName);
-        
-        if (revision == null)
+        static async Task HandleRenderCommand()
         {
-            TUI.Err("INFO", $"No content available for '{bodyName}'.", 
-                "The celestial body might not exist or doesn't have an active revision.");
-            return;
+            var body = CommandLogic.GetCurrentBody();
+            await TUI.RenderCelestialBody(body?.BodyName ?? "", body?.BodyType ?? -1);
         }
         
-        AnsiConsole.Write(TUI.Article(revision.CelestialBodyName ?? bodyName, null, revision.Content));
-        AnsiConsole.Write(TUI.AuthorInfo(revision.AuthorDisplayName ?? "Unknown", revision.CreatedAt));
-    }
+        static async Task ShowInfoForCurrentLocation()
+        {
+            var body = CommandLogic.GetCurrentBody();
+            if (body == null) { TUI.Err("INFO", "No celestial body found at current location."); return; }
+            
+            var rev = await CommandLogic.GetCurrentRevision();
+            
+            if (rev == null) {
+                TUI.Err("REV", "No content available for this celestial body.", "This celestial body might not have an active revision.");
+                return;
+            }
+            
+            List<Comment> comments = [];
+            if (rev.CelestialBodyName != null) {
+                comments = await CommandLogic.GetCommentsForNamedBody(rev.CelestialBodyName);
+            }
+
+            // AnsiConsole.Write(TUI.Article(revision.CelestialBodyName ?? "Unknown", revision.Content));
+            // AnsiConsole.Write(TUI.AuthorInfo(revision.AuthorDisplayName ?? "Unknown", revision.CreatedAt));
+            AnsiConsole.Write(TUI.WikiPage(rev, body.BodyType, comments));
+            await TUI.RenderCelestialBody(body.BodyName, body.BodyType);
+        }
+        
+        static async Task ShowInfoForNamedBody(string bodyName)
+        {
+            var revision = await CommandLogic.GetRevisionByBodyName(bodyName);
+            
+            if (revision == null)
+            {
+                TUI.Err("INFO", $"No content available for '{bodyName}'.", 
+                    "The celestial body might not exist or doesn't have an active revision.");
+                return;
+            }
+            
+            AnsiConsole.Write(TUI.Article(revision.CelestialBodyName ?? bodyName, null, revision.Content));
+            AnsiConsole.Write(TUI.AuthorInfo(revision.AuthorDisplayName ?? "Unknown", revision.CreatedAt));
+        }
 
     static async Task<IdMap<CelestialBodies>> GetAllCelestialBodies() {
         try { return await ApiClient.GetCelestialBodiesMap(); }
@@ -592,19 +590,19 @@ public static class Program
         var header = new Rule("[cyan] Galaxy Bot :robot: :sparkles: [/]");
         AnsiConsole.Write(header);
 
-        bool chatMode = true;
-        while(chatMode) {
-            AnsiConsole.Markup("[lightcyan1]Enter a message[/] [gold3]❯❯[/] ");
-            var msg = ReadLineWithHistory();
-            
-            if (msg.ToLower() == "quit" || msg.ToLower() == "exit") { 
-                chatMode = false; 
-            }
-            else { 
-                AnsiConsole.WriteLine("TODO: Bot response"); 
+            bool chatMode = true;
+            while(chatMode) {
+                AnsiConsole.Markup("[lightcyan1]Enter a message[/] [gold3]❯❯[/] ");
+                var msg = ReadLineWithHistory();
+                
+                if (msg.Equals("quit", StringComparison.CurrentCultureIgnoreCase) || msg.Equals("exit", StringComparison.CurrentCultureIgnoreCase)) { 
+                    chatMode = false; 
+                }
+                else { 
+                    AnsiConsole.WriteLine("TODO: Bot response"); 
+                }
             }
         }
-    }
 
     static async Task HandleCommentCommand(string args)
     {
@@ -644,7 +642,7 @@ public static class Program
                     TUI.Err("COMMENT", "No comment text provided.", "Usage: comment -a \"Your comment text\"");
                     return;
                 }
-                await AddComment(JoinArgs(argsList.Skip(1).ToList()));
+                await AddComment(JoinArgs([.. argsList.Skip(1)]));
                 break;
             
             case "-l":
@@ -949,4 +947,79 @@ public static class Program
     {
         return string.Join(" ", args);
     }
+
+     static async Task HandleRevisionCommand(string args)
+        {
+            // Parse arguments to check for -n or --name flag
+            var argParts = args.Split([' '], 2, StringSplitOptions.RemoveEmptyEntries);
+            
+            // Check if a specific celestial body was requested
+            if (argParts.Length == 2 && (argParts[0].Equals("-n", StringComparison.OrdinalIgnoreCase) || 
+                                         argParts[0].Equals("--name", StringComparison.OrdinalIgnoreCase)))
+            {
+                string bodyName = CommandLogic.TrimQuotes(argParts[1]);
+                await ShowRevisionsForNamedBody(bodyName);
+                return;
+            }
+            
+            // If no specific body was requested, show revisions for current location
+            await ShowRevisionsForCurrentLocation();
+        }
+        
+        static async Task ShowRevisionsForCurrentLocation()
+        {
+            var body = CommandLogic.GetCurrentBody();
+            
+            if (body == null)
+            {
+                TUI.Err("REVISION", "No celestial body found at current location.");
+                return;
+            }
+            
+            await ShowRevisionsForNamedBody(body.BodyName);
+        }
+        
+        static async Task ShowRevisionsForNamedBody(string bodyName)
+        {
+            try
+            {
+                var revisions = await ApiClient.GetRevisionsByBodyNameAsync(bodyName);
+                
+                if (revisions == null || revisions.Count == 0)
+                {
+                    TUI.Err("REVISION", $"No revisions found for '{bodyName}'.");
+                    return;
+                }
+                
+                var table = new Table()
+                    .Border(TableBorder.Rounded)
+                    .BorderColor(Color.Grey)
+                    .AddColumn(new TableColumn("ID").LeftAligned())
+                    .AddColumn(new TableColumn("Created At").LeftAligned())
+                    .AddColumn(new TableColumn("Author").LeftAligned())
+                    .AddColumn(new TableColumn("Preview").LeftAligned());
+                
+                foreach (var revision in revisions.OrderByDescending(r => r.CreatedAt))
+                {
+                    var previewContent = revision.Content?.Length > 50 
+                        ? revision.Content[..50] + "..." 
+                        : revision.Content ?? "";
+                    
+                    table.AddRow(
+                        revision.Id.ToString(),
+                        revision.CreatedAt.ToString("yyyy-MM-dd HH:mm"),
+                        revision.AuthorDisplayName ?? "Unknown",
+                        previewContent
+                    );
+                }
+                
+                AnsiConsole.Write(new Rule($"[gold3]Revision History for {bodyName}[/]"));
+                AnsiConsole.Write(table);
+            }
+            catch (Exception ex)
+            {
+                TUI.Err("REVISION", $"Failed to retrieve revisions for '{bodyName}'", ex.Message);
+            }
+        }
+}
 }
