@@ -17,7 +17,7 @@ namespace GalaxyWiki.Api.Controllers
             _commentService = commentService;
         }
 
-        // GET /comments
+        // GET /comment
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
@@ -25,7 +25,7 @@ namespace GalaxyWiki.Api.Controllers
             return Ok(comments);
         }
 
-        // GET /comments/{id}
+        // GET /comment/{id}
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
@@ -35,7 +35,7 @@ namespace GalaxyWiki.Api.Controllers
             return Ok(comment);
         }
 
-        // GET /comments/celestial_bodies/{celestialBodyId}
+        // GET /comment/celestial_bodies/{celestialBodyId}
         [HttpGet("celestial_bodies/{celestialBodyId}")]
         public async Task<IActionResult> GetByCelestialBody(int celestialBodyId)
         {
@@ -43,7 +43,7 @@ namespace GalaxyWiki.Api.Controllers
             return Ok(comments);
         }
 
-        // GET /comments/users/{userId}
+        // GET /comment/users/{userId}
         [HttpGet("users/{userId}")]
         public async Task<IActionResult> GetByUser(string userId)
         {
@@ -51,8 +51,8 @@ namespace GalaxyWiki.Api.Controllers
             return Ok(comments);            
         }
 
-        // GET /comments/date-range?startDate={startDate}&endDate={endDate}&celestialBodyId={celestialBodyId}
-        // Example: /comments/date-range?startDate=2024-01-01&endDate=2024-12-31&celestialBodyId=123e4567-e89b-12d3-a456-426614174000
+        // GET /comment/date-range?startDate={startDate}&endDate={endDate}&celestialBodyId={celestialBodyId}
+        // Example: /comment/date-range?startDate=2024-01-01&endDate=2024-12-31&celestialBodyId=123e4567-e89b-12d3-a456-426614174000
         [HttpGet("date-range")]
         public async Task<IActionResult> GetByDateRange([FromQuery] string startDate, [FromQuery] string endDate, [FromQuery] int? celestialBodyId)
         {
@@ -68,7 +68,7 @@ namespace GalaxyWiki.Api.Controllers
             return Ok(comments);
         }
 
-        // POST /comments
+        // POST /comment
         [HttpPost]
         [Authorize]
         public async Task<IActionResult> Create([FromBody] CreateCommentRequest newComment)
@@ -78,12 +78,12 @@ namespace GalaxyWiki.Api.Controllers
 
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            var comment = await _commentService.Create(newComment, userId);
+            var comment = await _commentService.Create(newComment, userId!);
 
             return CreatedAtAction(nameof(GetById), new { id = comment.CommentId }, comment);            
         }
 
-        // PUT /comments/{id}
+        // PUT /comment/{id}
         [HttpPut("{id}")]
         [Authorize]
         public async Task<IActionResult> Update(int commentId, [FromBody] UpdateCommentRequest updateDto)
@@ -93,19 +93,19 @@ namespace GalaxyWiki.Api.Controllers
 
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            var updatedComment = await _commentService.Update(commentId, updateDto, userId);
+            var updatedComment = await _commentService.Update(commentId, updateDto, userId!);
 
             return Ok(updatedComment);
         }
 
-        // DELETE /comments/{id}
+        // DELETE /comment/{id}
         [HttpDelete("{id}")]
         [Authorize]
         public async Task<IActionResult> Delete(int commentId)
         {   
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            await _commentService.Delete(commentId, userId);
+            await _commentService.Delete(commentId, userId!);
 
             return NoContent();
         }

@@ -5,7 +5,7 @@ using GalaxyWiki.Api.Repositories;
 
 namespace GalaxyWiki.API.Services
 {
-    public class ContentRevisionService
+    public class ContentRevisionService : IContentRevisionService
     {
         private AuthService _authService;
         private readonly ContentRevisionRepository _contentRevisionRepository;

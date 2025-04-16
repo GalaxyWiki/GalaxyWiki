@@ -214,7 +214,7 @@ namespace GalaxyWiki.CLI
                 return null;
             }
 
-            return await ApiClient.GetRevisionAsync($"http://localhost:5216/api/revision/{_state.CurrentBody.ActiveRevision}");
+            return await ApiClient.GetRevisionAsync($"/api/revision/{_state.CurrentBody.ActiveRevision}");
         }
 
         // Display a tree view of celestial bodies
@@ -449,7 +449,7 @@ namespace GalaxyWiki.CLI
             try
             {
                 // Get the active revision
-                return await ApiClient.GetRevisionAsync($"http://localhost:5216/api/revision/{targetBody.ActiveRevision.Value}");
+                return await ApiClient.GetRevisionAsync($"/api/revision/{targetBody.ActiveRevision.Value}");
             }
             catch (Exception ex)
             {
