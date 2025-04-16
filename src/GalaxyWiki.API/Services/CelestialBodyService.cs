@@ -7,13 +7,13 @@ using System.Threading.Tasks;
 
 namespace GalaxyWiki.API.Services
 {
-    public class CelestialBodyService
+    public class CelestialBodyService : ICelestialBodyService
     {
-        private readonly CelestialBodyRepository _celestialBodyRepository;
-        private readonly AuthService _authService;
+        private readonly ICelestialBodyRepository _celestialBodyRepository;
+        private readonly IAuthService _authService;
         private readonly BodyTypeRepository _bodyTypeRepository;
 
-        public CelestialBodyService(CelestialBodyRepository celestialBodyRepository, AuthService authService, BodyTypeRepository bodyTypesRepository)
+        public CelestialBodyService(ICelestialBodyRepository celestialBodyRepository, IAuthService authService, BodyTypeRepository bodyTypesRepository)
         {
             _celestialBodyRepository = celestialBodyRepository;
             _authService = authService;

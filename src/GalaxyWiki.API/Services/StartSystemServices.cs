@@ -5,20 +5,20 @@ using GalaxyWiki.API.DTOs;
 
 namespace GalaxyWiki.API.Services
 {
-    public class StarSystemService
+    public class StarSystemService : IStarSystemService
     {
-        private readonly AuthService _authService;
+        private readonly IAuthService _authService;
         private readonly StarSystemRepository _starSystemRepository;
-        private readonly CelestialBodyRepository _celestialBodyRepository;
+        private readonly ICelestialBodyRepository _celestialBodyRepository;
 
-        public StarSystemService(AuthService authService, StarSystemRepository starSystemRepository, CelestialBodyRepository celestialBodyRepository)
+        public StarSystemService(IAuthService authService, StarSystemRepository starSystemRepository, ICelestialBodyRepository celestialBodyRepository)
         {
             _authService = authService;
             _starSystemRepository = starSystemRepository;
             _celestialBodyRepository = celestialBodyRepository;
         }
 
-        public async Task<IEnumerable<StarSystems>> getAll()
+        public async Task<IEnumerable<StarSystems>> GetAll()
         {
             return await _starSystemRepository.GetAll();
         }

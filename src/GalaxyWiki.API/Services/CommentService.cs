@@ -6,14 +6,14 @@ using GalaxyWiki.Core.Enums;
 
 namespace GalaxyWiki.Api.Services
 {
-    public class CommentService
+    public class CommentService : ICommentService
     {
-        private AuthService _authService;
-        private UserService _userService;
+        private IAuthService _authService;
+        private IUserService _userService;
         private readonly CommentRepository _commentRepository;
-        private readonly CelestialBodyRepository _celestialBodyRepository;
+        private readonly ICelestialBodyRepository _celestialBodyRepository;
 
-        public CommentService(AuthService authService, UserService userService, CommentRepository commentRepository, CelestialBodyRepository celestialBodyRepository)
+        public CommentService(IAuthService authService, IUserService userService, CommentRepository commentRepository, ICelestialBodyRepository celestialBodyRepository)
         {
             _authService = authService;
             _userService = userService;

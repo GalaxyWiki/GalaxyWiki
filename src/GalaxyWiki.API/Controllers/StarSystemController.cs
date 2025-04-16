@@ -21,7 +21,7 @@ namespace GalaxyWiki.API.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
-            var starSystems = await _starSystemService.getAll();
+            var starSystems = await _starSystemService.GetAll();
 
             return Ok(starSystems.Select(ss => new
             {

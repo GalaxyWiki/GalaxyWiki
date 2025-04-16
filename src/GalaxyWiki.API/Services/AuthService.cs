@@ -6,9 +6,9 @@ namespace GalaxyWiki.API.Services
 {
     public class AuthService : IAuthService
     {
-        private readonly UserService _userService;
+        private readonly IUserService _userService;
 
-        public AuthService(NHibernate.ISession session, UserService userService)
+        public AuthService(NHibernate.ISession session, IUserService userService)
         {
             _userService = userService;
         }
