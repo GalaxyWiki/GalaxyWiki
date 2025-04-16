@@ -162,8 +162,7 @@ namespace GalaxyWiki.Cli
                 var table = new Table().Expand();
                 table.AddColumn(new TableColumn("[yellow]Type[/]").Width(15));
                 table.AddColumn(new TableColumn("[yellow]Name[/]"));
-                table.AddColumn(new TableColumn("[yellow]Match Type[/]").Width(15));
-                table.AddColumn(new TableColumn("[yellow]Match %[/]").Width(10));
+                 
 
                 bool foundResults = false;
 
@@ -171,9 +170,7 @@ namespace GalaxyWiki.Cli
                 {
                     table.AddRow(
                         "Celestial Body",
-                        Markup.Escape(result.Item.BodyName),
-                        Markup.Escape(result.MatchType),
-                        $"{result.MatchRatio}%"
+                        Markup.Escape(result.Item.BodyName)
                     );
                     foundResults = true;
                 }
