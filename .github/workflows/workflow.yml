@@ -297,7 +297,9 @@ jobs:
             -e CLIENT_ID='CLIENT_ID_VALUE' \
             -e CLIENT_SECRET='CLIENT_SECRET_VALUE' \
             -e DB_CONNECTION_STRING='DB_CONNECTION_VALUE' \
-            -e REDIRECT_URI='REDIRECT_URI_VALUE' \
+            -e REDIRECT_URI='http://localhost:5000/' \
+            -e API_URL='API_URL_VALUE' \
+            -e ASPNETCORE_URLS="http://0.0.0.0:80;https://0.0.0.0:443" \
             -p 80:80 -p 443:443 \
             --name galaxywiki-api-container \
             galaxywiki-api-image
@@ -307,7 +309,7 @@ jobs:
           sed -i "s|CLIENT_ID_VALUE|${{ env.GOOGLE_CLIENT_ID }}|g" docker_commands.sh
           sed -i "s|CLIENT_SECRET_VALUE|${{ env.GOOGLE_CLIENT_SECRET }}|g" docker_commands.sh
           sed -i "s|DB_CONNECTION_VALUE|Host=${{ needs.terraform.outputs.dbhost }};Port=5432;Database=galaxy;Username=${{ env.DB_USERNAME }};Password=${{ env.DB_PASSWORD }};|g" docker_commands.sh
-          sed -i "s|REDIRECT_URI_VALUE|https://${{ needs.terraform.outputs.ec2host }}/|g" docker_commands.sh
+          sed -i "s|API_URL_VALUE|http://${{ needs.terraform.outputs.ec2host }}|g" docker_commands.sh
           
           # Upload the script to S3
           aws s3 cp docker_commands.sh s3://galaxywiki-artifacts/docker_commands.sh
