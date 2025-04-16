@@ -4,6 +4,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using GalaxyWiki.Core.Entities;
 using Spectre.Console;
 
@@ -194,9 +195,15 @@ namespace GalaxyWiki.CLI
                 // Read the JSON response string
                 string jsonString = await response.Content.ReadAsStringAsync();
 
+                // Configure JSON options with custom DateTime handling
+                var options = new JsonSerializerOptions { 
+                    PropertyNameCaseInsensitive = true,
+                    Converters = { new DateTimeConverterUsingDateTimeParse() }
+                };
+
                 // Deserialize the JSON into a Revision object
                 Revision? revision = JsonSerializer
-                    .Deserialize<Revision>(jsonString, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    .Deserialize<Revision>(jsonString, options);
 
                 return revision;
             }
@@ -219,16 +226,22 @@ namespace GalaxyWiki.CLI
                 // Reading the JSON response string
                 string jsonString = await response.Content.ReadAsStringAsync();
 
-                // Deserialising the JSON into a List<Revision> object
+                // Configure JSON options with custom DateTime handling
+                var options = new JsonSerializerOptions { 
+                    PropertyNameCaseInsensitive = true,
+                    Converters = { new DateTimeConverterUsingDateTimeParse() }
+                };
+
+                // Deserializing the JSON into a List<Revision> object
                 List<Revision>? revisions = JsonSerializer
-                    .Deserialize<List<Revision>>(jsonString, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    .Deserialize<List<Revision>>(jsonString, options);
 
                 return revisions ?? [];
             }
             catch (Exception ex)
             {
                 TUI.Err("GET", "Couldn't retrieve revisions", ex.Message);
-                return new List<Revision>();
+                return [];
             }
         }
 
@@ -527,5 +540,36 @@ public class Users
 public class UpdateCommentRequest
 {
     public string CommentText { get; set; }
+}
+
+// Add this class at the end of the file, after all other class definitions
+public class DateTimeConverterUsingDateTimeParse : JsonConverter<DateTime>
+{
+    public override DateTime Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        string? dateString = reader.GetString();
+        if (string.IsNullOrEmpty(dateString))
+            return DateTime.MinValue;
+            
+        // Try to parse the date, using multiple formats to be safe
+        if (DateTime.TryParse(dateString, out DateTime result))
+            return result;
+            
+        try
+        {
+            // Try ISO 8601 format explicitly
+            return DateTime.ParseExact(dateString, "yyyy-MM-ddTHH:mm:ss.fffZ", null);
+        }
+        catch
+        {
+            // Last resort - return current time
+            return DateTime.Now;
+        }
+    }
+
+    public override void Write(Utf8JsonWriter writer, DateTime value, JsonSerializerOptions options)
+    {
+        writer.WriteStringValue(value.ToString("o"));
+    }
 }
 }
