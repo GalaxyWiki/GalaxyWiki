@@ -666,10 +666,26 @@ namespace GalaxyWiki.CLI
                     chatMode = false; 
                 }
                 else { 
-                    AnsiConsole.MarkupLine("[yellow]Thinking...[/]");
+
+await AnsiConsole.Status()
+                        .StartAsync("[yellow]Thinking...[/]", async ctx => {
+                            var response = await ClaudeClient.GetResponse(msg,currentContext);
+                            AnsiConsole.MarkupLine($"[green]Bot:[/] {response}");
+                        });
+
+
+                    // AnsiConsole.MarkupLine("[yellow]Thinking...[/]");
+                    // AnsiConsole.MarkupLine("[yellow]● ● ●[/] Galaxy Bot is thinking...");
+                    // AnsiConsole.Status()
+                    //     .Spinner(Spinner.Known.Dots)
+                    //     .Start("[yellow]● ● ●[/] Galaxy Bot is thinking...", async ctx =>{
+                    //         // Omitted
+
+                    //         var response = await ClaudeClient.GetResponse(msg, currentContext);
+                    // AnsiConsole.MarkupLine($"[green]Bot:[/] {response}");
+                    //     });
                     // Pass the current context to the ClaudeClient
-                    var response = await ClaudeClient.GetResponse(msg, currentContext);
-                    AnsiConsole.MarkupLine($"[green]Bot:[/] {response}");
+                    
                 }
             }
         }
