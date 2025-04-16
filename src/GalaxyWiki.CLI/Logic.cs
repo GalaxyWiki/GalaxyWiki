@@ -1,7 +1,6 @@
 using GalaxyWiki.Core.Entities;
 using Spectre.Console;
 using System.Text;
-using System.Text.RegularExpressions;
 
 namespace GalaxyWiki.CLI
 {
@@ -29,19 +28,18 @@ namespace GalaxyWiki.CLI
     public static class CommandLogic
     {
         private static NavigationState _state = new NavigationState();
-        private static List<BodyTypeInfo> _bodyTypes = new List<BodyTypeInfo>
-        {
-            new BodyTypeInfo { Id = 1, Name = "Galaxy", Description = "A vast system of stars, gas, and dust held together by gravity" },
-            new BodyTypeInfo { Id = 2, Name = "Star", Description = "A luminous ball of plasma held together by its own gravity" },
-            new BodyTypeInfo { Id = 3, Name = "Planet", Description = "A celestial body orbiting a star with sufficient mass for gravity to make it round" },
-            new BodyTypeInfo { Id = 4, Name = "Moon", Description = "A natural satellite orbiting a planet or other celestial body" },
-            new BodyTypeInfo { Id = 5, Name = "Satellite", Description = "An artificial object placed in orbit around a celestial body" },
-            new BodyTypeInfo { Id = 6, Name = "Black Hole", Description = "A region of spacetime where gravity is so strong that nothing can escape from it" },
-            new BodyTypeInfo { Id = 7, Name = "Dwarf Planet", Description = "A celestial body orbiting the Sun that is massive enough to be rounded by its own gravity" },
-            new BodyTypeInfo { Id = 8, Name = "Asteroid", Description = "A minor rocky body orbiting the Sun, smaller than a planet" },
-            new BodyTypeInfo { Id = 9, Name = "Comet", Description = "A small, icy object that, when close to the Sun, displays a visible coma and tail" },
-            new BodyTypeInfo { Id = 10, Name = "Nebula", Description = "A cloud of gas and dust in outer space" },
-            new BodyTypeInfo { Id = 11, Name = "Universe", Description = "All of space and time and their contents" }
+        private static List<BodyTypeInfo> _bodyTypes = new List<BodyTypeInfo> {
+            new BodyTypeInfo { Id = 1,  Name = "Galaxy",        Description = "A vast system of stars, gas, and dust held together by gravity" },
+            new BodyTypeInfo { Id = 2,  Name = "Star",          Description = "A luminous ball of plasma held together by its own gravity" },
+            new BodyTypeInfo { Id = 3,  Name = "Planet",        Description = "A celestial body orbiting a star with sufficient mass for gravity to make it round" },
+            new BodyTypeInfo { Id = 4,  Name = "Moon",          Description = "A natural satellite orbiting a planet or other celestial body" },
+            new BodyTypeInfo { Id = 5,  Name = "Satellite",     Description = "An artificial object placed in orbit around a celestial body" },
+            new BodyTypeInfo { Id = 6,  Name = "Black Hole",    Description = "A region of spacetime where gravity is so strong that nothing can escape from it" },
+            new BodyTypeInfo { Id = 7,  Name = "Dwarf Planet",  Description = "A celestial body orbiting the Sun that is massive enough to be rounded by its own gravity" },
+            new BodyTypeInfo { Id = 8,  Name = "Asteroid",      Description = "A minor rocky body orbiting the Sun, smaller than a planet" },
+            new BodyTypeInfo { Id = 9,  Name = "Comet",         Description = "A small, icy object that, when close to the Sun, displays a visible coma and tail" },
+            new BodyTypeInfo { Id = 10, Name = "Nebula",        Description = "A cloud of gas and dust in outer space" },
+            new BodyTypeInfo { Id = 11, Name = "Universe",      Description = "All of space and time and their contents" }
         };
 
         // Initialize the navigation state with the universe root

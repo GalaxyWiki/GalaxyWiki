@@ -1,11 +1,10 @@
 ﻿using Spectre.Console;
-using Spectre.Console.Cli;
-using Spectre.Console.Rendering;
 using dotenv.net;
 using GalaxyWiki.Core.Entities;
 using GalaxyWiki.CLI;
-using System.Text.RegularExpressions;
 using System.Text;
+using System.Reflection.Metadata;
+using Npgsql.Replication.PgOutput.Messages;
 
 namespace GalaxyWiki.Cli
 {
@@ -81,6 +80,8 @@ namespace GalaxyWiki.Cli
                     case "pwd": AnsiConsole.Write(TUI.Path(CommandLogic.GetCurrentPath())); break;
 
                     case "ls": await HandleLsCommand(); break;
+
+                    case "edit": await HandleEditCurrentRevision(); break;
 
                     case "list":
                     case "find": await HandleListCommand(dat); break;
@@ -499,30 +500,23 @@ namespace GalaxyWiki.Cli
         static async Task ShowInfoForCurrentLocation()
         {
             var body = CommandLogic.GetCurrentBody();
+            if (body == null) { TUI.Err("INFO", "No celestial body found at current location."); return; }
             
-            if (body == null)
-            {
-                TUI.Err("INFO", "No celestial body found at current location.");
-                return;
-            }
+            var rev = await CommandLogic.GetCurrentRevision();
             
-            var revision = await CommandLogic.GetCurrentRevision();
-            
-            if (revision == null)
-            {
-                TUI.Err("INFO", "No content available for this celestial body.", 
-                    "This celestial body might not have an active revision.");
+            if (rev == null) {
+                TUI.Err("REV", "No content available for this celestial body.", "This celestial body might not have an active revision.");
                 return;
             }
             
             List<Comment> comments = new List<Comment>();
-            if (revision.CelestialBodyName != null) {
-                comments = await CommandLogic.GetCommentsForNamedBody(revision.CelestialBodyName);
+            if (rev.CelestialBodyName != null) {
+                comments = await CommandLogic.GetCommentsForNamedBody(rev.CelestialBodyName);
             }
 
             // AnsiConsole.Write(TUI.Article(revision.CelestialBodyName ?? "Unknown", revision.Content));
             // AnsiConsole.Write(TUI.AuthorInfo(revision.AuthorDisplayName ?? "Unknown", revision.CreatedAt));
-            AnsiConsole.Write(TUI.WikiPage(revision, body.BodyType, comments));
+            AnsiConsole.Write(TUI.WikiPage(rev, body.BodyType, comments));
             await TUI.RenderCelestialBody(body.BodyName, body.BodyType);
         }
         
@@ -847,10 +841,7 @@ namespace GalaxyWiki.Cli
                 var newComments = new List<Comment> { comment };
                 AnsiConsole.Write(TUI.CommentsPanel(newComments, "Your New Comment"));
             }
-            else
-            {
-                TUI.Err("COMMENT", "Failed to add comment.");
-            }
+            else { TUI.Err("COMMENT", "Failed to add comment."); }
         }
         
         // Helper to split arguments while respecting quoted strings
@@ -897,6 +888,25 @@ namespace GalaxyWiki.Cli
         static string JoinArgs(List<string> args)
         {
             return string.Join(" ", args);
+        }
+
+        static async Task HandleEditCurrentRevision()
+        {
+            var body = CommandLogic.GetCurrentBody();
+            
+            if (body == null) { TUI.Err("INFO", "No celestial body found at current location."); return; }
+            
+            var rev = await CommandLogic.GetCurrentRevision();
+            
+            if (rev == null) {
+                TUI.Err("REV", "No content available for this celestial body.", "This celestial body might not have an active revision.");
+                return;
+            }
+
+            (string newContent, bool changed) = TUI.OpenExternalEditor(rev.Content ?? "");
+            if (!changed) { AnsiConsole.Markup($"[purple]Nothing was changed[/]\n\n"); return; }
+
+            AnsiConsole.Markup($"[green]Content updated successfully[/]\n\t{newContent.Replace("\n", "\n\t")}\n\n");
         }
     }
 }
