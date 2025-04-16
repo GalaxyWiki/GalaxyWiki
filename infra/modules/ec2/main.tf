@@ -159,10 +159,15 @@ locals {
     yum install -y git
     
     # Install AWS CLI
-    curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-    yum install -y unzip
-    unzip awscliv2.zip
-    ./aws/install
+    if ! command -v aws &> /dev/null; then
+      echo "Installing AWS CLI..."
+      curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+      yum install -y unzip
+      unzip awscliv2.zip
+      ./aws/install
+    else
+      echo "AWS CLI already installed"
+    fi
     aws --version
 
     # Install .NET 9.0

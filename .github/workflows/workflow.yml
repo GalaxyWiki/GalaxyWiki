@@ -146,12 +146,10 @@ jobs:
           head -n 1 galaxywiki-key.pem
           echo "Key size: $(wc -c < galaxywiki-key.pem) bytes"
 
-      - name: Install AWS CLI
+      - name: Check AWS CLI version
         run: |
-          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-          unzip awscliv2.zip
-          sudo ./aws/install
           aws --version
+          echo "Using pre-installed AWS CLI"
 
       - name: Get EC2 instance ID
         run: |
