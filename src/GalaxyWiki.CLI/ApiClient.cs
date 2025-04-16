@@ -55,7 +55,7 @@ namespace GalaxyWiki.CLI
             listener.Prefixes.Add(redirectUri!);
             listener.Start();
 
-            AnsiConsole.Write(new Rule("[gold3]Opening browser for google login...[/] "));
+            AnsiConsole.Write(new Rule("[orange1]Opening browser for google login...[/] "));
             Process.Start(new ProcessStartInfo(authUrl) { UseShellExecute = true });
 
             var context = await listener.GetContextAsync();

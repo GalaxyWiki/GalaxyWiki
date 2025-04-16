@@ -5,6 +5,7 @@ using GalaxyWiki.CLI;
 using System.Text;
 using System.Reflection.Metadata;
 using Npgsql.Replication.PgOutput.Messages;
+using System.Linq.Expressions;
 
 namespace GalaxyWiki.CLI
 {
@@ -116,120 +117,122 @@ namespace GalaxyWiki.CLI
             
             while (true)
             {
-                ConsoleKeyInfo keyInfo = Console.ReadKey(true);
-                
-                if (keyInfo.Key == ConsoleKey.Enter)
-                {
-                    Console.WriteLine(); // Move to next line after Enter
-                    return input.ToString();
-                }
-                else if (keyInfo.Key == ConsoleKey.Backspace && cursorPos > 0)
-                {
-                    input.Remove(cursorPos - 1, 1);
-                    cursorPos--;
+                try {
+                    ConsoleKeyInfo keyInfo = Console.ReadKey(true);
                     
-                    // Redraw the input line
-                    Console.SetCursorPosition(startLeft, startTop);
-                    Console.Write(new string(' ', input.Length + 1)); // Clear the line
-                    Console.SetCursorPosition(startLeft, startTop);
-                    Console.Write(input.ToString());
-                    Console.SetCursorPosition(startLeft + cursorPos, startTop);
-                }
-                else if (keyInfo.Key == ConsoleKey.Delete && cursorPos < input.Length)
-                {
-                    input.Remove(cursorPos, 1);
-                    
-                    // Redraw the input line
-                    Console.SetCursorPosition(startLeft, startTop);
-                    Console.Write(new string(' ', input.Length + 1)); // Clear the line
-                    Console.SetCursorPosition(startLeft, startTop);
-                    Console.Write(input.ToString());
-                    Console.SetCursorPosition(startLeft + cursorPos, startTop);
-                }
-                else if (keyInfo.Key == ConsoleKey.LeftArrow && cursorPos > 0)
-                {
-                    cursorPos--;
-                    Console.SetCursorPosition(startLeft + cursorPos, startTop);
-                }
-                else if (keyInfo.Key == ConsoleKey.RightArrow && cursorPos < input.Length)
-                {
-                    cursorPos++;
-                    Console.SetCursorPosition(startLeft + cursorPos, startTop);
-                }
-                else if (keyInfo.Key == ConsoleKey.Home)
-                {
-                    cursorPos = 0;
-                    Console.SetCursorPosition(startLeft, startTop);
-                }
-                else if (keyInfo.Key == ConsoleKey.End)
-                {
-                    cursorPos = input.Length;
-                    Console.SetCursorPosition(startLeft + cursorPos, startTop);
-                }
-                else if (keyInfo.Key == ConsoleKey.UpArrow)
-                {
-                    // Navigate backward in history
-                    if (_commandHistory.Count > 0)
+                    if (keyInfo.Key == ConsoleKey.Enter)
                     {
-                        // Move to the previous command in history (if possible)
-                        _historyIndex = Math.Min(_commandHistory.Count - 1, _historyIndex + 1);
-                        string historyCommand = _commandHistory[_commandHistory.Count - 1 - _historyIndex];
+                        Console.WriteLine(); // Move to next line after Enter
+                        return input.ToString();
+                    }
+                    else if (keyInfo.Key == ConsoleKey.Backspace && cursorPos > 0)
+                    {
+                        input.Remove(cursorPos - 1, 1);
+                        cursorPos--;
                         
-                        // Clear current input
+                        // Redraw the input line
                         Console.SetCursorPosition(startLeft, startTop);
-                        Console.Write(new string(' ', input.Length));
+                        Console.Write(new string(' ', input.Length + 1)); // Clear the line
                         Console.SetCursorPosition(startLeft, startTop);
-                        
-                        // Replace with command from history
-                        input.Clear();
-                        input.Append(historyCommand);
                         Console.Write(input.ToString());
-                        cursorPos = input.Length;
                         Console.SetCursorPosition(startLeft + cursorPos, startTop);
                     }
-                }
-                else if (keyInfo.Key == ConsoleKey.DownArrow)
-                {
-                    // Navigate forward in history
-                    if (_historyIndex > 0)
+                    else if (keyInfo.Key == ConsoleKey.Delete && cursorPos < input.Length)
                     {
-                        _historyIndex--;
-                        string historyCommand = _commandHistory[_commandHistory.Count - 1 - _historyIndex];
+                        input.Remove(cursorPos, 1);
                         
-                        // Clear current input
+                        // Redraw the input line
                         Console.SetCursorPosition(startLeft, startTop);
-                        Console.Write(new string(' ', input.Length));
+                        Console.Write(new string(' ', input.Length + 1)); // Clear the line
                         Console.SetCursorPosition(startLeft, startTop);
-                        
-                        // Replace with command from history
-                        input.Clear();
-                        input.Append(historyCommand);
                         Console.Write(input.ToString());
-                        cursorPos = input.Length;
                         Console.SetCursorPosition(startLeft + cursorPos, startTop);
                     }
-                    else if (_historyIndex == 0)
+                    else if (keyInfo.Key == ConsoleKey.LeftArrow && cursorPos > 0)
                     {
-                        // Clear the input when navigating past the newest history entry
-                        _historyIndex = -1;
-                        Console.SetCursorPosition(startLeft, startTop);
-                        Console.Write(new string(' ', input.Length));
-                        Console.SetCursorPosition(startLeft, startTop);
-                        input.Clear();
+                        cursorPos--;
+                        Console.SetCursorPosition(startLeft + cursorPos, startTop);
+                    }
+                    else if (keyInfo.Key == ConsoleKey.RightArrow && cursorPos < input.Length)
+                    {
+                        cursorPos++;
+                        Console.SetCursorPosition(startLeft + cursorPos, startTop);
+                    }
+                    else if (keyInfo.Key == ConsoleKey.Home)
+                    {
                         cursorPos = 0;
+                        Console.SetCursorPosition(startLeft, startTop);
                     }
-                }
-                else if (!char.IsControl(keyInfo.KeyChar))
-                {
-                    // Insert character at cursor position
-                    input.Insert(cursorPos, keyInfo.KeyChar);
-                    cursorPos++;
-                    
-                    // Redraw the input line
-                    Console.SetCursorPosition(startLeft, startTop);
-                    Console.Write(input.ToString());
-                    Console.SetCursorPosition(startLeft + cursorPos, startTop);
-                }
+                    else if (keyInfo.Key == ConsoleKey.End)
+                    {
+                        cursorPos = input.Length;
+                        Console.SetCursorPosition(startLeft + cursorPos, startTop);
+                    }
+                    else if (keyInfo.Key == ConsoleKey.UpArrow)
+                    {
+                        // Navigate backward in history
+                        if (_commandHistory.Count > 0)
+                        {
+                            // Move to the previous command in history (if possible)
+                            _historyIndex = Math.Min(_commandHistory.Count - 1, _historyIndex + 1);
+                            string historyCommand = _commandHistory[_commandHistory.Count - 1 - _historyIndex];
+                            
+                            // Clear current input
+                            Console.SetCursorPosition(startLeft, startTop);
+                            Console.Write(new string(' ', input.Length));
+                            Console.SetCursorPosition(startLeft, startTop);
+                            
+                            // Replace with command from history
+                            input.Clear();
+                            input.Append(historyCommand);
+                            Console.Write(input.ToString());
+                            cursorPos = input.Length;
+                            Console.SetCursorPosition(startLeft + cursorPos, startTop);
+                        }
+                    }
+                    else if (keyInfo.Key == ConsoleKey.DownArrow)
+                    {
+                        // Navigate forward in history
+                        if (_historyIndex > 0)
+                        {
+                            _historyIndex--;
+                            string historyCommand = _commandHistory[_commandHistory.Count - 1 - _historyIndex];
+                            
+                            // Clear current input
+                            Console.SetCursorPosition(startLeft, startTop);
+                            Console.Write(new string(' ', input.Length));
+                            Console.SetCursorPosition(startLeft, startTop);
+                            
+                            // Replace with command from history
+                            input.Clear();
+                            input.Append(historyCommand);
+                            Console.Write(input.ToString());
+                            cursorPos = input.Length;
+                            Console.SetCursorPosition(startLeft + cursorPos, startTop);
+                        }
+                        else if (_historyIndex == 0)
+                        {
+                            // Clear the input when navigating past the newest history entry
+                            _historyIndex = -1;
+                            Console.SetCursorPosition(startLeft, startTop);
+                            Console.Write(new string(' ', input.Length));
+                            Console.SetCursorPosition(startLeft, startTop);
+                            input.Clear();
+                            cursorPos = 0;
+                        }
+                    }
+                    else if (!char.IsControl(keyInfo.KeyChar))
+                    {
+                        // Insert character at cursor position
+                        input.Insert(cursorPos, keyInfo.KeyChar);
+                        cursorPos++;
+                        
+                        // Redraw the input line
+                        Console.SetCursorPosition(startLeft, startTop);
+                        Console.Write(input.ToString());
+                        Console.SetCursorPosition(startLeft + cursorPos, startTop);
+                    }
+                } catch {}
             }
         }
 
