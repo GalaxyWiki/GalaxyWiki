@@ -59,6 +59,22 @@ resource "aws_security_group" "api_sg" {
   }
   
   ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+    description = "HTTPS"
+  }
+  
+  ingress {
+    from_port   = 5000
+    to_port     = 5001
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+    description = ".NET API Ports"
+  }
+  
+  ingress {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
@@ -100,6 +116,12 @@ resource "aws_iam_role_policy_attachment" "ssm_policy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
 
+# Add EC2 Instance Connect policy
+resource "aws_iam_role_policy_attachment" "ec2_instance_connect_policy" {
+  role       = aws_iam_role.ec2_role.name
+  policy_arn = "arn:aws:iam::aws:policy/EC2InstanceConnect"
+}
+
 resource "aws_iam_instance_profile" "ec2_profile" {
   name = "galaxy-ec2-profile"
   role = aws_iam_role.ec2_role.name
@@ -128,11 +150,15 @@ locals {
     yum update -y
     
     # Install required packages
-    yum install -y httpd git
+    yum install -y git
+
+    # Install .NET 9.0
+    rpm -Uvh https://packages.microsoft.com/config/centos/7/packages-microsoft-prod.rpm
+    yum install -y dotnet-sdk-9.0
     
-    # Start and enable the web server
-    systemctl start httpd
-    systemctl enable httpd
+    # Create directory for application
+    mkdir -p /var/www/galaxywiki
+    chown -R ec2-user:ec2-user /var/www/galaxywiki
     
     # Set environment variables for database connection
     cat > /etc/profile.d/galaxy-env.sh << 'ENVFILE'
@@ -141,13 +167,44 @@ locals {
     export DB_NAME="${var.db_name}"
     export DB_USERNAME="${var.db_username}"
     export DB_PASSWORD="${var.db_password}"
+    export ASPNETCORE_URLS="http://0.0.0.0:5000"
+    export ASPNETCORE_ENVIRONMENT="Production"
     ENVFILE
     
-    # Create a simple index page
-    echo "<html><body><h1>GalaxyWiki API</h1><p>Test</p></body></html>" > /var/www/html/index.html
+    # Make environment variables available to services
+    source /etc/profile.d/galaxy-env.sh
     
-    # Set proper permissions
-    chmod 644 /var/www/html/index.html
+    # Create systemd service for the API
+    cat > /etc/systemd/system/galaxywiki-api.service << 'SERVICEFILE'
+    [Unit]
+    Description=GalaxyWiki API
+    After=network.target
+
+    [Service]
+    WorkingDirectory=/var/www/galaxywiki
+    ExecStart=/usr/bin/dotnet /var/www/galaxywiki/GalaxyWiki.API.dll
+    Restart=always
+    RestartSec=10
+    SyslogIdentifier=galaxywiki-api
+    User=ec2-user
+    Environment=ASPNETCORE_ENVIRONMENT=Production
+    Environment=DOTNET_GCHeapHardLimit=200000000
+    Environment=ASPNETCORE_URLS=http://0.0.0.0:5000
+    Environment=DB_HOST=${var.db_host}
+    Environment=DB_PORT=${var.db_port}
+    Environment=DB_NAME=${var.db_name}
+    Environment=DB_USERNAME=${var.db_username}
+    Environment=DB_PASSWORD=${var.db_password}
+
+    [Install]
+    WantedBy=multi-user.target
+    SERVICEFILE
+    
+    # Reload systemd
+    systemctl daemon-reload
+    
+    # Note: The API will be started after deployment
+    # You need to deploy your application to /var/www/galaxywiki
   EOF
 }
 
@@ -166,10 +223,12 @@ resource "aws_instance" "api_server" {
   instance_type          = "t2.micro"
   subnet_id              = aws_subnet.api_subnet.id
   vpc_security_group_ids = [aws_security_group.api_sg.id]
-  iam_instance_profile   = aws_iam_instance_profile.ec2_profile.name
-  user_data              = local.user_data
-  key_name               = aws_key_pair.generated_key.key_name
+  key_name              = aws_key_pair.generated_key.key_name
+  iam_instance_profile  = aws_iam_instance_profile.ec2_profile.name
   
+  user_data = local.user_data
+  user_data_replace_on_change = true
+
   root_block_device {
     volume_type           = "gp2"
     volume_size           = 8
@@ -178,6 +237,7 @@ resource "aws_instance" "api_server" {
   
   tags = {
     Name = "galaxy-api-server"
+    Environment = "Production"
   }
 }
 

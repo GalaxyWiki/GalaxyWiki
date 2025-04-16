@@ -28,7 +28,8 @@ namespace GalaxyWiki.API.Services
                 CommentId = comment.CommentId,
                 CommentText = comment.CommentText,
                 CreatedDate = comment.CreatedAt.ToString("yyyy-MM-dd"),
-                UserId = comment.UserId,
+                UserId = comment.Author.Id,
+                DisplayName = comment.Author.DisplayName,
                 CelestialBodyId = comment.CelestialBodyId
             };
         }
@@ -80,7 +81,7 @@ namespace GalaxyWiki.API.Services
             var comment = new Comments
             {
                 CommentText = commentDto.CommentText,
-                UserId = user.Id,
+                Author = user,
                 CelestialBodyId = commentDto.CelestialBodyId,
                 CreatedAt = DateTime.UtcNow
             };
@@ -102,7 +103,7 @@ namespace GalaxyWiki.API.Services
             if (comment == null) 
                 throw new CommentDoesNotExist("The selected comment does not exist");
 
-            if (user.Id != comment.UserId)
+            if (user.Id != comment.Author.Id)
                 throw new UserDoesNotHaveAccess("Cannot update a comment that is not your own."); 
 
             // Check if the comment is not older than one month
@@ -129,7 +130,7 @@ namespace GalaxyWiki.API.Services
             if (comment == null) 
                 throw new CommentDoesNotExist("The selected comment does not exist");
 
-            if (user.Role.Id != (int)UserRole.Admin && user.Id != comment.UserId)
+            if (user.Role.Id != (int)UserRole.Admin && user.Id != comment.Author.Id)
                 throw new UserDoesNotHaveAccess("Cannot delete a comment that is not your own."); 
 
             await _commentRepository.Delete(comment);

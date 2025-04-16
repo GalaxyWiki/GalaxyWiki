@@ -11,7 +11,7 @@ public class CommentsMap : ClassMap<Comments>
 
             Map(x => x.CelestialBodyId).Column("celestial_body_id").Not.Nullable();
 
-            Map(x => x.UserId).Column("user_id").Length(30);
+            References(x => x.Author).Column("user_id").Not.Nullable();
 
             Map(x => x.CommentText).Column("comment").Not.Nullable().Length(255);
             
