@@ -28,6 +28,12 @@ jobs:
         with:
           role-to-assume: arn:aws:iam::958933916692:role/gh-actions-role
           aws-region: eu-west-1
+    
+      - name: Get secrets from AWS Key Store
+        uses: aws-actions/aws-secretsmanager-get-secrets@v2
+        with:
+          secret-ids: |
+            DB_PASSWORD, dbpassword
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -38,6 +44,10 @@ jobs:
       - name: Terraform Init
         id: init
         run: terraform init
+
+      - name: Create terraform.tfvars
+        run: |
+          echo 'db_password = "${{ env.DB_PASSWORD }}"' > terraform.tfvars
 
       - name: Terraform Apply
         run: terraform apply -auto-approve
