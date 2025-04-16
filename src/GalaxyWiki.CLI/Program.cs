@@ -56,56 +56,33 @@ namespace GalaxyWiki.CLI
                 var (cmd, dat) = ParseCommand(inp);
 
             switch(cmd) {
-                case "quit":
-                case "exit": running = false; break;
-
-                case "help": PrintHelp(); break;
-
-                case "banner": TUI.ShowBanner(); break;
-
+                case "banner":      TUI.ShowBanner(); break;
+                case "cal":         AnsiConsole.Write(TUI.Calendar()); break;
+                case "cd":          await HandleCdCommand(dat); break;
+                case "chat":        await LaunchChatbot(); break;
                 case "clear":
-                case "cls": AnsiConsole.Clear(); break;
-
-                case "comment": await HandleCommentCommand(dat); break;
-
-                case "tree": await HandleTreeCommand(dat); break;
-
-                case "warp": await CommandLogic.WarpToSelectedBody(); break;
-
-                case "go": await ShowCdAutocomplete(); break;
-
-                case "cd": await HandleCdCommand(dat); break;
-
-                case "cal": AnsiConsole.Write(TUI.Calendar()); break;
-
-                case "search": AnsiConsole.WriteLine("TODO: Search wiki pages"); break;
-
-                case "pwd": AnsiConsole.Write(TUI.Path(CommandLogic.GetCurrentPath())); break;
-
-                    case "ls": await HandleLsCommand(dat); break;
-
-                    case "edit": await HandleEditCurrentRevision(); break;
-
-
+                case "cls":         AnsiConsole.Clear(); break;
+                case "comment":     await HandleCommentCommand(dat); break;
+                case "create-body": await HandleCreateBodyCommand(dat); break;
+                case "delete-body": await HandleDeleteBodyCommand(dat); break;
+                case "edit":        await HandleEditCurrentRevision(); break;
+                case "go":          await ShowCdAutocomplete(); break;
+                case "help":        PrintHelp(); break;
                 case "list":
-                case "find": await HandleListCommand(dat); break;
-
+                case "find":        await HandleListCommand(dat); break;
+                case "login":       await ApiClient.LoginAsync(); break;
+                case "ls":          await HandleLsCommand(dat); break;
+                case "pwd":         AnsiConsole.Write(TUI.Path(CommandLogic.GetCurrentPath())); break;
+                case "quit":
+                case "exit":        running = false; break;
+                case "render":      await HandleRenderCommand(); break;
+                case "revision":    await HandleRevisionCommand(dat); break;
+                case "search":      AnsiConsole.WriteLine("TODO: Search wiki pages"); break;
                 case "show":
-                case "info": await HandleShowCommand(dat); break;
-
-                case "render": await HandleRenderCommand(); break;
-
-                case "chat": await LaunchChatbot(); break;
-
-                    case "login": await ApiClient.LoginAsync(); break;
-
-                    case "revision": await HandleRevisionCommand(dat); break;
-                    
-                    case "create-body": await HandleCreateBodyCommand(dat); break;
-                    
-                    case "update-body": await HandleUpdateBodyCommand(dat); break;
-                    
-                    case "delete-body": await HandleDeleteBodyCommand(dat); break;
+                case "info":        await HandleShowCommand(dat); break;
+                case "tree":        await HandleTreeCommand(dat); break;
+                case "update-body": await HandleUpdateBodyCommand(dat); break;
+                case "warp":        await CommandLogic.WarpToSelectedBody(); break;
 
                 default: HandleUnknownCommand(cmd); break;
             }
@@ -1042,24 +1019,32 @@ await AnsiConsole.Status()
         return string.Join(" ", args);
     }
 
-     static async Task HandleEditCurrentRevision()
+    static async Task HandleEditCurrentRevision()
+    {
+        if (string.IsNullOrEmpty(ApiClient.JWT))
         {
-            var body = CommandLogic.GetCurrentBody();
-            
-            if (body == null) { TUI.Err("INFO", "No celestial body found at current location."); return; }
-            
-            var rev = await CommandLogic.GetCurrentRevision();
-            
-            if (rev == null) {
-                TUI.Err("REV", "No content available for this celestial body.", "This celestial body might not have an active revision.");
-                return;
-            }
-
-            (string newContent, bool changed) = TUI.OpenExternalEditor(rev.Content ?? "");
-            if (!changed) { AnsiConsole.Markup($"[purple]Nothing was changed[/]\n\n"); return; }
-
-            AnsiConsole.Markup($"[green]Content updated successfully[/]\n\t{newContent.Replace("\n", "\n\t")}\n\n");
+            TUI.Err("AUTH", "You must be logged in to edit pages.");
+            AnsiConsole.MarkupLine("[grey]Use the 'login' command to authenticate first.[/]");
+            return;
         }
+
+        var body = CommandLogic.GetCurrentBody();
+        if (body == null) { TUI.Err("INFO", "No celestial body found at current location."); return; }
+        
+        var rev = await CommandLogic.GetCurrentRevision();
+        
+        if (rev == null) {
+            TUI.Err("REV", "No content available for this celestial body.", "This celestial body might not have an active revision.");
+            return;
+        }
+
+        (string newContent, bool changed) = TUI.OpenExternalEditor(rev.Content ?? "");
+        if (!changed) { AnsiConsole.Markup($"[purple]Nothing was changed[/]\n\n"); return; }
+
+        await CommandLogic.CreateRevision(body.BodyName, newContent);
+        await CommandLogic.QuickRefreshBody();
+        AnsiConsole.Markup($"[green]Content updated successfully[/]\n\n");
+    }
         
      static async Task HandleRevisionCommand(string args)
         {
@@ -1504,97 +1489,4 @@ await AnsiConsole.Status()
             return CommandLogic.TrimQuotes(input);
         }
     }
-}/*
- static async Task HandleEditCurrentRevision()
-        {
-            var body = CommandLogic.GetCurrentBody();
-            
-            if (body == null) { TUI.Err("INFO", "No celestial body found at current location."); return; }
-            
-            var rev = await CommandLogic.GetCurrentRevision();
-            
-            if (rev == null) {
-                TUI.Err("REV", "No content available for this celestial body.", "This celestial body might not have an active revision.");
-                return;
-            }
-
-            (string newContent, bool changed) = TUI.OpenExternalEditor(rev.Content ?? "");
-            if (!changed) { AnsiConsole.Markup($"[purple]Nothing was changed[/]\n\n"); return; }
-
-            AnsiConsole.Markup($"[green]Content updated successfully[/]\n\t{newContent.Replace("\n", "\n\t")}\n\n");
-        }
-
-        static async Task HandleRevisionCommand(string args)
-        {
-            // Parse arguments to check for -n or --name flag
-            var argParts = args.Split([' '], 2, StringSplitOptions.RemoveEmptyEntries);
-            
-            // Check if a specific celestial body was requested
-            if (argParts.Length == 2 && (argParts[0].Equals("-n", StringComparison.OrdinalIgnoreCase) || 
-                                         argParts[0].Equals("--name", StringComparison.OrdinalIgnoreCase)))
-            {
-                string bodyName = CommandLogic.TrimQuotes(argParts[1]);
-                await ShowRevisionsForNamedBody(bodyName);
-                return;
-            }
-            
-            // If no specific body was requested, show revisions for current location
-            await ShowRevisionsForCurrentLocation();
-        }
-        
-        static async Task ShowRevisionsForCurrentLocation()
-        {
-            var body = CommandLogic.GetCurrentBody();
-            
-            if (body == null)
-            {
-                TUI.Err("REVISION", "No celestial body found at current location.");
-                return;
-            }
-            
-            await ShowRevisionsForNamedBody(body.BodyName);
-        }
-        
-        static async Task ShowRevisionsForNamedBody(string bodyName)
-        {
-            try
-            {
-                var revisions = await ApiClient.GetRevisionsByBodyNameAsync(bodyName);
-                
-                if (revisions == null || revisions.Count == 0)
-                {
-                    TUI.Err("REVISION", $"No revisions found for '{bodyName}'.");
-                    return;
-                }
-                
-                var table = new Table()
-                    .Border(TableBorder.Rounded)
-                    .BorderColor(Color.Grey)
-                    .AddColumn(new TableColumn("ID").LeftAligned())
-                    .AddColumn(new TableColumn("Created At").LeftAligned())
-                    .AddColumn(new TableColumn("Author").LeftAligned())
-                    .AddColumn(new TableColumn("Preview").LeftAligned());
-                
-                foreach (var revision in revisions.OrderByDescending(r => r.CreatedAt))
-                {
-                    var previewContent = revision.Content?.Length > 50 
-                        ? revision.Content[..50] + "..." 
-                        : revision.Content ?? "";
-                    
-                    table.AddRow(
-                        revision.Id.ToString(),
-                        revision.CreatedAt.ToString("yyyy-MM-dd HH:mm"),
-                        revision.AuthorDisplayName ?? "Unknown",
-                        previewContent
-                    );
-                }
-                
-                AnsiConsole.Write(new Rule($"[gold3]Revision History for {bodyName}[/]"));
-                AnsiConsole.Write(table);
-            }
-            catch (Exception ex)
-            {
-                TUI.Err("REVISION", $"Failed to retrieve revisions for '{bodyName}'", ex.Message);
-            }
-        }
-*/
+}
