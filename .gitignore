@@ -2,7 +2,7 @@ obj/
 bin/
 *.cache
 flyway.conf
-.terraform*
+# .terraform*
 # *.tfstate*
 .env
 src/GalaxyWiki.CLI/token.json/Google.Apis.Auth.OAuth2.Responses.TokenResponse-user
