@@ -599,6 +599,21 @@ public class BodyTypeInfo
         }
     }
 
+    public static async Task<Comment?> GetCommentById(int commentId)
+    {
+        try
+        {
+            // Get all comments and find the one with matching ID
+            var comments = await ApiClient.GetCommentsByCelestialBodyAsync(_state.CurrentBody.Id); 
+            return comments.FirstOrDefault(c => c.CommentId == commentId);
+        }
+        catch (Exception ex)
+        {
+            TUI.Err("COMMENT", "Failed to get comment.", ex.Message);
+            return null;
+        }
+    }
+
         // Create a new celestial body
         public static async Task<CelestialBodies?> CreateCelestialBody(string bodyName, int bodyTypeId, int? orbitsId = null)
         {
