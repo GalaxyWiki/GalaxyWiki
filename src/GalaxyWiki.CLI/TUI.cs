@@ -14,6 +14,8 @@ public static class TUI {
 
     static int Mod(int x, int m) => (x%m + m)%m;
 
+    static string Sanitize(string s) => s.Replace("[", "[[").Replace("]", "]]");
+
     static Color Shade(Color col, float amt) => Color.Default.Blend(col, amt);
 
     // Wrap an arbitrary element in a TUI box
@@ -130,12 +132,12 @@ public static class TUI {
     //---------- Error ----------//
     public static void Err(string name, string desc, string info = "") {
         AnsiConsole.Markup($"[[[bold red]{name.ToUpper()} ERR[/]]]: [red]{desc}[/]");
-        if (!info.Trim().IsEmpty()) { AnsiConsole.Markup("\n\t" + info.Replace("\n", "\n\t")); }
+        if (!info.Trim().IsEmpty()) { AnsiConsole.Markup("\n\t" + Sanitize(info).Replace("\n", "\n\t")); }
         AnsiConsole.Write("\n\n");
     }
     public static void Warn(string name, string desc, string info = "") {
         AnsiConsole.Markup($"[[[bold darkorange3]{name.ToUpper()} WARN[/]]]: [gold3]{desc}[/]");
-        if (!info.Trim().IsEmpty()) { AnsiConsole.Markup("\n\t" + info.Replace("\n", "\n\t") + "\n\n"); }
+        if (!info.Trim().IsEmpty()) { AnsiConsole.Markup("\n\t" + Sanitize(info).Replace("\n", "\n\t") + "\n\n"); }
         AnsiConsole.Write("\n\n");
     }
 

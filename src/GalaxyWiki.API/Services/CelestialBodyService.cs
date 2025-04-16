@@ -34,26 +34,6 @@ namespace GalaxyWiki.API.Services
             return result;
         }
 
-        public async Task<PagedResult<(CelestialBodies CelestialBody, BodyTypes? BodyType)>> GetAllPaginated(PaginationParameters parameters)
-        {
-            var (celestialBodies, totalCount) = await _celestialBodyRepository.GetAllPaginated(parameters);
-            var result = new List<(CelestialBodies CelestialBody, BodyTypes? BodyType)>();
-            
-            foreach (var celestialBody in celestialBodies)
-            {
-                var bodyType = await _bodyTypeRepository.GetById(celestialBody.BodyType);
-                result.Add((celestialBody, bodyType));
-            }
-            
-            return new PagedResult<(CelestialBodies CelestialBody, BodyTypes? BodyType)>
-            {
-                PageNumber = parameters.PageNumber,
-                PageSize = parameters.PageSize,
-                TotalCount = totalCount,
-                Items = result
-            };
-        }
-
         public async Task<(CelestialBodies? CelestialBody, BodyTypes? BodyType)> GetById(int id)
         {
             var celestialBody = await _celestialBodyRepository.GetById(id);
