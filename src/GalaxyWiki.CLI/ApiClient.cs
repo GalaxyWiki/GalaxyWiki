@@ -139,6 +139,31 @@ public static class ApiClient
         }
     }
 
+    public static async Task<List<Revision>> GetRevisionsByBodyNameAsync(string bodyName)
+    {
+        try
+        {
+            // Performing the HTTP GET request
+            string endpoint = $"/api/revision/by-name/{Uri.EscapeDataString(bodyName)}";
+            HttpResponseMessage response = await httpClient.GetAsync(apiUrl + endpoint);
+            response.EnsureSuccessStatusCode();
+
+            // Reading the JSON response string
+            string jsonString = await response.Content.ReadAsStringAsync();
+
+            // Deserialising the JSON into a List<Revision> object
+            List<Revision>? revisions = JsonSerializer
+                .Deserialize<List<Revision>>(jsonString, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+            return revisions ?? [];
+        }
+        catch (Exception ex)
+        {
+            TUI.Err("GET", "Couldn't retrieve revisions", ex.Message);
+            return new List<Revision>();
+        }
+    }
+
     // Get comments for a celestial body
     public static async Task<List<Comment>> GetCommentsByCelestialBodyAsync(int celestialBodyId)
     {

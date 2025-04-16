@@ -94,6 +94,8 @@ namespace GalaxyWiki.Cli
 
                     case "login": await ApiClient.LoginAsync(); break;
 
+                    case "revision": await HandleRevisionCommand(dat); break;
+
                     default: HandleUnknownCommand(cmd); break;
                 }
             }
@@ -897,6 +899,80 @@ namespace GalaxyWiki.Cli
         static string JoinArgs(List<string> args)
         {
             return string.Join(" ", args);
+        }
+
+        static async Task HandleRevisionCommand(string args)
+        {
+            // Parse arguments to check for -n or --name flag
+            var argParts = args.Split([' '], 2, StringSplitOptions.RemoveEmptyEntries);
+            
+            // Check if a specific celestial body was requested
+            if (argParts.Length == 2 && (argParts[0].Equals("-n", StringComparison.OrdinalIgnoreCase) || 
+                                         argParts[0].Equals("--name", StringComparison.OrdinalIgnoreCase)))
+            {
+                string bodyName = CommandLogic.TrimQuotes(argParts[1]);
+                await ShowRevisionsForNamedBody(bodyName);
+                return;
+            }
+            
+            // If no specific body was requested, show revisions for current location
+            await ShowRevisionsForCurrentLocation();
+        }
+        
+        static async Task ShowRevisionsForCurrentLocation()
+        {
+            var body = CommandLogic.GetCurrentBody();
+            
+            if (body == null)
+            {
+                TUI.Err("REVISION", "No celestial body found at current location.");
+                return;
+            }
+            
+            await ShowRevisionsForNamedBody(body.BodyName);
+        }
+        
+        static async Task ShowRevisionsForNamedBody(string bodyName)
+        {
+            try
+            {
+                var revisions = await ApiClient.GetRevisionsByBodyNameAsync(bodyName);
+                
+                if (revisions == null || revisions.Count == 0)
+                {
+                    TUI.Err("REVISION", $"No revisions found for '{bodyName}'.");
+                    return;
+                }
+                
+                var table = new Table()
+                    .Border(TableBorder.Rounded)
+                    .BorderColor(Color.Grey)
+                    .AddColumn(new TableColumn("ID").LeftAligned())
+                    .AddColumn(new TableColumn("Created At").LeftAligned())
+                    .AddColumn(new TableColumn("Author").LeftAligned())
+                    .AddColumn(new TableColumn("Preview").LeftAligned());
+                
+                foreach (var revision in revisions.OrderByDescending(r => r.CreatedAt))
+                {
+                    var previewContent = revision.Content?.Length > 50 
+                        ? revision.Content[..50] + "..." 
+                        : revision.Content ?? "";
+                    
+                    table.AddRow(
+                        revision.Id.ToString(),
+                        revision.CreatedAt.ToString("yyyy-MM-dd HH:mm"),
+                        revision.AuthorDisplayName ?? "Unknown",
+                        previewContent
+                    );
+                }
+                
+                AnsiConsole.Write(new Rule($"[gold3]Revision History for {bodyName}[/]"));
+                AnsiConsole.Write(table);
+            }
+            catch (Exception ex)
+            {
+                TUI.Err("REVISION", $"Failed to retrieve revisions for '{bodyName}'", ex.Message);
+            }
         }
     }
 }

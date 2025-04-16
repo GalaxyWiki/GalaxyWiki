@@ -472,4 +472,34 @@ public static class TUI {
         return selection;
     }
 
+    public static void ShowHelp()
+    {
+        AnsiConsole.Clear();
+        AnsiConsole.Write(new FigletText("GalaxyWiki CLI").Centered());
+        AnsiConsole.WriteLine();
+        
+        var table = new Table()
+            .Border(TableBorder.Rounded)
+            .BorderColor(Color.Grey)
+            .AddColumn(new TableColumn("Command").LeftAligned())
+            .AddColumn(new TableColumn("Description").LeftAligned());
+            
+        table.AddRow("cd <path>", "Navigate to a celestial body");
+        table.AddRow("ls", "List bodies in current location");
+        table.AddRow("info, show", "Show info about current location");
+        table.AddRow("show -n <name>", "Show info about a specific body");
+        table.AddRow("render", "Show visual representation of current body");
+        table.AddRow("pwd", "Print current path");
+        table.AddRow("comment <text>", "Add a comment to the current body");
+        table.AddRow("revision", "Show revision history for current body");
+        table.AddRow("revision -n <name>", "Show revision history for a specific body");
+        table.AddRow("find <term>", "Search for celestial bodies");
+        table.AddRow("create", "Create a new revision for current body");
+        table.AddRow("edit", "Edit the current body's content");
+        table.AddRow("login", "Login to the system");
+        table.AddRow("exit, quit", "Exit the application");
+        
+        AnsiConsole.Write(table);
+    }
+
 }
