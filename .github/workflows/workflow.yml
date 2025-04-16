@@ -160,26 +160,65 @@ jobs:
           echo "INSTANCE_ID=$INSTANCE_ID" >> $GITHUB_ENV
           echo "Instance ID: $INSTANCE_ID"
       
-      - name: Install Docker on EC2 via SSM
+      - name: Verify SSM connectivity
         run: |
-          # Send command via SSM
+          # Get instance ID using DNS name
+          INSTANCE_ID=$(aws ec2 describe-instances \
+            --filters "Name=dns-name,Values=${{ needs.terraform.outputs.ec2host }}" \
+            --query "Reservations[0].Instances[0].InstanceId" \
+            --output text)
+          
+          echo "Instance ID: $INSTANCE_ID"
+          echo "INSTANCE_ID=$INSTANCE_ID" >> $GITHUB_ENV
+          
+          # Check if instance is SSM managed
+          echo "Checking SSM status..."
+          aws ssm describe-instance-information --filters "Key=InstanceIds,Values=$INSTANCE_ID"
+          
+          # Wait for SSM agent to be online (up to 60 seconds)
+          echo "Waiting for SSM agent to be fully online..."
+          sleep 60
+
+      - name: Install Docker on EC2 via SSM (Simplified)
+        run: |
+          # Use a simplified command first to test SSM connectivity
           CMD_ID=$(aws ssm send-command \
+            --instance-ids "${{ env.INSTANCE_ID }}" \
+            --document-name "AWS-RunShellScript" \
+            --parameters "commands=['echo \"Testing SSM connectivity\"']" \
+            --query "Command.CommandId" \
+            --output text)
+            
+          echo "Simple Command ID: $CMD_ID"
+          
+          # Wait a moment for command to process
+          sleep 15
+          
+          # Check status of the simple command
+          aws ssm get-command-invocation \
+            --command-id "$CMD_ID" \
+            --instance-id "${{ env.INSTANCE_ID }}" \
+            --query "Status"
+          
+          # Now try the actual Docker installation
+          DOCKER_CMD_ID=$(aws ssm send-command \
             --instance-ids "${{ env.INSTANCE_ID }}" \
             --document-name "AWS-RunShellScript" \
             --parameters "commands=['sudo dnf update -y && sudo dnf install docker -y && sudo systemctl enable docker && sudo systemctl start docker']" \
             --query "Command.CommandId" \
             --output text)
           
-          echo "Command ID: $CMD_ID"
+          echo "Docker Command ID: $DOCKER_CMD_ID"
           
-          # Wait for command to complete
-          aws ssm wait command-executed --command-id "$CMD_ID" --instance-id "${{ env.INSTANCE_ID }}"
+          # Wait for the command to complete (with longer timeout)
+          echo "Waiting for Docker installation to complete (this may take several minutes)..."
+          sleep 120
           
-          # Get command output
+          # Check status
           aws ssm get-command-invocation \
-            --command-id "$CMD_ID" \
+            --command-id "$DOCKER_CMD_ID" \
             --instance-id "${{ env.INSTANCE_ID }}" \
-            --query "StandardOutputContent"
+            --query "Status"
 
       - name: Create Dockerfile
         run: |
@@ -226,43 +265,60 @@ jobs:
           
           echo "Docker image uploaded to S3://$BUCKET_NAME/galaxywiki-api-image.tar.gz"
 
-      - name: Deploy Docker image via SSM
+      - name: Deploy Docker image via SSM (Simplified)
         run: |
-          # Command to download from S3 and deploy
-          DEPLOY_COMMANDS='
-          sudo aws s3 cp s3://galaxywiki-artifacts/galaxywiki-api-image.tar.gz /tmp/
-          cd /tmp
-          sudo docker system prune --force
-          sudo gunzip -c galaxywiki-api-image.tar.gz | sudo docker load
-          sudo docker rm -f galaxywiki-api-container || true
-          sudo docker run -d \
-            -e CLIENT_ID="${{ env.GOOGLE_CLIENT_ID }}" \
-            -e CLIENT_SECRET="${{ env.GOOGLE_CLIENT_SECRET }}" \
-            -e DB_CONNECTION_STRING="Host=${{ needs.terraform.outputs.dbhost }};Port=5432;Database=galaxy;Username=${{ env.DB_USERNAME }};Password=${{ env.DB_PASSWORD }};" \
-            -e REDIRECT_URI="https://${{ needs.terraform.outputs.ec2host }}/" \
-            -p 80:80 -p 443:443 \
-            --name galaxywiki-api-container \
-            galaxywiki-api-image
-          '
-
-          # Send command via SSM
-          CMD_ID=$(aws ssm send-command \
+          # Command to download from S3 and deploy - break it into smaller steps
+          echo "Starting deployment process..."
+          
+          # Step 1: Download the Docker image from S3
+          DOWNLOAD_CMD_ID=$(aws ssm send-command \
             --instance-ids "${{ env.INSTANCE_ID }}" \
             --document-name "AWS-RunShellScript" \
-            --parameters "commands=['$DEPLOY_COMMANDS']" \
+            --parameters "commands=['sudo aws s3 cp s3://galaxywiki-artifacts/galaxywiki-api-image.tar.gz /tmp/ && echo \"Download completed\"']" \
             --query "Command.CommandId" \
             --output text)
           
-          echo "Command ID: $CMD_ID"
+          echo "Download Command ID: $DOWNLOAD_CMD_ID"
+          sleep 60
           
-          # Wait for command to complete
-          aws ssm wait command-executed --command-id "$CMD_ID" --instance-id "${{ env.INSTANCE_ID }}"
-          
-          # Get command output
+          # Check status of download command
           aws ssm get-command-invocation \
-            --command-id "$CMD_ID" \
+            --command-id "$DOWNLOAD_CMD_ID" \
             --instance-id "${{ env.INSTANCE_ID }}" \
-            --query "StandardOutputContent"
+            --query "Status"
+          
+          # Step 2: Load and run the Docker container
+          DOCKER_CMD_ID=$(aws ssm send-command \
+            --instance-ids "${{ env.INSTANCE_ID }}" \
+            --document-name "AWS-RunShellScript" \
+            --parameters 'commands=["
+              cd /tmp && 
+              sudo docker system prune --force && 
+              sudo gunzip -c galaxywiki-api-image.tar.gz | sudo docker load &&
+              sudo docker rm -f galaxywiki-api-container || true &&
+              sudo docker run -d \
+                -e CLIENT_ID=\"${{ env.GOOGLE_CLIENT_ID }}\" \
+                -e CLIENT_SECRET=\"${{ env.GOOGLE_CLIENT_SECRET }}\" \
+                -e DB_CONNECTION_STRING=\"Host=${{ needs.terraform.outputs.dbhost }};Port=5432;Database=galaxy;Username=${{ env.DB_USERNAME }};Password=${{ env.DB_PASSWORD }};\" \
+                -e REDIRECT_URI=\"https://${{ needs.terraform.outputs.ec2host }}/\" \
+                -p 80:80 -p 443:443 \
+                --name galaxywiki-api-container \
+                galaxywiki-api-image
+            "]' \
+            --query "Command.CommandId" \
+            --output text)
+          
+          echo "Docker Deployment Command ID: $DOCKER_CMD_ID"
+          
+          # Wait for deployment to complete (with longer timeout)
+          echo "Waiting for Docker deployment to complete (this may take several minutes)..."
+          sleep 180
+          
+          # Check status
+          aws ssm get-command-invocation \
+            --command-id "$DOCKER_CMD_ID" \
+            --instance-id "${{ env.INSTANCE_ID }}" \
+            --query "Status"
 
   flyway:
     needs:

@@ -155,6 +155,12 @@ locals {
     # Update system
     yum update -y
     
+    # Make sure SSM agent is installed and running
+    yum install -y amazon-ssm-agent
+    systemctl enable amazon-ssm-agent
+    systemctl start amazon-ssm-agent
+    systemctl status amazon-ssm-agent
+    
     # Install required packages
     yum install -y git
     
