@@ -220,6 +220,23 @@ jobs:
             --instance-id "${{ env.INSTANCE_ID }}" \
             --query "Status"
 
+      - name: Update security group for port 5000
+        run: |
+          # Get security group ID
+          SG_ID=$(aws ec2 describe-instances \
+            --instance-ids "${{ env.INSTANCE_ID }}" \
+            --query "Reservations[0].Instances[0].SecurityGroups[0].GroupId" \
+            --output text)
+          
+          echo "Security Group ID: $SG_ID"
+          
+          # Add rule for port 5000
+          aws ec2 authorize-security-group-ingress \
+            --group-id "$SG_ID" \
+            --protocol tcp \
+            --port 5000 \
+            --cidr 0.0.0.0/0 || echo "Rule may already exist"
+            
       - name: Create Dockerfile
         run: |
           cat > Dockerfile << EOF
@@ -299,8 +316,8 @@ jobs:
             -e DB_CONNECTION_STRING='DB_CONNECTION_VALUE' \
             -e REDIRECT_URI='http://localhost:5000/' \
             -e API_URL='API_URL_VALUE' \
-            -e ASPNETCORE_URLS="http://0.0.0.0:80;https://0.0.0.0:443" \
-            -p 80:80 -p 443:443 \
+            -e ASPNETCORE_URLS="http://0.0.0.0:80;http://0.0.0.0:5000" \
+            -p 80:80 -p 5000:5000 \
             --name galaxywiki-api-container \
             galaxywiki-api-image
           EOF
@@ -333,6 +350,38 @@ jobs:
             --command-id "$DOCKER_CMD_ID" \
             --instance-id "${{ env.INSTANCE_ID }}" \
             --query "Status"
+
+      - name: Debug container status
+        run: |
+          # Check if the container is running
+          DEBUG_CMD_ID=$(aws ssm send-command \
+            --instance-ids "${{ env.INSTANCE_ID }}" \
+            --document-name "AWS-RunShellScript" \
+            --parameters 'commands=["
+              echo \"=== Docker status ===\"
+              sudo docker ps
+              echo \"=== Container logs ===\"
+              sudo docker logs galaxywiki-api-container
+              echo \"=== Network status ===\"
+              sudo netstat -tuln
+              echo \"=== Curl test ===\"
+              sudo curl -v localhost:80/api/celestial-body/1 || echo \"Curl failed\"
+              echo \"=== Testing port 5000 ===\"
+              sudo curl -v localhost:5000/api/celestial-body/1 || echo \"Curl failed\"
+              echo \"=== Container environment ===\"
+              sudo docker exec galaxywiki-api-container env || echo \"Could not get env\"
+            "]' \
+            --query "Command.CommandId" \
+            --output text)
+          
+          echo "Debug Command ID: $DEBUG_CMD_ID"
+          sleep 30
+          
+          # Get debug output
+          aws ssm get-command-invocation \
+            --command-id "$DEBUG_CMD_ID" \
+            --instance-id "${{ env.INSTANCE_ID }}" \
+            --query "StandardOutputContent"
 
   flyway:
     needs:
