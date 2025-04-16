@@ -196,15 +196,13 @@ public class BodyTypeInfo
         private static async Task<List<CelestialBodies>> GetChildren(int parentId)
         {
             // Check cache first
-            if (_state.ChildrenCache.TryGetValue(parentId, out var cachedChildren))
-            {
-                return cachedChildren;
-            }
+            if (_state.ChildrenCache.TryGetValue(parentId, out var cachedChildren)) { return cachedChildren; }
 
             // Call API
             string endpoint = $"/celestial-body/{parentId}/children";
             var childrenData = await ApiClient.GetDeserialized<List<CelestialBodies>>(endpoint);
-            
+            childrenData.Sort((a, b) => a.Id.CompareTo(b.Id));
+
             // Add to cache
             _state.ChildrenCache[parentId] = childrenData;
             

@@ -19,7 +19,7 @@ namespace GalaxyWiki.CLI
 
     static string Sanitize(string s) => s.Replace("[", "[[").Replace("]", "]]");
 
-    static Color Shade(Color col, float amt) => Color.Default.Blend(col, amt);
+    static Color Shade(Color col, float amt) => Color.Default.Blend(col, amt).Blend(Color.White, 0.2f * (float)Math.Pow(amt, 8));
 
         // Wrap an arbitrary element in a TUI box
         public static Panel Boxed(IRenderable elem, String title = "", Color? color = null, Justify headAlign = Justify.Center)
@@ -550,6 +550,7 @@ namespace GalaxyWiki.CLI
 
             // Find all children that orbit this body
             var children = bodyMap.Values.Where(b => b.Orbits != null && b.Orbits.Id == body.Id).ToList();
+            children.Sort((a, b) => a.Id.CompareTo(b.Id));
 
             // Recursively add children
             foreach (var child in children)
