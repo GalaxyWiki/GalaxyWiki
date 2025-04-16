@@ -33,7 +33,7 @@ jobs:
         uses: aws-actions/aws-secretsmanager-get-secrets@v2
         with:
           secret-ids: |
-            DB_PASSWORD, dbpassword
+            DB_PASSWORD, DB_PASSWORD
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -103,11 +103,11 @@ jobs:
         uses: aws-actions/aws-secretsmanager-get-secrets@v2
         with:
           secret-ids: |
-            DB_USERNAME, dbusername
-            DB_PASSWORD, dbpassword
-            GOOGLE_CLIENT_SECRET, googleclientsecret
-            GOOGLE_CLIENT_ID, googleclientid
-            EC2_PRIV_KEY, ec2privatekey
+            DB_USERNAME, DB_USERNAME
+            DB_PASSWORD, DB_PASSWORD
+            GOOGLE_CLIENT_SECRET, GOOGLE_CLIENT_SECRET
+            GOOGLE_CLIENT_ID, GOOGLE_CLIENT_ID
+            EC2_PRIV_KEY, EC2_PRIV_KEY
 
       - name: Generate .env file
         working-directory: src/GalaxyWiki.API
@@ -207,11 +207,11 @@ jobs:
         uses: aws-actions/aws-secretsmanager-get-secrets@v2
         with:
           secret-ids: |
-            EC2_PRIV_KEY, ec2privatekey
-            GOOGLE_CLIENT_SECRET, googleclientsecret
-            GOOGLE_CLIENT_ID, googleclientid
-            DB_USERNAME, dbusername
-            DB_PASSWORD, dbpassword
+            EC2_PRIV_KEY, EC2_PRIV_KEY
+            GOOGLE_CLIENT_SECRET, GOOGLE_CLIENT_SECRET
+            GOOGLE_CLIENT_ID, GOOGLE_CLIENT_ID
+            DB_USERNAME, DB_USERNAME
+            DB_PASSWORD, DB_PASSWORD
 
       - name: Write private key
         run: |
@@ -261,8 +261,8 @@ jobs:
         uses: aws-actions/aws-secretsmanager-get-secrets@v2
         with:
           secret-ids: |
-            DB_USERNAME, dbusername
-            DB_PASSWORD, dbpassword
+            DB_USERNAME, DB_USERNAME
+            DB_PASSWORD, DB_PASSWORD
 
       - name: Run Flyway migrations
         run: |
