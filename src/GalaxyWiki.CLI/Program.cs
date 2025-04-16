@@ -423,10 +423,29 @@ namespace GalaxyWiki.Cli
             {
                 await CommandLogic.ChangeDirectory(part);
             }
+
+            // Show arrival message
+            var emoji = TUI.BodyTypeToEmoji(selectedItem.Body.BodyType);
+            AnsiConsole.MarkupLine($"\n[cyan]Warp complete![/] You have arrived at {emoji} [bold]{selectedItem.Body.BodyName}[/]");
+            
+            // Show a brief description if available
+            var revision = await CommandLogic.GetCurrentRevision();
+            if (revision?.Content != null)
+            {
+                var preview = revision.Content.Length > 150 
+                    ? revision.Content.Substring(0, 150) + "..." 
+                    : revision.Content;
+                AnsiConsole.MarkupLine($"\n[dim]{preview}[/]\n");
+            }
         }
 
         static async Task LaunchChatbot() {
-            var header = new Rule("[cyan] Galaxy Bot :robot: :sparkles: [/]");
+            // Get current path and body before starting chat
+            string currentPath = CommandLogic.GetCurrentPath();
+            var currentBody = CommandLogic.GetCurrentBody();
+            string currentContext = currentBody?.BodyName ?? "the Universe";
+            
+            var header = new Rule($"[cyan] Galaxy Bot :robot: :sparkles:[/] [dim]at {currentPath}[/]");
             AnsiConsole.Write(header);
 
             // Ensure environment variables are loaded
@@ -440,6 +459,10 @@ namespace GalaxyWiki.Cli
                 return;
             }
 
+            // Send initial message with current location
+            string initialMessage = $"Hey there! What would you like to know about {currentContext}?";
+            AnsiConsole.MarkupLine($"[green]Bot:[/] {initialMessage}");
+
             bool chatMode = true;
             while(chatMode) {
                 var msg = AnsiConsole.Ask<string>("[lightcyan1]Enter a message[/] [orange1]❯❯[/]");
@@ -448,7 +471,8 @@ namespace GalaxyWiki.Cli
                 }
                 else { 
                     AnsiConsole.MarkupLine("[yellow]Thinking...[/]");
-                    var response = await ClaudeClient.GetResponse(msg);
+                    // Pass the current context to the ClaudeClient
+                    var response = await ClaudeClient.GetResponse(msg, currentContext);
                     AnsiConsole.MarkupLine($"[green]Bot:[/] {response}");
                 }
             }

@@ -71,17 +71,24 @@ namespace GalaxyWiki.Cli
             client.DefaultRequestHeaders.Add("anthropic-version", "2023-06-01");
         }
 
-        public static async Task<string> GetResponse(string userMessage)
+        public static async Task<string> GetResponse(string userMessage, string? context = null)
         {
             try
             {
+                string systemPrompt = "You are a helpful assistant with expertise in astronomy and space science.";
+                if (!string.IsNullOrEmpty(context))
+                {
+                    // Append the context to the base system prompt
+                    systemPrompt += $" The user is currently asking questions about {context}."; 
+                }
+
                 var request = new ClaudeRequest
                 {
                     Messages = new List<Message>
                     {
                         new Message("user", userMessage)
                     },
-                    System = "You are a helpful assistant with expertise in astronomy and space science."
+                    System = systemPrompt // Use the potentially enhanced system prompt
                 };
 
                 var content = JsonContent.Create(request);
