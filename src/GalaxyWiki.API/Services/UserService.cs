@@ -1,15 +1,15 @@
 using GalaxyWiki.Core.Entities;
 using GalaxyWiki.Core.Enums;
-using GalaxyWiki.Api.Repositories;
+using GalaxyWiki.API.Repositories;
 
 namespace GalaxyWiki.API.Services
 {
-    public class UserService
+    public class UserService : IUserService
     {
-        private readonly UserRepository _userRepository;
-        private readonly RoleRepository _roleRepository;
+        private readonly IUserRepository _userRepository;
+        private readonly IRoleRepository _roleRepository;
 
-        public UserService(UserRepository userRepository, RoleRepository roleRepository)
+        public UserService(IUserRepository userRepository, IRoleRepository roleRepository)
         {
             _userRepository = userRepository;
             _roleRepository = roleRepository;
@@ -17,6 +17,7 @@ namespace GalaxyWiki.API.Services
 
         public async Task<Users> GetUserById(string googleSub)
         {
+            Console.WriteLine("In the user");
             return await _userRepository.GetById(googleSub);
         }
 

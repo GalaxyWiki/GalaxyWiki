@@ -1,10 +1,14 @@
 using GalaxyWiki.API.DTOs;
 using GalaxyWiki.Core.Entities;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
-public interface IContentRevisionService
+namespace GalaxyWiki.API.Services
 {
-    Task<ContentRevisions> GetRevisionByIdAsync(int id);
-    Task<IEnumerable<ContentRevisions>> GetRevisionsByCelestialBodyAsync(string celestialBodyPath); 
-    Task<ContentRevisions> CreateRevision(CreateRevisionRequest request, string authorId);
-}
-
+    public interface IContentRevisionService
+    {
+        Task<ContentRevisions?> GetRevisionByIdAsync(int id);
+        Task<IEnumerable<ContentRevisions>> GetRevisionsByCelestialBodyAsync(string celestialBodyPath);
+        Task<ContentRevisions> CreateRevision(CreateRevisionRequest request, string authorId);
+    }
+} 

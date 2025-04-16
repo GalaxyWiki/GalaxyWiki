@@ -3,9 +3,9 @@ using GalaxyWiki.API.DTOs;
 using NHibernate.Linq;
 using ISession = NHibernate.ISession;
 
-namespace GalaxyWiki.Api.Repositories
+namespace GalaxyWiki.API.Repositories
 {
-    public class CelestialBodyRepository
+    public class CelestialBodyRepository : ICelestialBodyRepository
     {
         private readonly ISession _session;
 
