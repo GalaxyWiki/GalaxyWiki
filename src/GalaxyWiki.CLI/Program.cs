@@ -6,12 +6,12 @@ using System.Text;
 using System.Reflection.Metadata;
 using Npgsql.Replication.PgOutput.Messages;
 
-namespace GalaxyWiki.Cli
+namespace GalaxyWiki.CLI
 {
     public static class Program
     {
         // Command history to store previous commands
-        private static List<string> _commandHistory = new List<string>();
+        private static List<string> _commandHistory = [];
         private static int _historyIndex = -1;
 
         public static async Task<int> Main(string[] args)
@@ -42,7 +42,7 @@ namespace GalaxyWiki.Cli
                 
                 // Add command to history if not empty and not a duplicate of the most recent command
                 if (!string.IsNullOrWhiteSpace(inp) && 
-                    (_commandHistory.Count == 0 || inp != _commandHistory[_commandHistory.Count - 1])) {
+                    (_commandHistory.Count == 0 || inp != _commandHistory[^1])) {
                     _commandHistory.Add(inp);
                 }
                 
@@ -107,7 +107,7 @@ namespace GalaxyWiki.Cli
         // Custom input method that supports command history with up/down arrows
         private static string ReadLineWithHistory()
         {
-            StringBuilder input = new StringBuilder();
+            StringBuilder input = new();
             int cursorPos = 0;
             
             // Starting position for editable area
@@ -247,10 +247,10 @@ namespace GalaxyWiki.Cli
                 return (input.ToLower(), "");
                 
             // Extract the command (everything before the first space)
-            string cmd = input.Substring(0, firstSpaceIndex).ToLower();
+            string cmd = input[..firstSpaceIndex].ToLower();
             
             // Extract arguments (everything after the first space)
-            string args = input.Substring(firstSpaceIndex + 1).Trim();
+            string args = input[(firstSpaceIndex + 1)..].Trim();
             
             return (cmd, args);
         }
@@ -347,7 +347,7 @@ namespace GalaxyWiki.Cli
         static async Task HandleListCommand(string args)
         {
             // Parse arguments
-            var argParts = args.Split(new[] { ' ' }, 2, StringSplitOptions.RemoveEmptyEntries);
+            var argParts = args.Split([' '], 2, StringSplitOptions.RemoveEmptyEntries);
             
             // If no arguments or not the right format, show all body types
             if (argParts.Length < 2 || !argParts[0].Equals("-t", StringComparison.OrdinalIgnoreCase))
@@ -478,7 +478,7 @@ namespace GalaxyWiki.Cli
         static async Task HandleShowCommand(string args)
         {
             // Parse arguments to check for -n or --name flag
-            var argParts = args.Split(new[] { ' ' }, 2, StringSplitOptions.RemoveEmptyEntries);
+            var argParts = args.Split([' '], 2, StringSplitOptions.RemoveEmptyEntries);
             
             // Check if a specific celestial body was requested
             if (argParts.Length == 2 && (argParts[0].Equals("-n", StringComparison.OrdinalIgnoreCase) || 
@@ -511,7 +511,7 @@ namespace GalaxyWiki.Cli
                 return;
             }
             
-            List<Comment> comments = new List<Comment>();
+            List<Comment> comments = [];
             if (rev.CelestialBodyName != null) {
                 comments = await CommandLogic.GetCommentsForNamedBody(rev.CelestialBodyName);
             }
@@ -595,7 +595,7 @@ namespace GalaxyWiki.Cli
                 AnsiConsole.Markup("[lightcyan1]Enter a message[/] [gold3]❯❯[/] ");
                 var msg = ReadLineWithHistory();
                 
-                if (msg.ToLower() == "quit" || msg.ToLower() == "exit") { 
+                if (msg.Equals("quit", StringComparison.CurrentCultureIgnoreCase) || msg.Equals("exit", StringComparison.CurrentCultureIgnoreCase)) { 
                     chatMode = false; 
                 }
                 else { 
@@ -642,7 +642,7 @@ namespace GalaxyWiki.Cli
                         TUI.Err("COMMENT", "No comment text provided.", "Usage: comment -a \"Your comment text\"");
                         return;
                     }
-                    await AddComment(JoinArgs(argsList.Skip(1).ToList()));
+                    await AddComment(JoinArgs([.. argsList.Skip(1)]));
                     break;
                 
                 case "-l":
@@ -739,6 +739,16 @@ namespace GalaxyWiki.Cli
                     await ViewCommentsByDateRange(startDate, endDate, dateLimit, dateSortOrder);
                     break;
                 
+                case "-del":
+                case "--delete":
+                    if (argsList.Count < 2 || !int.TryParse(argsList[1], out int commentId))
+                    {
+                        TUI.Err("COMMENT", "Invalid comment ID.", "Usage: comment -del <id>");
+                        return;
+                    }
+                    await DeleteComment(commentId);
+                    break;
+                
                 case "-h":
                 case "--help":
                     DisplayCommentHelp();
@@ -772,6 +782,7 @@ namespace GalaxyWiki.Cli
             grid.AddRow(new Text("comment -n \"Body Name\""), new Text("View comments for the specified celestial body"));
             grid.AddRow(new Text("comment -d <start> <end>"), new Text("View comments within date range (YYYY-MM-DD format)"));
             grid.AddRow(new Text("comment -n \"Body\" -l 5 -s oldest"), new Text("Combine flags for specific queries"));
+            grid.AddRow(new Text("comment -del <id>"), new Text("Delete a comment by ID"));
             
             AnsiConsole.Write(grid);
             AnsiConsole.WriteLine();
@@ -844,6 +855,30 @@ namespace GalaxyWiki.Cli
                 AnsiConsole.Write(TUI.CommentsPanel(newComments, "Your New Comment"));
             }
             else { TUI.Err("COMMENT", "Failed to add comment."); }
+        }
+        
+        static async Task DeleteComment(int commentId)
+        {
+            if (AnsiConsole.Confirm($"Are you sure you want to delete comment with ID {commentId}?"))
+            {
+                bool success = await CommandLogic.DeleteComment(commentId);
+                
+                if (success)
+                {
+                    AnsiConsole.MarkupLine($"[green]Comment with ID {commentId} deleted successfully![/]");
+                    
+                    await ViewCommentsForCurrentBody();
+                }
+                else
+                {
+                    TUI.Err("COMMENT", $"Failed to delete comment with ID {commentId}.", 
+                        "You might not have permission to delete this comment, or it doesn't exist.");
+                }
+            }
+            else
+            {
+                AnsiConsole.MarkupLine("[grey]Comment deletion cancelled.[/]");
+            }
         }
         
         // Helper to split arguments while respecting quoted strings
