@@ -56,7 +56,7 @@ jobs:
       - name: Capture Terraform Outputs
         id: tf_outputs
         run: |
-          echo "dbhost=$(terraform output -raw database_host)" >> $GITHUB_OUTPUT
+          echo "dbhost=$(terraform output -raw database_endpoint)" >> $GITHUB_OUTPUT
           echo "ec2host=$(terraform output -raw ec2_host)" >> $GITHUB_OUTPUT
 
   unit-tests:
