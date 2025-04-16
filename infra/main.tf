@@ -12,6 +12,10 @@ terraform {
       source  = "hashicorp/tls"
       version = "~> 4.0"
     }
+    local = {
+      source  = "hashicorp/local"
+      version = "~> 2.1"
+    }
   }
   required_version = ">= 1.0.0"
 }
@@ -37,6 +41,13 @@ module "ec2" {
   db_password = var.db_password
 }
 
+# Save the private key to a local file
+# resource "local_file" "private_key_pem" {
+#   content         = module.ec2.ssh_private_key
+#   filename        = "${path.module}/galaxy-api-key.pem"
+#   file_permission = "0600"  # Proper permissions for private key
+# }
+
 # Output the endpoints for easy access
 output "database_endpoint" {
   description = "The endpoint of the database"
@@ -48,11 +59,11 @@ output "api_endpoint" {
   value       = module.ec2.api_endpoint
 }
 
-output "ssh_private_key" {
-  description = "The private key for SSH access (sensitive)"
-  value       = module.ec2.ssh_private_key
-  sensitive   = true
-}
+# output "ssh_private_key" {
+#   description = "The private key for SSH access (sensitive)"
+#   value       = module.ec2.ssh_private_key
+#   sensitive   = true
+# }
 
 output "ssh_username" {
   description = "The username for SSH access"
