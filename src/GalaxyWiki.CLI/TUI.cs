@@ -17,9 +17,9 @@ namespace GalaxyWiki.CLI
 
         static int Mod(int x, int m) => (x % m + m) % m;
 
-    static string Sanitize(string s) => s.Replace("[", "[[").Replace("]", "]]");
+        static string Sanitize(string s) => s.Replace("[", "[[").Replace("]", "]]");
 
-    static Color Shade(Color col, float amt) => Color.Default.Blend(col, amt).Blend(Color.White, 0.2f * (float)Math.Pow(amt, 8));
+        static Color Shade(Color col, float amt) => Color.Default.Blend(col, amt).Blend(Color.White, 0.2f * (float)Math.Pow(amt, 8));
 
         // Wrap an arbitrary element in a TUI box
         public static Panel Boxed(IRenderable elem, String title = "", Color? color = null, Justify headAlign = Justify.Center)
@@ -144,17 +144,19 @@ namespace GalaxyWiki.CLI
         }
 
         //---------- Error ----------//
-    public static void Err(string name, string desc, string info = "") {
-        AnsiConsole.Markup($"[[[bold red]{name.ToUpper()} ERR[/]]]: [red]{desc}[/]");
-        if (!info.Trim().IsEmpty()) { AnsiConsole.Markup("\n\t" + Sanitize(info).Replace("\n", "\n\t")); }
-        AnsiConsole.Write("\n\n");
-    }
-    public static void Warn(string name, string desc, string info = "") {
-        AnsiConsole.Markup($"[[[bold darkorange3]{name.ToUpper()} WARN[/]]]: [gold3]{desc}[/]");
-        if (!info.Trim().IsEmpty()) { AnsiConsole.Markup("\n\t" + Sanitize(info).Replace("\n", "\n\t") + "\n\n"); }
-        AnsiConsole.Write("\n\n");
-    }
-      
+        public static void Err(string name, string desc, string info = "")
+        {
+            AnsiConsole.Markup($"[[[bold red]{name.ToUpper()} ERR[/]]]: [red]{desc}[/]");
+            if (!info.Trim().IsEmpty()) { AnsiConsole.Markup("\n\t" + Sanitize(info).Replace("\n", "\n\t")); }
+            AnsiConsole.Write("\n\n");
+        }
+        public static void Warn(string name, string desc, string info = "")
+        {
+            AnsiConsole.Markup($"[[[bold darkorange3]{name.ToUpper()} WARN[/]]]: [gold3]{desc}[/]");
+            if (!info.Trim().IsEmpty()) { AnsiConsole.Markup("\n\t" + Sanitize(info).Replace("\n", "\n\t") + "\n\n"); }
+            AnsiConsole.Write("\n\n");
+        }
+
         //---------- Path ----------//
         public static Panel Path(string path)
         {
@@ -361,44 +363,44 @@ namespace GalaxyWiki.CLI
                 .BorderColor(Color.DarkOrange)
                 .HideHeaders()
                 .Expand();
-            
+
             // Create a 3-column layout (ID is hidden in author column)
             // table.AddColumn(new TableColumn("").Width(3)); // Visual spacer/indentation
             table.AddColumn(new TableColumn("").Width(75)); // Author and content
             table.AddColumn(new TableColumn("").Width(25)); // Date and controls
-            
+
             foreach (var comment in comments)
             {
                 // // YouTube-style user icon (first letter of name in colored circle)
                 // string userIcon = string.IsNullOrEmpty(comment.DisplayName) ? 
                 //     "[grey]?[/]" : 
                 //     $"[yellow on blue]{comment.DisplayName[..1].ToUpper()}[/]";
-                
+
                 // Username/display name with ID in small text
-                string author = string.IsNullOrEmpty(comment.DisplayName) ? 
-                    $"[grey]Anonymous[/]" : 
+                string author = string.IsNullOrEmpty(comment.DisplayName) ?
+                    $"[grey]Anonymous[/]" :
                     $"[bold aqua]{comment.DisplayName}[/]";
                 string idText = $"[dim grey](#{comment.CommentId})[/]";
-                
+
                 // Format date like YouTube
                 string formattedDate = FormatRelativeTime(comment.CreatedDate);
-                
+
                 // Format the comment text with indentation for content
                 string formattedComment = FormatCommentWithSpectre(comment.CommentText);
-                
+
                 // Create YouTube-style comment header
                 string headerLine = $"{author} {idText}";
-                
+
                 // Create the main content column that combines username and comment
                 string contentText = $"{headerLine}\n{formattedComment}";
-                
+
                 // Add the row to the table
                 table.AddRow(
                     // new Markup(userIcon),
                     new Markup(contentText),
                     new Markup($"[grey]{formattedDate}[/]")
                 );
-                
+
                 // Add a separator row
                 table.AddRow(
                     // new Text(""),
@@ -406,7 +408,7 @@ namespace GalaxyWiki.CLI
                     new Text("")
                 );
             }
-            
+
             return Boxed(table, $"[bold cyan] {title} ({comments.Count}) [/]", Color.DarkOrange);
         }
 
@@ -414,7 +416,7 @@ namespace GalaxyWiki.CLI
         private static string FormatRelativeTime(DateTime date)
         {
             var span = DateTime.Now - date;
-            
+
             if (span.TotalDays > 365)
             {
                 int years = (int)(span.TotalDays / 365);
@@ -445,7 +447,7 @@ namespace GalaxyWiki.CLI
                 int minutes = (int)span.TotalMinutes;
                 return minutes == 1 ? "1 minute ago" : $"{minutes} minutes ago";
             }
-            
+
             return "just now";
         }
 
