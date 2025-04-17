@@ -355,6 +355,7 @@ namespace GalaxyWiki.CLI
             grid.AddRow(new Text("tree"), new Text("Display full celestial body hierarchy"));
             grid.AddRow(new Text("tree -h"), new Text("Display hierarchy from current location"));
             grid.AddRow(new Text("warp"), new Text("Show interactive tree and warp to any celestial body"));
+            grid.AddRow(new Text("search <term>"), new Text("Search for celestial bodies by name"));
             grid.AddRow(new Text("list/find"), new Text("List all celestial body types"));
             grid.AddRow(new Text("list/find -t <type>"), new Text("List all celestial bodies of a specific type (by name or ID)"));
             grid.AddRow(new Text("show/info"), new Text("Display wiki content for current celestial body"));

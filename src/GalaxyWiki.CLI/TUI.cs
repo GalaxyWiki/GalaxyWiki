@@ -633,13 +633,14 @@ namespace GalaxyWiki.CLI
             table.AddRow("cd <path>", "Navigate to a celestial body");
             table.AddRow("ls", "List bodies in current location");
             table.AddRow("info, show", "Show info about current location");
-            table.AddRow("show -n <name>", "Show info about a specific body");
+            table.AddRow("show -n <n>", "Show info about a specific body");
             table.AddRow("render", "Show visual representation of current body");
             table.AddRow("pwd", "Print current path");
             table.AddRow("comment <text>", "Add a comment to the current body");
             table.AddRow("revision", "Show revision history for current body");
-            table.AddRow("revision -n <name>", "Show revision history for a specific body");
+            table.AddRow("revision -n <n>", "Show revision history for a specific body");
             table.AddRow("find <term>", "Search for celestial bodies");
+            table.AddRow("search <term>", "Search for celestial bodies by name");
             table.AddRow("create", "Create a new revision for current body");
             table.AddRow("edit", "Edit the current body's content");
             table.AddRow("login", "Login to the system");
