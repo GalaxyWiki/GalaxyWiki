@@ -40,9 +40,9 @@ namespace GalaxyWiki.API.Services
             var token = JsonDocument.Parse(json).RootElement;
 
             var idToken = token.GetProperty("id_token").GetString();
-            
+
             GoogleJsonWebSignature.Payload payload;
-            try 
+            try
             {
                 payload = await GoogleJsonWebSignature.ValidateAsync(idToken);
             }
@@ -58,7 +58,7 @@ namespace GalaxyWiki.API.Services
                 user = await _userService.CreateUser(payload.Subject, payload.Email, payload.Name, UserRole.Viewer);
             }
 
-            return [idToken, user.DisplayName];     
+            return [idToken, user.DisplayName];
         }
 
         public async Task<bool> CheckUserHasAccessRight(UserRole[] accessLevelRequired, string? authorId)

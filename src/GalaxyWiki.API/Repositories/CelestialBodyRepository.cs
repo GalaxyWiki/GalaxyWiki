@@ -23,12 +23,12 @@ namespace GalaxyWiki.API.Repositories
         {
             var query = _session.Query<CelestialBodies>();
             var totalCount = await query.CountAsync();
-            
+
             var items = await query
                 .Skip((parameters.PageNumber - 1) * parameters.PageSize)
                 .Take(parameters.PageSize)
                 .ToListAsync();
-            
+
             return (items, totalCount);
         }
 
@@ -56,14 +56,14 @@ namespace GalaxyWiki.API.Repositories
         {
             var query = _session.Query<CelestialBodies>()
                 .Where(cb => cb.Orbits != null && cb.Orbits.Id == id);
-                
+
             var totalCount = await query.CountAsync();
-            
+
             var items = await query
                 .Skip((parameters.PageNumber - 1) * parameters.PageSize)
                 .Take(parameters.PageSize)
                 .ToListAsync();
-            
+
             return (items, totalCount);
         }
 
@@ -80,7 +80,7 @@ namespace GalaxyWiki.API.Repositories
             {
                 await _session.SaveAsync(celestialBody);
                 transaction.Commit();
-                return celestialBody; 
+                return celestialBody;
             }
             catch
             {
@@ -96,7 +96,7 @@ namespace GalaxyWiki.API.Repositories
             {
                 await _session.UpdateAsync(celestialBody);
                 transaction.Commit();
-                return celestialBody; 
+                return celestialBody;
             }
             catch
             {
@@ -128,4 +128,4 @@ namespace GalaxyWiki.API.Repositories
             }
         }
     }
-} 
+}

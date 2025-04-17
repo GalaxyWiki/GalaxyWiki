@@ -26,11 +26,11 @@ namespace GalaxyWiki.API.Repositories
                 transaction.Commit();
                 return user;
             }
-            catch 
+            catch
             {
                 transaction.Rollback();
                 throw;
             }
         }
     }
-} 
+}

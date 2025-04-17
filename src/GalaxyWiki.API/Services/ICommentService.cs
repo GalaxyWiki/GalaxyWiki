@@ -17,4 +17,4 @@ namespace GalaxyWiki.API.Services
         Task<CommentRequest> Update(int id, UpdateCommentRequest updateDto, string userId);
         Task Delete(int id, string userId);
     }
-} 
+}

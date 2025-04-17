@@ -13,4 +13,4 @@ namespace GalaxyWiki.API.DTOs
         public bool HasNext => PageNumber < TotalPages;
         public IEnumerable<T> Items { get; set; }
     }
-} 
+}

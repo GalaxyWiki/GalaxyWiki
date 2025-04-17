@@ -32,7 +32,7 @@ namespace GalaxyWiki.API.Repositories
                 transaction.Commit();
                 return starSystem;
             }
-            catch 
+            catch
             {
                 transaction.Rollback();
                 throw;
@@ -48,7 +48,7 @@ namespace GalaxyWiki.API.Repositories
                 transaction.Commit();
                 return starSystem;
             }
-            catch 
+            catch
             {
                 transaction.Rollback();
                 throw;

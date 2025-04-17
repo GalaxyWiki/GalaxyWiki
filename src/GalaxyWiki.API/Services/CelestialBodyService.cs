@@ -24,13 +24,13 @@ namespace GalaxyWiki.API.Services
         {
             var celestialBodies = await _celestialBodyRepository.GetAll();
             var result = new List<(CelestialBodies CelestialBody, BodyTypes? BodyType)>();
-            
+
             foreach (var celestialBody in celestialBodies)
             {
                 var bodyType = await _bodyTypeRepository.GetById(celestialBody.BodyType);
                 result.Add((celestialBody, bodyType));
             }
-            
+
             return result;
         }
 
@@ -39,7 +39,7 @@ namespace GalaxyWiki.API.Services
             var celestialBody = await _celestialBodyRepository.GetById(id);
             if (celestialBody == null)
                 return (null, null);
-                
+
             var bodyType = await _bodyTypeRepository.GetById(celestialBody.BodyType);
             return (celestialBody, bodyType);
         }
@@ -59,17 +59,17 @@ namespace GalaxyWiki.API.Services
             {
                 throw new UserDoesNotHaveAccess("You do not have access to perform this action.");
             }
-            
+
             if (!request.BodyTypeId.HasValue)
                 throw new RequestBodyIsInvalid("Body type ID is required.");
 
             var bodyType = await _bodyTypeRepository.GetById(request.BodyTypeId.Value);
 
             if (bodyType == null)
-                throw new BodyTypeDoesNotExist("Invalid body type ID." );
+                throw new BodyTypeDoesNotExist("Invalid body type ID.");
 
             CelestialBodies? orbits = null;
-            
+
             if (request.OrbitsId.HasValue)
             {
                 orbits = await _celestialBodyRepository.GetById(request.OrbitsId.Value);
@@ -107,11 +107,11 @@ namespace GalaxyWiki.API.Services
             var bodyType = await _bodyTypeRepository.GetById(request.BodyTypeId.Value);
 
             if (bodyType == null)
-                throw new BodyTypeDoesNotExist("Invalid body type ID." );
+                throw new BodyTypeDoesNotExist("Invalid body type ID.");
 
 
             CelestialBodies? orbits = null;
-            
+
             if (request.OrbitsId.HasValue)
             {
                 orbits = await _celestialBodyRepository.GetById(request.OrbitsId.Value);
@@ -149,16 +149,16 @@ namespace GalaxyWiki.API.Services
             var celestialBody = await _celestialBodyRepository.GetById(id);
             if (celestialBody == null)
                 throw new CelestialBodyDoesNotExist("Celestial body does not exist.");
-                
+
             var children = await _celestialBodyRepository.GetCelestialBodiesOrbitingThisId(id);
             var result = new List<(CelestialBodies CelestialBody, BodyTypes? BodyType)>();
-            
+
             foreach (var child in children)
             {
                 var bodyType = await _bodyTypeRepository.GetById(child.BodyType);
                 result.Add((child, bodyType));
             }
-            
+
             return result;
         }
 
@@ -167,16 +167,16 @@ namespace GalaxyWiki.API.Services
             var celestialBody = await _celestialBodyRepository.GetById(id);
             if (celestialBody == null)
                 throw new CelestialBodyDoesNotExist("Celestial body does not exist.");
-                
+
             var (children, totalCount) = await _celestialBodyRepository.GetCelestialBodiesOrbitingThisIdPaginated(id, parameters);
             var result = new List<(CelestialBodies CelestialBody, BodyTypes? BodyType)>();
-            
+
             foreach (var child in children)
             {
                 var bodyType = await _bodyTypeRepository.GetById(child.BodyType);
                 result.Add((child, bodyType));
             }
-            
+
             return new PagedResult<(CelestialBodies CelestialBody, BodyTypes? BodyType)>
             {
                 PageNumber = parameters.PageNumber,

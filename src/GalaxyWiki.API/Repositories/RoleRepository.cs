@@ -17,4 +17,4 @@ namespace GalaxyWiki.API.Repositories
             return await _session.GetAsync<Roles>(id);
         }
     }
-} 
+}

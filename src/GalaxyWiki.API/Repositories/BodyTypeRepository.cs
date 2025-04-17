@@ -20,4 +20,4 @@ namespace GalaxyWiki.API.Repositories
         }
 
     }
-} 
+}

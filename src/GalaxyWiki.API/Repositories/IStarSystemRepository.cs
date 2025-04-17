@@ -12,4 +12,4 @@ namespace GalaxyWiki.API.Repositories
         Task<StarSystems> Update(StarSystems starSystem);
         Task Delete(StarSystems starSystem);
     }
-} 
+}

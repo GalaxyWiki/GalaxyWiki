@@ -18,4 +18,4 @@ namespace GalaxyWiki.API.Repositories
         Task<CelestialBodies> Update(CelestialBodies celestialBody);
         Task Delete(CelestialBodies celestialBody);
     }
-} 
+}

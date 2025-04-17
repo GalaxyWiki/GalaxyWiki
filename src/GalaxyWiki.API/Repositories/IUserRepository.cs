@@ -8,4 +8,4 @@ namespace GalaxyWiki.API.Repositories
         Task<Users> GetById(string id);
         Task<Users> Create(Users user);
     }
-} 
+}

@@ -63,7 +63,7 @@ namespace GalaxyWiki.API.Controllers
         public async Task<IActionResult> GetCelestialBodies(int id)
         {
             var celestialBodies = await _starSystemService.GetCelestialBodiesForStarSystemById(id);
-            
+
             return Ok(celestialBodies.Select(cb => new
             {
                 cb.Id,
@@ -134,4 +134,4 @@ namespace GalaxyWiki.API.Controllers
             return NoContent();
         }
     }
-} 
+}

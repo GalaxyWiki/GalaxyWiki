@@ -24,13 +24,14 @@ namespace GalaxyWiki.API.Controllers
 
                 // Get the last message from the list, which is the latest user message
                 var lastMessage = request.Messages.Last();
-                
+
                 // Format all previous messages to send as context to Claude
-                var claudeMessages = request.Messages.Select(m => 
+                var claudeMessages = request.Messages.Select(m =>
                     new Message(m.Role, m.Content)).ToList();
 
                 // Request
-                var claudeRequest = new ClaudeRequest {
+                var claudeRequest = new ClaudeRequest
+                {
                     Messages = claudeMessages,
                     System = request.System,
                     MaxTokens = request.MaxTokens
@@ -52,16 +53,16 @@ namespace GalaxyWiki.API.Controllers
             {
                 // Create HttpClient w/ headers
                 using var client = new HttpClient();
-                var apiKey = Environment.GetEnvironmentVariable("CLAUDE_API_KEY") ?? 
+                var apiKey = Environment.GetEnvironmentVariable("CLAUDE_API_KEY") ??
                     throw new InvalidOperationException("CLAUDE_API_KEY environment variable is not set");
-                
+
                 client.DefaultRequestHeaders.Add("x-api-key", apiKey);
                 client.DefaultRequestHeaders.Add("anthropic-version", "2023-06-01");
 
                 // Serialize and send request
                 var content = new StringContent(
-                    JsonSerializer.Serialize(request), 
-                    System.Text.Encoding.UTF8, 
+                    JsonSerializer.Serialize(request),
+                    System.Text.Encoding.UTF8,
                     "application/json"
                 );
 
@@ -73,18 +74,18 @@ namespace GalaxyWiki.API.Controllers
                 {
                     return $"Error from Claude API: {response.StatusCode} - {responseContent}";
                 }
-                
+
                 var claudeResponse = JsonSerializer.Deserialize<ClaudeResponse>(responseContent);
                 if (claudeResponse?.Error != null)
                 {
                     return $"Claude API Error: {claudeResponse.Error.Type} - {claudeResponse.Error.Message}";
                 }
-                
+
                 if (claudeResponse?.Content == null || !claudeResponse.Content.Any())
                 {
                     return "No response content from Claude";
                 }
-                
+
                 return claudeResponse.Content.First().Text;
             }
             catch (Exception ex)

@@ -7,4 +7,4 @@ namespace GalaxyWiki.API.Repositories
     {
         Task<Roles> GetById(int id);
     }
-} 
+}

@@ -30,7 +30,7 @@ namespace GalaxyWiki.API.Controllers
         public async Task<IActionResult> GetById(int id)
         {
             var comment = await _commentService.GetById(id);
-            if (comment == null) 
+            if (comment == null)
                 return NotFound(new { error = "Comment not found." });
             return Ok(comment);
         }
@@ -48,7 +48,7 @@ namespace GalaxyWiki.API.Controllers
         public async Task<IActionResult> GetByUser(string userId)
         {
             var comments = await _commentService.GetByUser(userId);
-            return Ok(comments);            
+            return Ok(comments);
         }
 
         // GET /comment/date-range?startDate={startDate}&endDate={endDate}&celestialBodyId={celestialBodyId}
@@ -72,14 +72,14 @@ namespace GalaxyWiki.API.Controllers
         [Authorize]
         public async Task<IActionResult> Create([FromBody] CreateCommentRequest newComment)
         {
-            if (!ModelState.IsValid) 
+            if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             var comment = await _commentService.Create(newComment, userId!);
 
-            return CreatedAtAction(nameof(GetById), new { id = comment.CommentId }, comment);            
+            return CreatedAtAction(nameof(GetById), new { id = comment.CommentId }, comment);
         }
 
         // PUT /comment/{id}
@@ -87,7 +87,7 @@ namespace GalaxyWiki.API.Controllers
         [Authorize]
         public async Task<IActionResult> Update([FromRoute(Name = "id")] int commentId, [FromBody] UpdateCommentRequest updateDto)
         {
-            if (!ModelState.IsValid) 
+            if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -101,9 +101,9 @@ namespace GalaxyWiki.API.Controllers
         [HttpDelete("{id}")]
         [Authorize]
         public async Task<IActionResult> Delete([FromRoute(Name = "id")] int commentId)
-        {   
+        {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            Console.WriteLine("in the controller-----"+commentId);
+            Console.WriteLine("in the controller-----" + commentId);
             await _commentService.Delete(commentId, userId!);
 
             return NoContent();
