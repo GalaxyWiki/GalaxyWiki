@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - tevlen-prod
 
 jobs:
   terraform:
@@ -26,7 +25,7 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
-          role-to-assume: arn:aws:iam::958933916692:role/gh-actions-role
+          role-to-assume: arn:aws:iam::958933916692:role/gh-action-role
           aws-region: eu-west-1
     
       - name: Get secrets from AWS Key Store
@@ -104,7 +103,7 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
-          role-to-assume: arn:aws:iam::958933916692:role/gh-actions-role
+          role-to-assume: arn:aws:iam::958933916692:role/gh-action-role
           aws-region: eu-west-1
 
       - name: Get secrets from AWS Key Store
