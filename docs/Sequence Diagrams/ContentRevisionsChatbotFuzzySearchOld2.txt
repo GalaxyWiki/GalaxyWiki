@@ -1,0 +1,151 @@
+title Content Management System Flows
+
+// --- Viewing Content Revisions Flow ---
+User [icon: user, color: blue]
+Web App [icon: monitor, color: lightblue]
+ContentController [icon: server, color: purple]
+RevisionService [icon: tool, color: orange]
+RevisionRepository [icon: database, color: green]
+
+User > Web App: Request to view content revisions
+activate User
+Web App > ContentController: Fetch revisions for content
+activate Web App
+activate ContentController
+ContentController > RevisionService: Get revisions by content ID
+activate RevisionService
+RevisionService > RevisionRepository: Query revisions by content ID
+activate RevisionRepository
+RevisionRepository --> RevisionService: List of revisions
+deactivate RevisionRepository
+RevisionService --> ContentController: Revision data
+deactivate RevisionService
+ContentController --> Web App: Revision data (JSON)
+deactivate ContentController
+
+alt [label: revisions found, color: green] {
+  Web App --> User: Display revision history
+}
+else [label: no revisions, color: red] {
+  Web App --> User: Show "No revisions found" message
+}
+deactivate Web App
+deactivate User
+
+// --- Creating Content Revisions Flow ---
+User [icon: user, color: blue]
+Web App [icon: monitor, color: lightblue]
+ContentController [icon: server, color: purple]
+RevisionService [icon: tool, color: orange]
+RevisionRepository [icon: database, color: green]
+NotificationService [icon: bell, color: orange]
+AuthService [icon: lock, color: gray]
+
+User > Web App: Edit content
+activate User
+Web App > User: Show content editor
+activate Web App
+User > Web App: Submit changes
+
+// --- Auth check block ---
+Web App > AuthService: Check user authentication
+activate AuthService
+alt [label: authenticated, color: green] {
+  AuthService --> Web App: Auth OK
+  Web App > ContentController: POST new revision
+  activate ContentController
+  // --- Authorization check block ---
+  ContentController > AuthService: Check user authorization
+  alt [label: authorized, color: green] {
+    AuthService --> ContentController: Authorized
+    ContentController > RevisionService: Create new revision
+    activate RevisionService
+    RevisionService > RevisionRepository: Insert new revision
+    activate RevisionRepository
+    RevisionRepository --> RevisionService: Revision ID
+    deactivate RevisionRepository
+    RevisionService --> ContentController: Revision created (ID)
+    deactivate RevisionService
+    ContentController > NotificationService: Notify subscribers of new revision
+    activate NotificationService
+    NotificationService --> ContentController: Notification sent
+    deactivate NotificationService
+    ContentController --> Web App: Revision created (ID)
+    deactivate ContentController
+    Web App --> User: Show success message
+  }
+  else [label: not authorized, color: red] {
+    AuthService --> ContentController: Not authorized
+    ContentController --> Web App: Show "Not authorized" error
+    Web App --> User: Show authorization error
+  }
+}
+else [label: not authenticated, color: red] {
+  AuthService --> Web App: Auth failed
+  Web App --> User: Show login required
+}
+deactivate AuthService
+deactivate Web App
+deactivate User
+
+// --- Chatbot Flow ---
+User [icon: user, color: blue]
+Chat UI [icon: message-circle, color: purple]
+ChatbotController [icon: bot, color: pink]
+NLPService [icon: cpu, color: yellow]
+KnowledgeRepository [icon: book, color: green]
+Human Agent [icon: user-check, color: red]
+
+User > Chat UI: Send message
+activate User
+Chat UI > ChatbotController: Forward user message
+activate Chat UI
+activate ChatbotController
+ChatbotController > NLPService: Analyze intent
+activate NLPService
+NLPService > KnowledgeRepository: Query for answer
+activate KnowledgeRepository
+KnowledgeRepository --> NLPService: Relevant information
+deactivate KnowledgeRepository
+NLPService --> ChatbotController: Intent + Answer
+deactivate NLPService
+ChatbotController > Chat UI: Compose response
+deactivate ChatbotController
+Chat UI --> User: Show chatbot reply
+deactivate Chat UI
+deactivate User
+
+opt [label: escalation needed, color: orange] {
+  ChatbotController > Human Agent: Escalate conversation
+  activate Human Agent
+  Human Agent --> User: Human support response
+  deactivate Human Agent
+}
+
+// --- Fuzzy Search Flow ---
+User [icon: user, color: blue]
+Web App [icon: monitor, color: lightblue]
+SearchController [icon: server, color: purple]
+SearchService [icon: search, color: teal]
+ResultRepository [icon: database, color: green]
+
+User > Web App: Enter search query
+activate User
+Web App > SearchController: Search request (query string)
+activate Web App
+activate SearchController
+SearchController > SearchService: Fuzzy search (query)
+activate SearchService
+loop [label: for each result, color: lightgray] {
+  SearchService > ResultRepository: Fetch result details
+  activate ResultRepository
+  ResultRepository --> SearchService: Result data
+  deactivate ResultRepository
+}
+SearchService --> SearchController: Ranked results
+deactivate SearchService
+SearchController --> Web App: Search results
+deactivate SearchController
+Web App --> User: Display search results
+deactivate Web App
+deactivate User

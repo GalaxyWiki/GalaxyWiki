@@ -1,0 +1,379 @@
+public static async Task LoginAsync()
+        {
+            var scopes = "openid email profile";
+
+            var authUrl = $"https://accounts.google.com/o/oauth2/v2/auth?" +
+                        $"response_type=code&client_id={clientId}&" +
+                        $"redirect_uri={Uri.EscapeDataString(redirectUri!)}&" +
+                        $"scope={Uri.EscapeDataString(scopes)}&" +
+                        $"access_type=offline";
+
+            using var listener = new HttpListener();
+            listener.Prefixes.Add(redirectUri!);
+            listener.Start();
+
+            AnsiConsole.Write(new Rule("[orange1]Opening browser for google login...[/] "));
+            Process.Start(new ProcessStartInfo(authUrl) { UseShellExecute = true });
+
+            var context = await listener.GetContextAsync();
+            var authCode = context.Request.QueryString["code"];
+            var responseString = """
+            <html>
+                <head>
+                    <title>Login success</title>
+                    <script> function closePage() { window.close(); } </script>
+                    <style>
+                        body            { background: #140d1c; color: #f0ebf5; margin: 0; }
+                        #txt            { display: flex; center; width: 100%; height: 100%; justify-content: center; align-items: center; }
+                        #msg            { text-align: center; }
+                        h1              { font-family: monospace; font-size: 3em; }
+                        p               { font-family: sans-serif; }
+                        #space, .stars  { overflow: hidden; position: absolute; top: 0; bottom: 0; left: 0; right: 0; }
+
+                        .stars {
+                            background-image: 
+                                radial-gradient(2px 2px at 20px 30px, #eee, rgba(0,0,0,0)),
+                                radial-gradient(2px 2px at 40px 70px, #fff, rgba(0,0,0,0)),
+                                radial-gradient(2px 2px at 50px 160px, #ddd, rgba(0,0,0,0)),
+                                radial-gradient(2px 2px at 90px 40px, #fff, rgba(0,0,0,0)),
+                                radial-gradient(2px 2px at 130px 80px, #fff, rgba(0,0,0,0)),
+                                radial-gradient(2px 2px at 160px 120px, #ddd, rgba(0,0,0,0));
+                            background-repeat: repeat;
+                            background-size: 200px 200px;
+                            animation: zoom 2s infinite;
+                            opacity: 0;
+                        }
+
+                        .stars:nth-child(1) { background-position: 50% 50%; animation-delay: 0s; }
+                        .stars:nth-child(2) { background-position: 20% 60%; animation-delay: 500ms; }
+                        .stars:nth-child(3) { background-position: -20% -30%; animation-delay: 1s; }
+                        .stars:nth-child(4) { background-position: 40% -80%; animation-delay: 1500ms; }
+                        .stars:nth-child(5) { background-position: -20% 30%; animation-delay: 2s; }
+                        .stars:nth-child(6) { background-position: 40% -80%; animation-delay: 2500ms; }
+                        .stars:nth-child(7) { background-position: -20% 30%; animation-delay: 3s; }
+                        .stars:nth-child(8) { background-position: -20% 30%; animation-delay: 3500ms; }
+                        .stars:nth-child(9) { background-position: 40% -80%; animation-delay: 4s; }
+
+                        @keyframes zoom {
+                            0% { opacity: 0; transform: scale(0.5); animation-timing-function: ease-in; } 
+                            85% { opacity: 1; transform: scale(2.8); animation-timing-function: linear; }
+                            100% { opacity: 0; transform: scale(3.5); }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div id="txt">
+                        <div id="msg">
+                            <h1> Login successful &#128640; </h1>
+                            <p>You may now close this page</p>
+                            <br /><br /><br />
+                        </div>
+                    </div>
+                    <div id="space">
+                        <div class="stars"></div> <div class="stars"></div> <div class="stars"></div>
+                        <div class="stars"></div> <div class="stars"></div> <div class="stars"></div>
+                        <div class="stars"></div> <div class="stars"></div> <div class="stars"></div>
+                    </div>
+
+                </body>
+            </html>
+            """;
+            var buffer = Encoding.UTF8.GetBytes(responseString);
+            context.Response.OutputStream.Write(buffer);
+            context.Response.OutputStream.Close();
+            Thread.Sleep(1000);
+            listener.Stop();
+
+            Console.WriteLine($"Received auth code: {authCode}");
+
+            AnsiConsole.Write(new Rule("[cyan]Logging into GalaxyWiki api...[/]"));
+
+            using var http = new HttpClient();
+            var res = await http.PostAsync(apiUrl + "/login",
+                new StringContent(JsonSerializer.Serialize(new { authCode }), Encoding.UTF8, "application/json"));
+
+            var json = await res.Content.ReadAsStringAsync();
+            JWT = JsonDocument.Parse(json).RootElement.GetProperty("idToken").GetString() ?? "";
+            if (JWT == "")
+            {
+                TUI.Err("JWT", "Error getting JWT. Response did not contain a token.");
+                return;
+            }
+            var userName = JsonDocument.Parse(json).RootElement.GetProperty("name").GetString();
+
+            Console.WriteLine($"JWT from API: \n{JWT}");
+
+            AnsiConsole.Write(new Rule("[green]Logged in successfully. Welcome " + userName + ".[/]"));
+        }
+
+
+
+using Microsoft.AspNetCore.Mvc;
+using GalaxyWiki.API.Services;
+using GalaxyWiki.API.DTO;
+
+namespace GalaxyWiki.API.Controllers
+{
+  [ApiController]
+  [Route("[controller]")]
+  public class AuthController : ControllerBase
+  {   
+      private readonly IAuthService _authService;
+
+      public AuthController(IAuthService authService)
+      {
+          _authService = authService;
+      }
+
+      [HttpPost("/login")]
+      public async Task<IActionResult> Login([FromBody] LoginRequest request)
+      {
+        if (string.IsNullOrWhiteSpace(request.AuthCode))
+            return BadRequest("Auth code is required.");
+
+        var result = await _authService.Login(request.AuthCode);
+        
+        return Ok(new
+        {
+            message = "Login successful",
+            idToken = result[0],
+            name = result[1]
+        });
+      }
+  }
+}
+
+using GalaxyWiki.Core.Enums;
+using System.Threading.Tasks;
+
+namespace GalaxyWiki.API.Services
+{
+    public interface IAuthService
+    {
+        Task<string[]> Login(string authCode);
+        Task<bool> CheckUserHasAccessRight(UserRole[] accessLevelRequired, string? authorId);
+    }
+} 
+
+using Google.Apis.Auth;
+using GalaxyWiki.Core.Enums;
+using System.Text.Json;
+
+namespace GalaxyWiki.API.Services
+{
+    public class AuthService : IAuthService
+    {
+        private readonly IUserService _userService;
+
+        public AuthService(NHibernate.ISession session, IUserService userService)
+        {
+            _userService = userService;
+        }
+
+        public async Task<string[]> Login(string authCode)
+        {
+            var clientId = Environment.GetEnvironmentVariable("CLIENT_ID");
+            var clientSecret = Environment.GetEnvironmentVariable("CLIENT_SECRET");
+            var redirectUri = Environment.GetEnvironmentVariable("REDIRECT_URI");
+
+            using var http = new HttpClient();
+            var resp = await http.PostAsync("https://oauth2.googleapis.com/token",
+                new FormUrlEncodedContent(new Dictionary<string, string>
+                {
+                    { "code", authCode },
+                    { "client_id", clientId },
+                    { "client_secret", clientSecret },
+                    { "redirect_uri", redirectUri },
+                    { "grant_type", "authorization_code" }
+                }));
+
+            if (!resp.IsSuccessStatusCode)
+            {
+                var err = await resp.Content.ReadAsStringAsync();
+                throw new InvalidGoogleTokenException("Google token exchange failed: " + err);
+            }
+
+            var json = await resp.Content.ReadAsStringAsync();
+            var token = JsonDocument.Parse(json).RootElement;
+
+            var idToken = token.GetProperty("id_token").GetString();
+            
+            GoogleJsonWebSignature.Payload payload;
+            try 
+            {
+                payload = await GoogleJsonWebSignature.ValidateAsync(idToken);
+            }
+            catch (InvalidJwtException ex)
+            {
+                throw new InvalidGoogleTokenException("Invalid Google ID token: " + ex.Message);
+            }
+
+            var user = await _userService.GetUserById(payload.Subject);
+
+            if (user == null)
+            {
+                user = await _userService.CreateUser(payload.Subject, payload.Email, payload.Name, UserRole.Viewer);
+            }
+
+            return [idToken, user.DisplayName];     
+        }
+
+        public async Task<bool> CheckUserHasAccessRight(UserRole[] accessLevelRequired, string? authorId)
+        {
+            if (string.IsNullOrEmpty(authorId))
+            {
+                throw new InvalidGoogleTokenException("Author Id missing.");
+            }
+
+            var user = await _userService.GetUserById(authorId);
+
+            if (user == null)
+            {
+                throw new UserDoesNotExist("User does not exist.");
+            }
+
+            return Array.Exists(accessLevelRequired, r => (int)r == user.Role.Id);
+        }
+    }
+}
+
+using GalaxyWiki.Core.Entities;
+using GalaxyWiki.Core.Enums;
+using System.Threading.Tasks;
+
+namespace GalaxyWiki.API.Services
+{
+    public interface IUserService
+    {
+        Task<Users> GetUserById(string googleSub);
+        Task<Users> CreateUser(string googleSub, string email, string name, UserRole userRole);
+    }
+} 
+
+using GalaxyWiki.Core.Entities;
+using GalaxyWiki.Core.Enums;
+using GalaxyWiki.API.Repositories;
+
+namespace GalaxyWiki.API.Services
+{
+    public class UserService : IUserService
+    {
+        private readonly IUserRepository _userRepository;
+        private readonly IRoleRepository _roleRepository;
+
+        public UserService(IUserRepository userRepository, IRoleRepository roleRepository)
+        {
+            _userRepository = userRepository;
+            _roleRepository = roleRepository;
+        }
+
+        public async Task<Users> GetUserById(string googleSub)
+        {
+            Console.WriteLine("In the user");
+            return await _userRepository.GetById(googleSub);
+        }
+
+        public async Task<Users> CreateUser(string googleSub, string email, string name, UserRole userRole)
+        {
+            var role = await _roleRepository.GetById((int)userRole);
+            if (role == null)
+            {
+                throw new RoleDoesNotExist("The selected role type does not exist.");
+            }
+
+            var user = new Users
+            {
+                Id = googleSub,
+                Email = email,
+                DisplayName = name,
+                Role = role
+            };
+
+            await _userRepository.Create(user);
+
+            return user;
+        }
+    }
+}
+
+using GalaxyWiki.Core.Entities;
+using System.Threading.Tasks;
+
+namespace GalaxyWiki.API.Repositories
+{
+    public interface IUserRepository
+    {
+        Task<Users> GetById(string id);
+        Task<Users> Create(Users user);
+    }
+} 
+
+using GalaxyWiki.Core.Entities;
+using System.Threading.Tasks;
+
+namespace GalaxyWiki.API.Repositories
+{
+    public interface IRoleRepository
+    {
+        Task<Roles> GetById(int id);
+    }
+} 
+
+using GalaxyWiki.Core.Entities;
+using ISession = NHibernate.ISession;
+
+namespace GalaxyWiki.API.Repositories
+{
+    public class RoleRepository : IRoleRepository
+    {
+        private readonly ISession _session;
+
+        public RoleRepository(ISession session)
+        {
+            _session = session;
+        }
+
+        public async Task<Roles> GetById(int id)
+        {
+            return await _session.GetAsync<Roles>(id);
+        }
+    }
+} 
+
+
+using GalaxyWiki.Core.Entities;
+using ISession = NHibernate.ISession;
+
+namespace GalaxyWiki.API.Repositories
+{
+    public class UserRepository : IUserRepository
+    {
+        private readonly ISession _session;
+
+        public UserRepository(ISession session)
+        {
+            _session = session;
+        }
+
+        public async Task<Users> GetById(string id)
+        {
+            return await _session.GetAsync<Users>(id);
+        }
+
+        public async Task<Users> Create(Users user)
+        {
+            using var transaction = _session.BeginTransaction();
+            try
+            {
+                await _session.SaveAsync(user);
+                transaction.Commit();
+                return user;
+            }
+            catch 
+            {
+                transaction.Rollback();
+                throw;
+            }
+        }
+    }
+} 

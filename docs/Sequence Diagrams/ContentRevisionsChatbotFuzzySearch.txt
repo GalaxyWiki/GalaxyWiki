@@ -1,0 +1,123 @@
+title Viewing Content Revisions
+
+CLI [icon: monitor, color: orange] > Content Revision Controller [icon: server, color: blue]: GET /api/revision/by-name/{name}
+activate Content Revision Controller
+
+Content Revision Controller > Content Revision Service [icon: tool, color: purple]: getRevisionsByName(name)
+deactivate Content Revision Controller
+activate Content Revision Service
+
+Content Revision Service > Content Revision Repository [icon: database, color: teal]: findByName(name)
+deactivate Content Revision Service
+activate Content Revision Repository
+
+alt [label: Revision Exists, color: green] {
+    Content Revision Repository --> Content Revision Service: List<Revision Data>
+    activate Content Revision Service
+    Content Revision Service --> Content Revision Controller: List<Revision Data>
+    activate Content Revision Controller
+    Content Revision Controller --> CLI: 200 List<Revisions Data>
+    deactivate Content Revision Controller
+    deactivate Content Revision Service
+}
+else [label: No Revision Found, color: red] {
+    Content Revision Repository --> Content Revision Service: null
+    activate Content Revision Service
+    Content Revision Service --> Content Revision Controller: Not Found
+    activate Content Revision Controller
+    Content Revision Controller --> CLI: 404 Error response
+    deactivate Content Revision Controller
+    deactivate Content Revision Service
+}
+
+deactivate Content Revision Repository
+
+
+title Creating Content Revisions
+CLI [icon: monitor, color: orange] > Content Revision Controller [icon: server, color: blue]: POST /api/revision (new revision)
+activate Content Revision Controller
+Content Revision Controller > AuthService [icon: shield, color: red]: validateAuthorization()
+deactivate Content Revision Controller
+activate AuthService
+alt [label: Authorized, color: green] {
+    AuthService -> Content Revision Controller: Authorized
+    activate Content Revision Controller
+    Content Revision Controller > Content Revision Service [icon: tool, color: purple]: createRevision(data)
+    deactivate Content Revision Controller
+    activate Content Revision Service
+    Content Revision Service > Content Revision Repository [icon: database, color: green]: save(data)
+    activate Content Revision Repository
+    Content Revision Repository -> Content Revision Service: Saved Revision
+    deactivate Content Revision Repository
+    Content Revision Service -> Content Revision Controller: Revision Details
+    deactivate Content Revision Service
+    activate Content Revision Controller
+    Content Revision Controller -> CLI: 201 Revision Details
+    deactivate Content Revision Controller
+}
+else [label: Unauthorized, color: red] {
+    AuthService -> Content Revision Controller: Unauthorized
+    activate Content Revision Controller
+    Content Revision Controller -> CLI: 403 Error response
+    deactivate Content Revision Controller
+}
+deactivate AuthService
+
+
+title Chatbot
+CLI [icon: monitor, color: orange] > Chat Controller [icon: server, color: blue]: POST /api/chat (chat messages)
+
+activate Chat Controller
+alt [label: Valid Request, color: green] {
+    loop [label: Processing Messages] {
+        Chat Controller > CLI: Request next message
+        activate CLI
+        CLI > Chat Controller: User message
+        deactivate CLI
+        Chat Controller > Chat Controller: formatChatMessage()
+        Chat Controller > Claude API [icon: globe, color: red]: sendChatRequest()
+        activate Claude API
+        Claude API -> Chat Controller: chatResponseContent
+        deactivate Claude API
+        Chat Controller -> CLI: 200 OK (Chat Response)
+    }
+}
+else [label: Invalid Request] {
+    Chat Controller -> CLI: 400 Bad Request
+}
+deactivate Chat Controller
+
+
+
+
+
+title Fuzzy Search
+
+Client [icon: monitor, color: orange] > Search Service [icon: server, color: blue]: Initiate fuzzy search with term {search term}
+activate Search Service
+
+// Process Celestial Bodies in the fuzzy search
+loop [label: For each Celestial Body] {
+    alt [label: Exact Match?] {
+        Search Service > Search Service: Compare BodyName with {search term} (case-insensitive)
+        Search Service -> Search Service: Add Exact match result (100%)
+        // Exact match found; continue to next body
+    }
+    else [label: Contains Match?] {
+        Search Service > Search Service: Check if BodyName contains {search term}
+        Search Service -> Search Service: Add Contains match result (90%)
+        // Contains match found; no fuzzy check needed
+    }
+    else [label: Fuzzy Match?] {
+        Search Service > Fuzz Library [icon: tool, color: lightblue]: Calculate Ratio(lowercase(BodyName), {search term})
+        activate Fuzz Library
+        Fuzz Library -> Search Service: Return Ratio value
+        deactivate Fuzz Library
+        opt [label: Ratio >= 60] {
+            Search Service -> Search Service: Add Fuzzy match result with returned Ratio
+        }
+    }
+}
+
+Search Service -> Client: Display top fuzzy search results
+deactivate Search Service

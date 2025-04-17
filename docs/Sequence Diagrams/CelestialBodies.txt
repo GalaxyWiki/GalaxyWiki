@@ -1,0 +1,160 @@
+title Viewing Celestial Body Information
+Client [icon: monitor, color: orange] > CelestialBody Controller [icon: server, color: blue]: GET /api/celestial-body/{id}
+activate CelestialBody Controller
+CelestialBody Controller > CelestialBody Service [icon: tool, color: purple]: GetById(id)
+activate CelestialBody Service
+CelestialBody Service > CelestialBodyRepository [icon: database, color: green]: GetById(id)
+activate CelestialBodyRepository
+CelestialBodyRepository -> CelestialBody Service: CelestialBody data
+deactivate CelestialBodyRepository
+CelestialBody Service > BodyType Repository [icon: database, color: teal]: GetById(bodyTypeId)
+activate BodyType Repository
+BodyType Repository -> CelestialBody Service: BodyType data
+deactivate BodyType Repository
+alt [label: Celestial Body Found, color: green] {
+  CelestialBody Service -> CelestialBody Controller: (CelestialBody, BodyType)
+  CelestialBody Controller -> Client: 200 OK with data
+}
+else [label: Celestial Body Not Found, color: red] {
+  CelestialBody Controller -> Client: 404 Error reponse
+}
+deactivate CelestialBody Service
+deactivate CelestialBody Controller
+
+
+
+title Creating Celestial Body
+Client [icon: monitor, color: orange] > CelestialBodyController [icon: server, color: blue]: POST /api/celestial-body
+activate CelestialBodyController
+CelestialBodyController > CelestialBody Service [icon: tool, color: purple]: CreateCelestialBody(request, authorId)
+activate CelestialBody Service
+// Authorization check
+alt [label: Access Granted, color: green] {
+  CelestialBody Service > AuthService [icon: shield, color: red]: CheckUserHasAccessRight(Admin, authorId)
+  activate AuthService
+  AuthService -> CelestialBody Service: true
+}
+else [label: Access Denied, color: red] {
+  AuthService -> CelestialBody Service: false
+  deactivate AuthService
+  CelestialBody Service -> CelestialBodyController: Unauthorized
+  CelestialBodyController -> Client: 403 Error response
+}
+deactivate CelestialBodyController
+opt [label: Validate Body Type, color: lightblue] {
+  CelestialBody Service > BodyType Repository [icon: database, color: teal]: GetById(request.BodyTypeId)
+  activate BodyType Repository
+  BodyType Repository -> CelestialBody Service: "BodyType data / null"
+  deactivate BodyType Repository
+}
+opt [label: Validate Orbits, color: yellow] {
+  CelestialBody Service > CelestialBody Repository [icon: database, color: yellow]: GetById(request.OrbitsId)
+  activate CelestialBody Repository
+  CelestialBody Repository -> CelestialBody Service: "Orbits data / null"
+  deactivate CelestialBody Repository
+}
+CelestialBody Service > CelestialBody Repository [icon: database, color: green]: Create(celestialBody)
+activate CelestialBody Repository
+CelestialBody Repository -> CelestialBody Service: New CelestialBody
+deactivate CelestialBody Repository
+activate CelestialBodyController
+CelestialBody Service -> CelestialBodyController: celestialBody object
+deactivate CelestialBody Service
+CelestialBodyController -> Client: 201 Created with celestialBody
+deactivate CelestialBodyController
+
+
+title Celestial Body Updating Flow
+Client [icon: monitor, color: orange] > CelestialBodyController [icon: server, color: blue]: PUT /api/celestial-body/{id}
+activate CelestialBodyController
+CelestialBodyController > CelestialBodyService [icon: tool, color: purple]: UpdateCelestialBody(id, request, authorId)
+activate CelestialBodyService
+alt [label: Access Granted, color: green] {
+  CelestialBodyService > AuthService [icon: shield, color: red]: CheckUserHasAccessRight(Admin, authorId)
+  activate AuthService
+  AuthService -> CelestialBodyService: true
+}
+else [label: Access Denied, color: red] {
+  AuthService -> CelestialBodyService: false
+  deactivate AuthService
+  CelestialBodyService -> CelestialBodyController: Access denied
+  CelestialBodyController -> Client: 403 Error response
+}
+deactivate CelestialBodyController
+CelestialBodyService > CelestialBodyRepository [icon: database, color: yellow]: GetById(id)
+activate CelestialBodyRepository
+CelestialBodyRepository -> CelestialBodyService: "CelestialBody / null"
+deactivate CelestialBodyRepository
+alt [label: Celestial Body Found, color: green] {
+  opt [label: Validate Body Type, color: lightblue] {
+    CelestialBodyService > BodyTypeRepository [icon: database, color: teal]: GetById(request.BodyTypeId)
+    activate BodyTypeRepository
+    BodyTypeRepository -> CelestialBodyService: "BodyType data / null"
+    deactivate BodyTypeRepository
+  }
+  opt [label: Validate Orbits, color: yellow] {
+    CelestialBodyService > CelestialBodyRepository [icon: database, color: gree]: GetById(request.OrbitsId)
+    activate CelestialBodyRepository
+    CelestialBodyRepository -> CelestialBodyService: "Orbits data / null"
+    deactivate CelestialBodyRepository
+  }
+  CelestialBodyService > CelestialBodyRepository [icon: database, color: green]: Update(celestialBody)
+  activate CelestialBodyRepository
+  CelestialBodyRepository -> CelestialBodyService: Updated data
+  deactivate CelestialBodyRepository
+  activate CelestialBodyController
+  CelestialBodyService -> CelestialBodyController: Updated celestialBody
+  CelestialBodyController -> Client: 200 OK with updated data
+}
+else [label: Celestial Body Not Found, color: red] {
+  CelestialBodyService -> CelestialBodyController: Error Not Found
+  CelestialBodyController -> Client: 404 Error response
+}
+deactivate CelestialBodyService
+deactivate CelestialBodyController
+
+
+title Celestial Body Deleting Flow
+Client [icon: monitor, color: orange] > CelestialBodyController [icon: server, color: blue]: DELETE /api/celestial-body/{id}
+activate CelestialBodyController
+CelestialBodyController > CelestialBodyService [icon: tool, color: purple]: DeleteCelestialBody(id, authorId)
+activate CelestialBodyService
+alt [label: Access Granted, color: green] {
+  CelestialBodyService > AuthService [icon: shield, color: red]: CheckUserHasAccessRight(Admin, authorId)
+  activate AuthService
+  AuthService -> CelestialBodyService: true
+}
+else [label: Access Denied, color: red] {
+  AuthService -> CelestialBodyService: false
+  deactivate AuthService
+  CelestialBodyService -> CelestialBodyController: Access Error
+  CelestialBodyController -> Client: 403 Forbidden
+}
+deactivate CelestialBodyController
+CelestialBodyService > CelestialBodyRepository [icon: database, color: teal]: GetById(id)
+activate CelestialBodyRepository
+CelestialBodyRepository -> CelestialBodyService: "CelestialBody / null"
+deactivate CelestialBodyRepository
+alt [label: Celestial Body Exists, color: green] {
+  CelestialBodyService  > CelestialBodyRepository: Delete children
+  activate CelestialBodyRepository
+  loop [label: Deleting Children, color: orange] {
+    CelestialBodyRepository > CelestialBodyRepository: For each child in children
+    CelestialBodyRepository -> CelestialBodyRepository: Delete(child)
+  }
+  CelestialBodyRepository  > CelestialBodyService: Confirmation
+  deactivate CelestialBodyRepository
+  CelestialBodyService > CelestialBodyRepository [icon: database, color: yellow]: Delete(celestialBody)
+  activate CelestialBodyRepository
+  CelestialBodyRepository -> CelestialBodyService: Confirmation
+  deactivate CelestialBodyRepository
+  activate CelestialBodyController
+  CelestialBodyService -> CelestialBodyController: No Content
+  CelestialBodyController -> Client: 204 No Content
+}
+else [label: Celestial Body Not Found, color: red] {
+  CelestialBodyService -> CelestialBodyController: Error Not Found
+  deactivate CelestialBodyService
+  CelestialBodyController -> Client: 404 Error response
+}
+deactivate CelestialBodyController

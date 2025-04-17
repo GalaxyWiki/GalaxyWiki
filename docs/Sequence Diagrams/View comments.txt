@@ -1,0 +1,145 @@
+static async Task ViewCommentsForCurrentBody(int? limit = null, string sortOrder = "newest")
+    {
+        var comments = await CommandLogic.GetCommentsForCurrentBody(limit, sortOrder);
+        
+        string title = CommandLogic.GetCurrentBody()?.BodyName ?? "Unknown";
+        title = $"Comments for {title}";
+        
+        if (limit.HasValue)
+        {
+            title += $" (Showing {Math.Min(limit.Value, comments.Count)} of {comments.Count})";
+        }
+        
+        AnsiConsole.Write(TUI.CommentsPanel(comments, title));
+    }
+
+public static async Task<List<Comment>> GetCommentsForCurrentBody(int? limit = null, string sortOrder = "newest")
+        {
+            if (_state.CurrentBody == null)
+            {
+                TUI.Err("COMMENT", "Navigation system not initialized.");
+                return [];
+            }
+            
+            var comments = await ApiClient.GetCommentsByCelestialBodyAsync(_state.CurrentBody.Id);
+            
+            // Sort comments
+            if (sortOrder.Equals("newest", StringComparison.OrdinalIgnoreCase))
+            {
+                comments = [.. comments.OrderByDescending(c => c.CreatedDate)];
+            }
+            else if (sortOrder.Equals("oldest", StringComparison.OrdinalIgnoreCase))
+            {
+                comments = [.. comments.OrderBy(c => c.CreatedDate)];
+            }
+            
+            // Apply limit if specified
+            if (limit.HasValue && limit.Value > 0 && limit.Value < comments.Count)
+            {
+                comments = [.. comments.Take(limit.Value)];
+            }
+            
+            return comments;
+        }
+
+public static async Task<List<Comment>> GetCommentsByCelestialBodyAsync(int celestialBodyId)
+    {
+        try
+        {
+            string endpoint = $"/comment/celestial-body/{celestialBodyId}";
+            return await GetDeserialized<List<Comment>>(endpoint);
+        }
+        catch (Exception ex)
+        {
+            TUI.Err("GET", "Couldn't retrieve comments", ex.Message);
+            return new List<Comment>();
+        }
+    }
+
+public static CelestialBodies? GetCurrentBody()
+    {
+        return _state.CurrentBody;
+    }
+
+public static async Task<T> GetDeserialized<T>(string endpoint) where T : new()
+        {
+            string json = await GetJson(endpoint);
+            return JsonSerializer.Deserialize<T>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new T();
+        }
+
+
+public static async Task<string> GetJson(string endpoint)
+        {
+            // Fetch
+            HttpResponseMessage resp = await httpClient.GetAsync($"{apiUrl}/api{endpoint}");
+            resp.EnsureSuccessStatusCode();
+            return await resp.Content.ReadAsStringAsync();
+        }
+
+// GET /comment/celestial_bodies/{celestialBodyId}
+        [HttpGet("celestial-body/{celestialBodyId}")]
+        public async Task<IActionResult> GetByCelestialBody(int celestialBodyId)
+        {
+            var comments = await _commentService.GetByCelestialBody(celestialBodyId);
+            return Ok(comments);
+        }
+
+using GalaxyWiki.API.DTOs;
+using GalaxyWiki.Core.Entities;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+
+namespace GalaxyWiki.API.Services
+{
+    public interface ICommentService
+    {
+        Task<IEnumerable<Comments>> GetAll();
+        Task<CommentRequest?> GetById(int id);
+        Task<IEnumerable<CommentRequest>> GetByCelestialBody(int celestialBodyId);
+        Task<IEnumerable<CommentRequest>> GetByUser(string userId);
+        Task<IEnumerable<CommentRequest>> GetByDateRange(DateTime startDate, DateTime endDate, int? celestialBodyId = null);
+        Task<CommentRequest> Create(CreateCommentRequest commentDto, string userId);
+        Task<CommentRequest> Update(int id, UpdateCommentRequest updateDto, string userId);
+        Task Delete(int id, string userId);
+    }
+} 
+
+ public async Task<IEnumerable<CommentRequest>> GetByCelestialBody(int celestialBodyId)
+        {
+            var comments = await _commentRepository.GetByCelestialBody(celestialBodyId);
+            return comments.Select(MapToDto);
+        }
+
+using GalaxyWiki.Core.Entities;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+
+namespace GalaxyWiki.API.Repositories
+{
+    public interface ICommentRepository
+    {
+        Task<IEnumerable<Comments>> GetAll();
+        Task<Comments> GetById(int id);
+        Task<IEnumerable<Comments>> GetByCelestialBody(int celestialBodyId);
+        Task<IEnumerable<Comments>> GetByUser(string userId);
+        Task<IEnumerable<Comments>> GetByDateRange(DateTime startDate, DateTime endDate, int? celestialBodyId = null);
+        Task<Comments> Create(Comments comment);
+        Task<Comments> Update(Comments comment);
+        Task Delete(Comments comment);
+    }
+} 
+
+public async Task<IEnumerable<Comments>> GetByCelestialBody(int celestialBodyId)
+        {
+            return await _session.Query<Comments>()
+                .Where(c => c.CelestialBodyId == celestialBodyId)
+                .ToListAsync();
+        }
+
+
+
+
+
+

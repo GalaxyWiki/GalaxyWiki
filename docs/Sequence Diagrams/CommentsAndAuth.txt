@@ -1,0 +1,297 @@
+title Viewing Comments
+
+// Client initiates a GET request for all comments
+Client [icon: monitor, color: orange] > Comment Controller [icon: server, color: blue]: GET /comment
+activate Comment Controller
+Comment Controller > Comment Service [icon: tool, color: purple]: GetAll()
+activate Comment Service
+Comment Service > Comment Repository [icon: database, color: green]: GetAll()
+activate Comment Repository
+Comment Repository -> Comment Service: List<Comments>
+deactivate Comment Repository
+Comment Service > User Repository [icon: user, color: teal]: GetUserDetailsForComments
+activate User Repository
+User Repository -> Comment Service: User Details
+deactivate User Repository
+Comment Service -> Comment Controller: List<Comments> + User Details
+deactivate Comment Service
+Comment Controller -> Client: List<Comments> + User Details
+deactivate Comment Controller
+
+//////////////////////////////////////////////////
+
+title Adding a Comment
+
+// Client sends a POST request to create a new comment
+Client [icon: monitor, color: orange] > Comment Controller [icon: server, color: blue]: POST /comment {commentText, celestialBodyId}
+activate Comment Controller
+Comment Controller > Comment Service [icon: tool, color: purple]: Create(newComment, userId)
+activate Comment Service
+alt [label: Access Granted, color: green] {
+    Comment Service > User Service [icon: user, color: teal]: GetUserById(userId)
+    activate User Service
+    User Service -> Comment Service: User Details
+    deactivate User Service
+
+    Comment Service > User Repository [icon: user, color: teal]: GetUserPermissions(userId)
+    activate User Repository
+    User Repository -> Comment Service: Permissions
+    deactivate User Repository
+
+    Comment Service > CelestialBody Repository [icon: database, color: lightblue]: GetById(celestialBodyId)
+    activate CelestialBody Repository
+    CelestialBody Repository -> Comment Service: CelestialBody
+    deactivate CelestialBody Repository
+
+    Comment Service > Comment Repository [icon: database, color: green]: Create(comment)
+    activate Comment Repository
+    Comment Repository -> Comment Service: Created Comment
+    deactivate Comment Repository
+
+    Comment Service -> Comment Controller: Created Comment DTO
+    Comment Controller -> Client: 201 Created
+}
+else [label: Access Denied, color: red] {
+    Comment Service -> Comment Controller: Access Denied
+    Comment Controller -> Client: 401 Error Response
+}
+deactivate Comment Service
+deactivate Comment Controller
+
+//////////////////////////////////////////////////
+
+title Updating a Comment
+
+// Client sends a PUT request to update an existing comment
+Client [icon: monitor, color: orange] > CommentController [icon: server, color: blue]: PUT /comment/{id} {updateDto}
+activate CommentController
+CommentController > CommentService [icon: tool, color: purple]: Update(commentId, updateDto, userId)
+activate CommentService
+alt [label: Access Granted, color: green] {
+    CommentService > UserService [icon: user, color: teal]: GetUserById(userId)
+    activate UserService
+    UserService --> CommentService: User Details
+    deactivate UserService
+
+    CommentService > UserRepository [icon: user, color: teal]: GetUserPermissions(userId)
+    activate UserRepository
+    UserRepository --> CommentService: Permissions
+    deactivate UserRepository
+
+    CommentService > CommentRepository [icon: database, color: green]: GetById(commentId)
+    activate CommentRepository
+    alt [label: Comment Found, color: blue] {
+        CommentRepository --> CommentService: Comment Object
+        alt [label: Comment Updatable, color: green] {
+            CommentService > CommentRepository: Update(comment)
+            CommentRepository --> CommentService: Updated Comment
+            CommentService --> CommentController: 200 OK
+            CommentService --> CommentController: Updated Comment DTO
+        }
+        else [label: Comment Too Old, color: orange] {
+            CommentService --> CommentController: Error: Comment too old to update
+            CommentService --> CommentController: 409 Conflict
+        }
+    }
+    else [label: Not Found, color: red] {
+        CommentRepository --> CommentService: NotFound
+        CommentService --> CommentController: 404 Not Found
+        CommentService --> CommentController: Error: Comment not found
+    }
+    deactivate CommentRepository
+}
+else [label: Access Denied, color: red] {
+    CommentService --> CommentController: Error: Access Denied
+    CommentService --> CommentController: 403 Forbidden
+}
+deactivate CommentService
+CommentController --> Client: "200 OK / Error Response"
+deactivate CommentController
+
+//////////////////////////////////////////////////
+
+title Deleting a Comment
+
+// Client sends a DELETE request to remove a comment
+Client [icon: monitor, color: orange] > Comment Controller [icon: server, color: blue]: DELETE /comment/{id}
+activate Comment Controller
+Comment Controller > Comment Service [icon: tool, color: purple]: Delete(commentId, userId)
+activate Comment Service
+alt [label: Access Granted, color: green] {
+    Comment Service > User Service [icon: user, color: teal]: GetUserById(userId)
+    activate User Service
+    User Service -> Comment Service: User Details
+    deactivate User Service
+
+    Comment Service > User Repository [icon: user, color: teal]: GetUserPermissions(userId)
+    activate User Repository
+    User Repository -> Comment Service: Permissions
+    deactivate User Repository
+
+    Comment Service > Comment Repository [icon: database, color: green]: GetById(commentId)
+    activate Comment Repository
+    alt [label: Comment Found, color: blue] {
+         Comment Repository -> Comment Service: Comment Object
+         alt [label: Authorized to Delete, color: green] {
+            Comment Service > Comment Repository: Delete(comment)
+            Comment Repository -> Comment Service: Deletion Confirmation
+            Comment Service -> 
+            Comment Controller: Deletion Confirmation
+            Comment Controller -> Client: 204 No Content
+         }
+         else [label: Not Authorized, color: red] {
+             Comment Service -> Comment Controller: Not Authorized to delete
+             Comment Controller -> Client: 403 Error response
+         }
+    }
+    else [label: Comment Not Found, color: red] {
+         Comment Repository -> Comment Service: Not Found
+         Comment Service -> Comment Controller: Not Found
+         Comment Controller -> Client: 404 Error response
+    }
+    deactivate Comment Repository
+}
+else [label: Access Denied, color: red] {
+    Comment Service -> Comment Controller: Error: Access Denied
+    Comment Controller -> Client: 401 Error response
+}
+deactivate Comment Service
+deactivate Comment Controller
+
+
+
+///////////////////////////////////////////////
+
+title OAuth2 Google Login and JWT Exchange
+
+// Actor definitions with icons and colors
+User [icon: user, color: blue]
+Client App [icon: monitor, color: orange]
+Browser [icon: globe, color: green]
+Google OAuth [icon: google, color: red]
+Auth Controller [icon: shield, color: purple]
+Auth Service [icon: key, color: yellow]
+User Service [icon: users, color: teal]
+User Repository [icon: database, color: gray]
+Role Repository [icon: database, color: gray]
+
+// User initiates login
+User > Client App: Start login
+activate Client App
+Client App > Browser: Open Google OAuth URL
+deactivate Client App
+
+// User authenticates with Google
+activate Browser
+Browser > Google OAuth: User login & consent
+
+alt [label: user cancels, color: orange] {
+  activate Google OAuth
+  Google OAuth > Browser: Redirect with error
+  deactivate Google OAuth
+  Browser > Client App: Receive error
+  activate Client App
+  Client App > User: Show error message
+  deactivate Client App
+  // End sequence on error
+  break [label: login failed, color: red] {
+    // Sequence ends here
+  }
+}
+else [label: user grants consent, color: green] {
+  activate Google OAuth
+  Google OAuth > Browser: Redirect with auth code
+  deactivate Google OAuth
+  Browser > Client App: Receive auth code (via local HTTP listener)
+}
+deactivate Browser
+
+// Exchange code for JWT
+activate Client App
+Client App > Auth Controller: "POST /login" { authCode }
+deactivate Client App
+activate Auth Controller
+
+opt [label: authCode missing or empty, color: red] {
+  Auth Controller > Client App: Error response
+  deactivate Auth Controller
+  activate Client App
+  Client App > User: Show error message
+  deactivate Client App
+  break [label: abort, color: red] {
+    // Sequence ends here
+  }
+}
+
+// Auth Controller delegates to Auth Service
+activate Auth Controller
+Auth Controller > Auth Service: Login(authCode)
+deactivate Auth Controller
+
+// Auth Service exchanges code for Google tokens
+activate Auth Service
+Auth Service > Google OAuth: "POST /token (authCode", client_id, ...)
+activate Google OAuth
+
+
+
+alt [label: Google token exchange fails, color: blue] {
+  Google OAuth > Auth Service: Error
+  deactivate Google OAuth
+  Auth Service > Auth Controller: Throw InvalidGoogleTokenException
+  activate Auth Controller
+  Auth Controller > Client App: 500 Error
+  deactivate Auth Controller
+  activate Client App
+  Client App > User: Show error message
+  deactivate Client App
+  break [label: abort, color: red] {
+    // Sequence ends here
+  }
+}
+else [label: Google token exchange succeeds, color: green] {
+  activate Google OAuth
+  Google OAuth > Auth Service: id_token, access_token
+  deactivate Google OAuth
+  Auth Service > Google OAuth: Validate id_token
+  activate Google OAuth
+  Google OAuth > Auth Service: id_token payload (sub, email, name)
+  deactivate Google OAuth
+}
+
+
+// Check if user exists
+Auth Service > User Service: GetUserById(sub)
+activate User Service
+User Service > User Repository: GetById(sub)
+activate User Repository
+User Repository > User Service: User or null
+deactivate User Repository
+
+alt [label: user exists, color: green] {
+  User Service > Auth Service: Return user
+}
+else [label: user does not exist, color: yellow] {
+  Auth Service > User Service: CreateUser(sub, email, name, Viewer)
+  User Service > Role Repository: GetById(Viewer)
+  activate Role Repository
+  Role Repository > User Service: Role
+  deactivate Role Repository
+  User Service > User Repository: Create(user)
+  activate User Repository
+  User Repository > User Service: User
+  deactivate User Repository
+  User Service > Auth Service: Return new user
+}
+deactivate User Service
+
+// Return JWT and user name
+Auth Service > Auth Controller: [idToken, displayName]
+deactivate Auth Service
+activate Auth Controller
+Auth Controller > Client App: 200 OK { idToken, name }
+
+// Client App stores JWT and welcomes user
+activate Client App
+Client App > User: Show welcome message with name
+deactivate Client App
