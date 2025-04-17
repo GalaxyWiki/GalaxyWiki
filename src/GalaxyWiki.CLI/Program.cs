@@ -43,12 +43,6 @@ namespace GalaxyWiki.CLI
                 //var cmd = parts[0].ToLower();
                 var searchTerm = parts.Length > 1 ? parts[1] : string.Empty;
 
-
-                // Display prompt
-                AnsiConsole.Markup($"[lightcyan1]{promptPath}[/] [springgreen3_1]❯❯[/] ");
-
-
-
                 // Skip empty input
                 if (string.IsNullOrWhiteSpace(inp))
                     continue;
