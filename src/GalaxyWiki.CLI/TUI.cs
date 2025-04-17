@@ -6,6 +6,7 @@ using Spectre.Console;
 using Spectre.Console.Rendering;
 using System.Text.RegularExpressions;
 using System.Diagnostics;
+using System.Text;
 
 namespace GalaxyWiki.CLI
 {
@@ -17,9 +18,9 @@ namespace GalaxyWiki.CLI
 
         static int Mod(int x, int m) => (x % m + m) % m;
 
-    static string Sanitize(string s) => s.Replace("[", "[[").Replace("]", "]]");
+        static string Sanitize(string s) => s.Replace("[", "[[").Replace("]", "]]");
 
-    static Color Shade(Color col, float amt) => Color.Default.Blend(col, amt).Blend(Color.White, 0.2f * (float)Math.Pow(amt, 8));
+        static Color Shade(Color col, float amt) => Color.Default.Blend(col, amt).Blend(Color.White, 0.2f * (float)Math.Pow(amt, 8));
 
         // Wrap an arbitrary element in a TUI box
         public static Panel Boxed(IRenderable elem, String title = "", Color? color = null, Justify headAlign = Justify.Center)
@@ -34,8 +35,8 @@ namespace GalaxyWiki.CLI
 
         static string BodyToString(CelestialBodies body)
         {
-            // TODO: Potentially append star-system group as tag
-            return $"{BodyTypeToEmoji(body.BodyType)} ({body.Id}) {body.BodyName}";
+            // Display just the emoji and name without the ID
+            return $"{BodyTypeToEmoji(body.BodyType)} {body.BodyName}";
         }
 
         public static string BodyTypeToEmoji(int bodyType)
@@ -92,7 +93,7 @@ namespace GalaxyWiki.CLI
                 formattedParagraph = Regex.Replace(
                     formattedParagraph,
                     @"\b(\d+(?:\.\d+)?(?:\s*(?:billion|million|trillion|light-year|ly|kg|m|km))?)\b",
-                    "[green]$1[/]"
+                    "[green italic]$1[/]"
                 );
 
                 result.Add(formattedParagraph);
@@ -128,33 +129,130 @@ namespace GalaxyWiki.CLI
         //---------- Banner ----------//
         public static void ShowBanner()
         {
-            var banner = new Panel(
-                Align.Left(
-                    new FigletText(FigletFont.Load("../../assets/starwars.flf"), "Galaxy Wiki")
-                    .Centered()
-                    .Color(Color.Aqua),
-                    VerticalAlignment.Bottom
-                )
-            )
-            .NoBorder()
-            .Expand();
+            // Space-themed colors for our text
+            var colors = new[] {
+                Color.Blue,
+                Color.Purple,
+                Color.MediumPurple,
+                Color.DeepSkyBlue1,
+                Color.Aqua,
+                Color.Fuchsia
+            };
 
-            AnsiConsole.WriteLine("\n     Welcome to\n");
-            AnsiConsole.Write(banner);
+            // Clear the console for a fresh start
+            AnsiConsole.Clear();
+            
+            // Display stars in the background
+            DisplayStars();
+
+            // Create a simple welcome header
+            var rule = new Rule("[blue]✨ [/][cyan]Welcome to[/][blue] ✨[/]")
+                .RuleStyle("blue dim")
+                .Centered();
+            AnsiConsole.Write(rule);
+            AnsiConsole.WriteLine();
+
+            // Get a random color from our space theme for figlet
+            Random random = new Random();
+            Color randomColor = colors[random.Next(colors.Length)];
+            
+            // Create the figlet text with the random color
+            var figlet = new FigletText(FigletFont.Load("../../assets/starwars.flf"), "Galaxy Wiki")
+                .Centered()
+                .Color(randomColor);
+
+            // Create a panel with the figlet (no border)
+            var panel = new Panel(figlet)
+                .NoBorder()
+                .Expand();
+            
+            AnsiConsole.Write(panel);
+            
+            // Display a random space fact (more subtle)
+            DisplayRandomSpaceFact();
+            
+            // Bottom rule
+            var bottomRule = new Rule("[blue]✧ [/][cyan]Your journey to the stars begins now[/][blue] ✧[/]")
+                .RuleStyle("blue dim")
+                .Centered();
+            AnsiConsole.WriteLine();
+            AnsiConsole.Write(bottomRule);
+            AnsiConsole.WriteLine("\n");
+        }
+        
+        private static void DisplayStars()
+        {
+            // Get console width
+            int width = Console.WindowWidth;
+            
+            // Characters for stars
+            char[] starChars = { '✦', '✧', '⋆', '˚', '·', '✫', '⊹' };
+            Random random = new Random();
+            
+            // Create star lines that span the full width
+            for (int i = 0; i < 4; i++)
+            {
+                StringBuilder line = new StringBuilder();
+                
+                for (int j = 0; j < width; j++)
+                {
+                    // Add stars or spaces (mostly spaces for a sparse effect)
+                    if (random.Next(12) == 0)
+                    {
+                        line.Append(starChars[random.Next(starChars.Length)]);
+                    }
+                    else
+                    {
+                        line.Append(' ');
+                    }
+                }
+                
+                AnsiConsole.Markup($"[blue dim]{line}[/]");
+                AnsiConsole.WriteLine();
+            }
+        }
+        
+        private static void DisplayRandomSpaceFact()
+        {
+            string[] spaceFacts = {
+                "The universe is estimated to be around 13.8 billion years old.",
+                "There are more stars in the universe than grains of sand on all the beaches on Earth.",
+                "A day on Venus is longer than a year on Venus.",
+                "The largest known star, UY Scuti, is more than 1,700 times the size of our Sun.",
+                "Black holes aren't actually holes, but regions of space where gravity is so strong that nothing can escape.",
+                "The coldest place in the universe is the Boomerang Nebula at -458°F (-272°C).",
+                "Saturn isn't the only planet with rings. Jupiter, Uranus, and Neptune have them too.",
+                "The footprints on the Moon will stay there for at least 100 million years.",
+                "A neutron star can spin at a rate of 600 rotations per second.",
+                "The Milky Way galaxy is on a collision course with Andromeda, expected in about 4 billion years."
+            };
+            
+            Random random = new Random();
+            string fact = spaceFacts[random.Next(spaceFacts.Length)];
+            
+            // More subtle, centered fact with dimmer colors and "Fun fact:" prefix
+            // Using even dimmer cyan and italicizing the whole text
+            var factText = new Markup($"[dim dim cyan italic]Fun fact: {fact}[/]");
+            
+            AnsiConsole.WriteLine();
+            AnsiConsole.Write(Align.Center(factText));
+            AnsiConsole.WriteLine();
         }
 
         //---------- Error ----------//
-    public static void Err(string name, string desc, string info = "") {
-        AnsiConsole.Markup($"[[[bold red]{name.ToUpper()} ERR[/]]]: [red]{desc}[/]");
-        if (!info.Trim().IsEmpty()) { AnsiConsole.Markup("\n\t" + Sanitize(info).Replace("\n", "\n\t")); }
-        AnsiConsole.Write("\n\n");
-    }
-    public static void Warn(string name, string desc, string info = "") {
-        AnsiConsole.Markup($"[[[bold darkorange3]{name.ToUpper()} WARN[/]]]: [gold3]{desc}[/]");
-        if (!info.Trim().IsEmpty()) { AnsiConsole.Markup("\n\t" + Sanitize(info).Replace("\n", "\n\t") + "\n\n"); }
-        AnsiConsole.Write("\n\n");
-    }
-      
+        public static void Err(string name, string desc, string info = "")
+        {
+            AnsiConsole.Markup($"[[[bold red]{name.ToUpper()} ERR[/]]]: [red]{desc}[/]");
+            if (!info.Trim().IsEmpty()) { AnsiConsole.Markup("\n\t" + Sanitize(info).Replace("\n", "\n\t")); }
+            AnsiConsole.Write("\n\n");
+        }
+        public static void Warn(string name, string desc, string info = "")
+        {
+            AnsiConsole.Markup($"[[[bold darkorange3]{name.ToUpper()} WARN[/]]]: [gold3]{desc}[/]");
+            if (!info.Trim().IsEmpty()) { AnsiConsole.Markup("\n\t" + Sanitize(info).Replace("\n", "\n\t") + "\n\n"); }
+            AnsiConsole.Write("\n\n");
+        }
+
         //---------- Path ----------//
         public static Panel Path(string path)
         {
@@ -319,7 +417,12 @@ namespace GalaxyWiki.CLI
         //---------- Author Info ----------//
         public static Panel AuthorInfo(string displayName, DateTime date)
         {
-            var formattedDate = date.ToString("MMMM d, yyyy 'at' h:mm tt");
+            // Convert UTC time to local time for display
+            DateTime localDate = date.Kind == DateTimeKind.Utc ? date.ToLocalTime() : date;
+            
+            // Format the date in a clear, readable format
+            var formattedDate = localDate.ToString("MMMM d, yyyy 'at' h:mm tt");
+            
             return new Panel(
                 Align.Right(
                     new Markup($"[italic grey]Last updated by [/][bold]{displayName}[/] [italic grey]on {formattedDate}[/]")
@@ -358,63 +461,62 @@ namespace GalaxyWiki.CLI
 
             var table = new Table()
                 .Border(TableBorder.None)
-                .BorderColor(Color.DarkOrange)
+                .BorderColor(Color.Grey50)
                 .HideHeaders()
                 .Expand();
-            
-            // Create a 3-column layout (ID is hidden in author column)
-            // table.AddColumn(new TableColumn("").Width(3)); // Visual spacer/indentation
-            table.AddColumn(new TableColumn("").Width(75)); // Author and content
-            table.AddColumn(new TableColumn("").Width(25)); // Date and controls
-            
+
+            // Single column for simplified layout
+            table.AddColumn(new TableColumn("").Width(100));
+
             foreach (var comment in comments)
             {
-                // // YouTube-style user icon (first letter of name in colored circle)
-                // string userIcon = string.IsNullOrEmpty(comment.DisplayName) ? 
-                //     "[grey]?[/]" : 
-                //     $"[yellow on blue]{comment.DisplayName[..1].ToUpper()}[/]";
-                
-                // Username/display name with ID in small text
-                string author = string.IsNullOrEmpty(comment.DisplayName) ? 
-                    $"[grey]Anonymous[/]" : 
-                    $"[bold aqua]{comment.DisplayName}[/]";
-                string idText = $"[dim grey](#{comment.CommentId})[/]";
-                
-                // Format date like YouTube
-                string formattedDate = FormatRelativeTime(comment.CreatedDate);
-                
-                // Format the comment text with indentation for content
+                // Format the comment text - the main focus
                 string formattedComment = FormatCommentWithSpectre(comment.CommentText);
                 
-                // Create YouTube-style comment header
-                string headerLine = $"{author} {idText}";
+                // Format date in a simple style
+                string formattedDate = FormatRelativeTime(comment.CreatedDate);
                 
-                // Create the main content column that combines username and comment
-                string contentText = $"{headerLine}\n{formattedComment}";
+                // Create the author info for the bottom right
+                string author = string.IsNullOrEmpty(comment.DisplayName) ?
+                    "Anonymous" :
+                    comment.DisplayName;
                 
-                // Add the row to the table
-                table.AddRow(
-                    // new Markup(userIcon),
-                    new Markup(contentText),
-                    new Markup($"[grey]{formattedDate}[/]")
-                );
+                // Create footer with author and date
+                string footer = $"— [bold]{author}[/] • [dim]{formattedDate}[/] [grey](#{comment.CommentId})[/]";
                 
-                // Add a separator row
-                table.AddRow(
-                    // new Text(""),
-                    new Rule().RuleStyle(Style.Parse("dim grey")),
-                    new Text("")
-                );
+                // Create a layout for the comment with aligned content
+                var commentContent = new Markup(formattedComment);
+                var footerContent = Align.Right(new Markup(footer));
+                
+                // Add the comment to the table with minimal padding for a compact view
+                var panel = new Panel(
+                    new Grid()
+                        .AddColumn(new GridColumn())
+                        .AddRow(commentContent)
+                        .AddRow(footerContent)
+                        .Collapse() // Make grid as compact as possible
+                )
+                .RoundedBorder()
+                .BorderColor(Color.Grey50)
+                .Padding(1, 0, 1, 0); // Horizontal padding only
+                
+                table.AddRow(panel);
+                
+                // No extra space between comments for a more compact view
             }
-            
-            return Boxed(table, $"[bold cyan] {title} ({comments.Count}) [/]", Color.DarkOrange);
+
+            return Boxed(table, $"[bold cyan] {title} ({comments.Count}) [/]", Color.Grey);
         }
 
         // Format relative time similar to YouTube
         private static string FormatRelativeTime(DateTime date)
         {
-            var span = DateTime.Now - date;
+            // Convert UTC time to local time for comparison
+            DateTime localDate = date.Kind == DateTimeKind.Utc ? date.ToLocalTime() : date;
             
+            // Calculate time span from local date to now
+            var span = DateTime.Now - localDate;
+
             if (span.TotalDays > 365)
             {
                 int years = (int)(span.TotalDays / 365);
@@ -445,7 +547,7 @@ namespace GalaxyWiki.CLI
                 int minutes = (int)span.TotalMinutes;
                 return minutes == 1 ? "1 minute ago" : $"{minutes} minutes ago";
             }
-            
+
             return "just now";
         }
 
@@ -636,13 +738,14 @@ namespace GalaxyWiki.CLI
             table.AddRow("cd <path>", "Navigate to a celestial body");
             table.AddRow("ls", "List bodies in current location");
             table.AddRow("info, show", "Show info about current location");
-            table.AddRow("show -n <name>", "Show info about a specific body");
+            table.AddRow("show -n <n>", "Show info about a specific body");
             table.AddRow("render", "Show visual representation of current body");
             table.AddRow("pwd", "Print current path");
             table.AddRow("comment <text>", "Add a comment to the current body");
             table.AddRow("revision", "Show revision history for current body");
-            table.AddRow("revision -n <name>", "Show revision history for a specific body");
+            table.AddRow("revision -n <n>", "Show revision history for a specific body");
             table.AddRow("find <term>", "Search for celestial bodies");
+            table.AddRow("search <term>", "Search for celestial bodies by name");
             table.AddRow("create", "Create a new revision for current body");
             table.AddRow("edit", "Edit the current body's content");
             table.AddRow("login", "Login to the system");

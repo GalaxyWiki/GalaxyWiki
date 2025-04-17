@@ -30,4 +30,4 @@ namespace GalaxyWiki.API.Controllers
             });
         }
     }
-} 
+}

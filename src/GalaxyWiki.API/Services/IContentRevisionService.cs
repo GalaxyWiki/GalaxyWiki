@@ -11,4 +11,4 @@ namespace GalaxyWiki.API.Services
         Task<IEnumerable<ContentRevisions>> GetRevisionsByCelestialBodyAsync(string celestialBodyPath);
         Task<ContentRevisions> CreateRevision(CreateRevisionRequest request, string authorId);
     }
-} 
+}

@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Authorization;
 using GalaxyWiki.API.DTOs;
 using GalaxyWiki.API.Services;
 using System.Security.Claims;
-using NHibernate.Criterion;
 
 namespace GalaxyWiki.API.Controllers
 {
@@ -39,7 +38,7 @@ namespace GalaxyWiki.API.Controllers
         public async Task<IActionResult> GetById(int id)
         {
             var (CelestialBody, BodyType) = await _celestialBodyService.GetById(id);
-            if (CelestialBody == null) 
+            if (CelestialBody == null)
                 return NotFound(new { error = "Celestial body not found." });
 
             return Ok(new
@@ -57,7 +56,7 @@ namespace GalaxyWiki.API.Controllers
         [HttpGet("{id}/orbits")]
         public async Task<IActionResult> GetOrbits(int id)
         {
-            
+
             var (CelestialBody, BodyType) = await _celestialBodyService.GetOrbitsById(id);
 
             if (CelestialBody == null)
@@ -94,7 +93,7 @@ namespace GalaxyWiki.API.Controllers
             var authorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             var celestialBody = await _celestialBodyService.UpdateCelestialBody(id, request, authorId);
-            
+
             return Ok(celestialBody);
         }
 
@@ -102,7 +101,7 @@ namespace GalaxyWiki.API.Controllers
         [HttpDelete("{id}")]
         [Authorize]
         public async Task<IActionResult> Delete(int id)
-        {   
+        {
             var authorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             await _celestialBodyService.DeleteCelestialBody(id, authorId);
@@ -117,22 +116,22 @@ namespace GalaxyWiki.API.Controllers
             if (parameters is null || (parameters.PageNumber == 0))
             {
                 var children = await _celestialBodyService.GetChildrenById(id);
-            
+
                 return Ok(from r in children
-                        select new
-                        {
-                            r.CelestialBody.Id,
-                            r.CelestialBody.BodyName,
-                            r.CelestialBody.Orbits,
-                            r.CelestialBody.BodyType,
-                            BodyTypeName = r.BodyType?.TypeName,
-                            r.CelestialBody.ActiveRevision
-                        });
+                          select new
+                          {
+                              r.CelestialBody.Id,
+                              r.CelestialBody.BodyName,
+                              r.CelestialBody.Orbits,
+                              r.CelestialBody.BodyType,
+                              BodyTypeName = r.BodyType?.TypeName,
+                              r.CelestialBody.ActiveRevision
+                          });
             }
-            else 
+            else
             {
                 var pagedResult = await _celestialBodyService.GetChildrenByIdPaginated(id, parameters);
-                
+
                 var mappedItems = pagedResult.Items.Select(r => new
                 {
                     r.CelestialBody.Id,
@@ -142,7 +141,7 @@ namespace GalaxyWiki.API.Controllers
                     BodyTypeName = r.BodyType?.TypeName,
                     r.CelestialBody.ActiveRevision
                 });
-                
+
                 var result = new
                 {
                     PageNumber = pagedResult.PageNumber,
@@ -151,9 +150,9 @@ namespace GalaxyWiki.API.Controllers
                     TotalPages = pagedResult.TotalPages,
                     Items = mappedItems
                 };
-                
+
                 return Ok(result);
             }
         }
     }
-} 
+}

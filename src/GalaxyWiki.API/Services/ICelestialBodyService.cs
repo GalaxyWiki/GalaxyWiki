@@ -18,4 +18,4 @@ namespace GalaxyWiki.API.Services
         Task<IEnumerable<(CelestialBodies CelestialBody, BodyTypes? BodyType)>> GetChildrenById(int id);
         Task<PagedResult<(CelestialBodies CelestialBody, BodyTypes? BodyType)>> GetChildrenByIdPaginated(int id, PaginationParameters parameters);
     }
-} 
+}

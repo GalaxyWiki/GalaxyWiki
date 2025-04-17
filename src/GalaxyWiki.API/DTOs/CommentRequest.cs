@@ -9,4 +9,4 @@ namespace GalaxyWiki.API.DTOs
         public string DisplayName { get; set; }
         public int CelestialBodyId { get; set; }
     }
-} 
+}

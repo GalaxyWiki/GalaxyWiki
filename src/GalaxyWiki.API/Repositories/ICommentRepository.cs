@@ -16,4 +16,4 @@ namespace GalaxyWiki.API.Repositories
         Task<Comments> Update(Comments comment);
         Task Delete(Comments comment);
     }
-} 
+}

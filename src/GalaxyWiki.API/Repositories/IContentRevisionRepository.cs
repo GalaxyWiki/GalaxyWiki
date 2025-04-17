@@ -10,4 +10,4 @@ namespace GalaxyWiki.API.Repositories
         Task<IEnumerable<ContentRevisions>> GetByCelestialBodyId(int id);
         Task<ContentRevisions> Create(ContentRevisions contentRevisions);
     }
-} 
+}

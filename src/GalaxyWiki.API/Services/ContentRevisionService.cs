@@ -36,10 +36,11 @@ namespace GalaxyWiki.API.Services
 
         public async Task<ContentRevisions> CreateRevision(CreateRevisionRequest request, string authorId)
         {
-            if (await _authService.CheckUserHasAccessRight([UserRole.Admin], authorId) == false) {
+            if (await _authService.CheckUserHasAccessRight([UserRole.Admin], authorId) == false)
+            {
                 throw new UserDoesNotHaveAccess("You do not have access to perform this action.");
             }
-            
+
             var author = await _userRepository.GetById(authorId);
 
             if (author == null) throw new UserDoesNotExist("User does not exist.");
@@ -61,7 +62,7 @@ namespace GalaxyWiki.API.Services
 
             celestialBody.ActiveRevision = revision.Id;
             await _celestialBodyRepository.Update(celestialBody);
-            
+
             return revision;
         }
     }

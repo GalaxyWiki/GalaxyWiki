@@ -8,4 +8,4 @@ namespace GalaxyWiki.API.Services
         Task<string[]> Login(string authCode);
         Task<bool> CheckUserHasAccessRight(UserRole[] accessLevelRequired, string? authorId);
     }
-} 
+}

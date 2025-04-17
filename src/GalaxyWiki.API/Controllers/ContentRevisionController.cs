@@ -21,7 +21,7 @@ namespace GalaxyWiki.API.Controllers
         {
             var revision = await _contentRevisionService.GetRevisionByIdAsync(id);
 
-            if (revision == null) 
+            if (revision == null)
                 return NotFound();
 
             var result = new ContentRevisionDto
@@ -58,7 +58,7 @@ namespace GalaxyWiki.API.Controllers
         [HttpPost]
         [Authorize]
         public async Task<IActionResult> Create([FromBody] CreateRevisionRequest request)
-        { 
+        {
             var authorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             var revision = await _contentRevisionService.CreateRevision(request, authorId!);

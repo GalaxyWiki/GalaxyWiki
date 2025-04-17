@@ -45,7 +45,7 @@ namespace GalaxyWiki.API.Services
             }
 
             var centerCb = await _celestialBodyRepository.GetById(request.CenterCbId);
-            
+
             if (centerCb == null)
                 throw new CelestialBodyDoesNotExist("Center celestial body not found.");
 
@@ -79,7 +79,7 @@ namespace GalaxyWiki.API.Services
 
                 if (centerCb == null)
                     throw new CelestialBodyDoesNotExist("Center celestial body not found.");
-                
+
                 starSystem.CenterCb = centerCb;
             }
 

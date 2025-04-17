@@ -9,22 +9,22 @@ namespace GalaxyWiki.CLI
     {
         // Current celestial body
         public CelestialBodies? CurrentBody { get; set; }
-        
+
         // Path stack to track navigation history
         public Stack<CelestialBodies> PathStack { get; set; } = new Stack<CelestialBodies>();
-        
+
         // Cache for children of bodies to avoid repeated API calls
         public Dictionary<int, List<CelestialBodies>> ChildrenCache { get; set; } = [];
     }
 
-// Class to store body type information
-public class BodyTypeInfo
-{
-    public int Id { get; set; }
-    public string Name { get; set; } = string.Empty;
-    public string Description { get; set; } = string.Empty;
-    public string Emoji => TUI.BodyTypeToEmoji(Id);
-}
+    // Class to store body type information
+    public class BodyTypeInfo
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string Emoji => TUI.BodyTypeToEmoji(Id);
+    }
 
     public static class CommandLogic
     {
@@ -48,7 +48,7 @@ public class BodyTypeInfo
         public static async Task Initialize()
         {
             var bodies = await ApiClient.GetCelestialBodiesMap();
-            
+
             // Find the root (Universe) node - it's the one with null Orbits
             var root = bodies.Values.FirstOrDefault(b => b.Orbits == null);
             if (root == null)
@@ -70,12 +70,12 @@ public class BodyTypeInfo
 
             var path = new StringBuilder("GW");
             var reversedPath = _state.PathStack.Reverse().ToList();
-            
+
             foreach (var body in reversedPath)
             {
                 path.Append($" \\ {body.BodyName}");
             }
-            
+
             // path.Append(">");
             return path.ToString();
         }
@@ -122,24 +122,24 @@ public class BodyTypeInfo
                 _state.CurrentBody = _state.CurrentBody.Orbits;
                 return true;
             }
-            
+
             // Navigate to a specific celestial body
             try
             {
                 // Get children of current body
                 var children = await GetChildren(_state.CurrentBody.Id);
-                
+
                 // Find the child by name (case-insensitive)
-                var targetChild = children.FirstOrDefault(c => 
+                var targetChild = children.FirstOrDefault(c =>
                     c.BodyName.Equals(target, StringComparison.OrdinalIgnoreCase));
-                
+
                 if (targetChild == null)
                 {
-                    TUI.Err("CD", $"Celestial body '{target}' not found.", 
+                    TUI.Err("CD", $"Celestial body '{target}' not found.",
                         "Use 'ls' to see available celestial bodies.");
                     return false;
                 }
-                
+
                 // Update current body and path
                 _state.CurrentBody = targetChild;
                 _state.PathStack.Push(targetChild);
@@ -158,12 +158,12 @@ public class BodyTypeInfo
             if (string.IsNullOrEmpty(input))
                 return input;
 
-                // Remove surrounding double or single quotes if present
-                if ((input.StartsWith("\"") && input.EndsWith("\"")) || 
-                    (input.StartsWith("'") && input.EndsWith("'")))
-                {
-                    return input[1..^1];
-                }
+            // Remove surrounding double or single quotes if present
+            if ((input.StartsWith("\"") && input.EndsWith("\"")) ||
+                (input.StartsWith("'") && input.EndsWith("'")))
+            {
+                return input[1..^1];
+            }
 
             return input;
         }
@@ -205,7 +205,7 @@ public class BodyTypeInfo
 
             // Add to cache
             _state.ChildrenCache[parentId] = childrenData;
-            
+
             return childrenData;
         }
 
@@ -223,41 +223,54 @@ public class BodyTypeInfo
 
             // Determine root node for the tree
             CelestialBodies rootBody;
-            
-            if (useCurrentAsRoot)
-            {
-                // Use current location as root
-                rootBody = _state.CurrentBody;
-                
-                if (rootBody == null)
-                {
-                    TUI.Err("TREE", "No current celestial body to use as root.");
-                    return;
-                }
-            }
-            else
-            {
-                // Find the universe root
-                var bodies = await ApiClient.GetCelestialBodiesMap();
-                var possibleRoot = bodies.Values.FirstOrDefault(b => b.Orbits == null);
-                
-                if (possibleRoot == null)
-                {
-                    TUI.Err("TREE", "Could not find root celestial body (Universe).");
-                    return;
-                }
-                
-                rootBody = possibleRoot;
-            }
 
-            // Create tree and build it
-            var tree = new Tree(FormatCelestialBodyLabel(rootBody));
-            await BuildTreeRecursively(rootBody.Id, tree);
-            
-            // Display tree with some styling
-            tree.Guide = TreeGuide.BoldLine;
-            tree.Style = Style.Parse("blue");
-            AnsiConsole.Write(tree);
+            // Use a loading spinner while retrieving and building the tree
+            await AnsiConsole.Status()
+                .AutoRefresh(true)
+                .Spinner(Spinner.Known.Dots)
+                .SpinnerStyle(Style.Parse("cyan"))
+                .StartAsync("Loading celestial body tree...", async ctx => 
+                {
+                    if (useCurrentAsRoot)
+                    {
+                        // Use current location as root
+                        rootBody = _state.CurrentBody;
+
+                        if (rootBody == null)
+                        {
+                            TUI.Err("TREE", "No current celestial body to use as root.");
+                            return;
+                        }
+                    }
+                    else
+                    {
+                        // Find the universe root
+                        ctx.Status("Retrieving universe data...");
+                        var bodies = await ApiClient.GetCelestialBodiesMap();
+                        var possibleRoot = bodies.Values.FirstOrDefault(b => b.Orbits == null);
+
+                        if (possibleRoot == null)
+                        {
+                            TUI.Err("TREE", "Could not find root celestial body (Universe).");
+                            return;
+                        }
+
+                        rootBody = possibleRoot;
+                    }
+
+                    // Create tree and build it
+                    ctx.Status("Building celestial hierarchy...");
+                    var tree = new Tree(FormatCelestialBodyLabel(rootBody));
+                    await BuildTreeRecursively(rootBody.Id, tree);
+
+                    // Update status before displaying
+                    ctx.Status("Rendering tree...");
+                    
+                    // Display tree with some styling
+                    tree.Guide = TreeGuide.BoldLine;
+                    tree.Style = Style.Parse("blue");
+                    AnsiConsole.Write(tree);
+                });
         }
 
         // Helper to recursively build the tree
@@ -267,7 +280,7 @@ public class BodyTypeInfo
             {
                 // Get children of this node
                 var children = await GetChildren(parentId);
-                
+
                 // Add each child to the tree
                 foreach (var child in children)
                 {
@@ -299,7 +312,7 @@ public class BodyTypeInfo
         {
             // Get all celestial bodies
             var bodies = await ApiClient.GetCelestialBodiesMap();
-            
+
             // Find the root (Universe) node
             var root = bodies.Values.FirstOrDefault(b => b.Orbits == null);
             if (root == null)
@@ -307,25 +320,25 @@ public class BodyTypeInfo
                 TUI.Err("WARP", "Could not find root celestial body (Universe).");
                 return;
             }
-            
+
             // Create an empty list of selectable items
             var items = new List<(string DisplayLabel, CelestialBodies Body)>();
-            
+
             // Show the selection prompt with a loading indicator
             await AnsiConsole.Status()
-                .StartAsync("Building universe map...", ctx => 
+                .StartAsync("Building universe map...", ctx =>
                 {
                     // Build a list of selectable items with proper indentation
                     TUI.RecBuildSelectableTree(bodies, root.Id, items, 0);
                     return Task.CompletedTask;
                 });
-            
+
             if (items.Count == 0)
             {
                 TUI.Err("WARP", "No celestial bodies found in the universe.");
                 return;
             }
-            
+
             // Display the selection prompt
             var selection = AnsiConsole.Prompt(
                 new SelectionPrompt<string>()
@@ -334,16 +347,16 @@ public class BodyTypeInfo
                     .HighlightStyle(new Style(Color.SpringGreen3_1, Color.Black, Decoration.Underline))
                     .AddChoices(items.Select(i => i.DisplayLabel))
             );
-            
+
             // Find the selected body
             var (DisplayLabel, Body) = items.FirstOrDefault(i => i.DisplayLabel == selection);
-            
+
             if (Body == null)
             {
                 TUI.Err("WARP", "Selected celestial body not found.");
                 return;
             }
-            
+
             // Navigate to the selected body
             await WarpToBody(Body);
         }
@@ -355,44 +368,44 @@ public class BodyTypeInfo
 
             // First go to root
             await ChangeDirectory("/");
-            
+
             // Build the path from the selected body back to root
             var pathParts = new List<string>();
             var current = targetBody;
-            
+
             while (current != null)
             {
                 pathParts.Insert(0, current.BodyName);
                 current = current.Orbits;
             }
-            
+
             // Navigate to each part of the path
             AnsiConsole.Status()
-                .Start("Warping through space...", ctx => 
+                .Start("Warping through space...", ctx =>
                 {
                     // Skip the first part (Universe) as we're already there
                     for (int i = 1; i < pathParts.Count; i++)
                     {
-                        ctx.Status($"Passing through {pathParts[i-1]}...");
+                        ctx.Status($"Passing through {pathParts[i - 1]}...");
                         ctx.Spinner(Spinner.Known.Star);
                         Thread.Sleep(300); // Short delay for visual effect
                         ChangeDirectory(pathParts[i]).Wait();
                     }
-                    
+
                     ctx.Status($"Arrived at {targetBody.BodyName}!");
                     Thread.Sleep(500); // Pause briefly to show arrival message
                     return;
                 });
-            
+
             AnsiConsole.MarkupLine($"[green]Successfully warped to[/] [cyan]{targetBody.BodyName}[/]");
         }
-        
+
         // List all available body types
         public static List<BodyTypeInfo> GetBodyTypes()
         {
             return _bodyTypes;
         }
-        
+
         // Get body type info by ID or name
         public static BodyTypeInfo? GetBodyTypeInfo(string typeIdentifier)
         {
@@ -401,12 +414,12 @@ public class BodyTypeInfo
             {
                 return _bodyTypes.FirstOrDefault(t => t.Id == typeId);
             }
-            
+
             // Otherwise search by name (case-insensitive)
-            return _bodyTypes.FirstOrDefault(t => 
+            return _bodyTypes.FirstOrDefault(t =>
                 t.Name.Equals(typeIdentifier, StringComparison.OrdinalIgnoreCase));
         }
-        
+
         // List all celestial bodies of a specific type
         public static async Task<List<CelestialBodies>> ListCelestialBodiesByType(int bodyTypeId)
         {
@@ -414,7 +427,7 @@ public class BodyTypeInfo
             {
                 // Get all celestial bodies
                 var allBodies = await ApiClient.GetCelestialBodies();
-                
+
                 // Filter by body type
                 return [.. allBodies.Where(b => b.BodyType == bodyTypeId)];
             }
@@ -430,16 +443,16 @@ public class BodyTypeInfo
         {
             // Get all celestial bodies
             var bodies = await ApiClient.GetCelestialBodiesMap();
-            
+
             // Find the body by name (case-insensitive)
-            var targetBody = bodies.Values.FirstOrDefault(b => 
+            var targetBody = bodies.Values.FirstOrDefault(b =>
                 b.BodyName.Equals(bodyName, StringComparison.OrdinalIgnoreCase));
-            
+
             if (targetBody == null || !targetBody.ActiveRevision.HasValue)
             {
                 return null;
             }
-            
+
             try
             {
                 // Get the active revision
@@ -451,7 +464,7 @@ public class BodyTypeInfo
                 return null;
             }
         }
-        
+
         // Get comments for the current celestial body
         public static async Task<List<Comment>> GetCommentsForCurrentBody(int? limit = null, string sortOrder = "newest")
         {
@@ -460,9 +473,9 @@ public class BodyTypeInfo
                 TUI.Err("COMMENT", "Navigation system not initialized.");
                 return [];
             }
-            
+
             var comments = await ApiClient.GetCommentsByCelestialBodyAsync(_state.CurrentBody.Id);
-            
+
             // Sort comments
             if (sortOrder.Equals("newest", StringComparison.OrdinalIgnoreCase))
             {
@@ -472,34 +485,34 @@ public class BodyTypeInfo
             {
                 comments = [.. comments.OrderBy(c => c.CreatedDate)];
             }
-            
+
             // Apply limit if specified
             if (limit.HasValue && limit.Value > 0 && limit.Value < comments.Count)
             {
                 comments = [.. comments.Take(limit.Value)];
             }
-            
+
             return comments;
         }
-        
+
         // Get comments for a celestial body by name
         public static async Task<List<Comment>> GetCommentsForNamedBody(string bodyName, int? limit = null, string sortOrder = "newest")
         {
             // Get all celestial bodies
             var bodies = await ApiClient.GetCelestialBodiesMap();
-            
+
             // Find the body by name (case-insensitive)
-            var targetBody = bodies.Values.FirstOrDefault(b => 
+            var targetBody = bodies.Values.FirstOrDefault(b =>
                 b.BodyName.Equals(bodyName, StringComparison.OrdinalIgnoreCase));
-            
+
             if (targetBody == null)
             {
                 TUI.Err("COMMENT", $"Celestial body '{bodyName}' not found.");
                 return [];
             }
-            
+
             var comments = await ApiClient.GetCommentsByCelestialBodyAsync(targetBody.Id);
-            
+
             // Sort comments
             if (sortOrder.Equals("newest", StringComparison.OrdinalIgnoreCase))
             {
@@ -509,16 +522,16 @@ public class BodyTypeInfo
             {
                 comments = [.. comments.OrderBy(c => c.CreatedDate)];
             }
-            
+
             // Apply limit if specified
             if (limit.HasValue && limit.Value > 0 && limit.Value < comments.Count)
             {
                 comments = [.. comments.Take(limit.Value)];
             }
-            
+
             return comments;
         }
-        
+
         // Get comments for current body by date range
         public static async Task<List<Comment>> GetCommentsByDateRange(DateTime startDate, DateTime endDate, int? limit = null, string sortOrder = "newest")
         {
@@ -527,9 +540,9 @@ public class BodyTypeInfo
                 TUI.Err("COMMENT", "Navigation system not initialized.");
                 return [];
             }
-            
+
             var comments = await ApiClient.GetCommentsByDateRangeAsync(startDate, endDate, _state.CurrentBody.Id);
-            
+
             // Sort comments
             if (sortOrder.Equals("newest", StringComparison.OrdinalIgnoreCase))
             {
@@ -539,16 +552,16 @@ public class BodyTypeInfo
             {
                 comments = [.. comments.OrderBy(c => c.CreatedDate)];
             }
-            
+
             // Apply limit if specified
             if (limit.HasValue && limit.Value > 0 && limit.Value < comments.Count)
             {
                 comments = [.. comments.Take(limit.Value)];
             }
-            
+
             return comments;
         }
-        
+
         // Create a new comment for the current celestial body
         public static async Task<Comment?> CreateComment(string commentText)
         {
@@ -557,7 +570,7 @@ public class BodyTypeInfo
                 TUI.Err("COMMENT", "No celestial body selected.");
                 return null;
             }
-            
+
             // Create the comment via API
             return await ApiClient.CreateCommentAsync(commentText, _state.CurrentBody.Id);
         }
@@ -571,14 +584,15 @@ public class BodyTypeInfo
                 TUI.Err("AUTH", "You must be logged in to delete comments.");
                 return false;
             }
-            
+
             // Delete the comment via API
             return await ApiClient.DeleteCommentAsync(commentId);
         }
         public static async Task<Comment> UpdateComment(int commentId, string commentText)
         {
             try { return await ApiClient.UpdateCommentAsync(commentId, commentText); }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 TUI.Err("COMMENT", "Failed to update comment.", ex.Message);
                 return null;
             }
@@ -587,7 +601,8 @@ public class BodyTypeInfo
         public static async Task<ContentRevisions> CreateRevision(string celestialBodyPath, string newContent)
         {
             try { return await ApiClient.CreateRevisionAsync(celestialBodyPath, newContent); }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 TUI.Err("REVISION", "Failed to create content revision.", ex.Message);
                 return null;
             }
@@ -599,7 +614,7 @@ public class BodyTypeInfo
             try
             {
                 // Get all comments and find the one with matching ID
-                var comments = await ApiClient.GetCommentsByCelestialBodyAsync(_state.CurrentBody.Id); 
+                var comments = await ApiClient.GetCommentsByCelestialBodyAsync(_state.CurrentBody.Id);
                 return comments.FirstOrDefault(c => c.CommentId == commentId);
             }
             catch (Exception ex)
@@ -618,7 +633,7 @@ public class BodyTypeInfo
                 TUI.Err("AUTH", "You must be logged in to create celestial bodies.");
                 return null;
             }
-            
+
             // Validate body type
             var bodyType = GetBodyTypeInfo(bodyTypeId.ToString());
             if (bodyType == null)
@@ -626,19 +641,19 @@ public class BodyTypeInfo
                 TUI.Err("BODY", $"Invalid body type ID: {bodyTypeId}");
                 return null;
             }
-            
+
             // Create the celestial body via API
             var newBody = await ApiClient.CreateCelestialBodyAsync(bodyName, bodyTypeId, orbitsId);
-            
+
             if (newBody != null)
             {
                 // Clear cache to ensure the new body appears in subsequent listings
                 _state.ChildrenCache.Clear();
             }
-            
+
             return newBody;
         }
-        
+
         // Update an existing celestial body
         public static async Task<CelestialBodies?> UpdateCelestialBody(int bodyId, string bodyName, int bodyTypeId, int? orbitsId = null)
         {
@@ -648,7 +663,7 @@ public class BodyTypeInfo
                 TUI.Err("AUTH", "You must be logged in to update celestial bodies.");
                 return null;
             }
-            
+
             // Validate body type
             var bodyType = GetBodyTypeInfo(bodyTypeId.ToString());
             if (bodyType == null)
@@ -656,40 +671,43 @@ public class BodyTypeInfo
                 TUI.Err("BODY", $"Invalid body type ID: {bodyTypeId}");
                 return null;
             }
-            
+
             // Update the celestial body via API
             var updatedBody = await ApiClient.UpdateCelestialBodyAsync(bodyId, bodyName, bodyTypeId, orbitsId);
             if (updatedBody != null) { RefreshCurrentBodyState(updatedBody); }
-            
+
             return updatedBody;
         }
 
-        public static async Task QuickRefreshBody() {
+        public static async Task QuickRefreshBody()
+        {
             if (_state.CurrentBody == null) return;
             var newBody = await ApiClient.GetCelestialBodyAsync(_state.CurrentBody.Id);
             if (newBody != null) { RefreshCurrentBodyState(newBody); }
         }
 
-        static void RefreshCurrentBodyState(CelestialBodies updatedBody) {
+        static void RefreshCurrentBodyState(CelestialBodies updatedBody)
+        {
             // Clear cache to ensure the updated body appears correctly in subsequent listings
             _state.ChildrenCache.Clear();
-            
+
             // If we updated the current body, update the state
             if (_state.CurrentBody != null && _state.CurrentBody.Id == updatedBody.Id)
             {
                 _state.CurrentBody = updatedBody;
-                
+
                 // Update the path stack
                 var newStack = new Stack<CelestialBodies>();
-                foreach (var body in _state.PathStack.Reverse()) {
+                foreach (var body in _state.PathStack.Reverse())
+                {
                     if (body.Id == updatedBody.Id) { newStack.Push(updatedBody); }
-                    else                           { newStack.Push(body); }
+                    else { newStack.Push(body); }
                 }
-                
+
                 _state.PathStack = new Stack<CelestialBodies>(newStack.Reverse());
             }
         }
-        
+
         // Delete a celestial body
         public static async Task<bool> DeleteCelestialBody(int bodyId)
         {
@@ -699,24 +717,24 @@ public class BodyTypeInfo
                 TUI.Err("AUTH", "You must be logged in to delete celestial bodies.");
                 return false;
             }
-            
+
             // Check if trying to delete the current body
             if (_state.CurrentBody != null && _state.CurrentBody.Id == bodyId)
             {
-                TUI.Err("BODY", "Cannot delete the celestial body you're currently in.", 
+                TUI.Err("BODY", "Cannot delete the celestial body you're currently in.",
                     "Navigate to the parent body first using 'cd ..'");
                 return false;
             }
-            
+
             // Delete the celestial body via API
             bool success = await ApiClient.DeleteCelestialBodyAsync(bodyId);
-            
+
             if (success)
             {
                 // Clear cache to ensure deleted body doesn't appear in subsequent listings
                 _state.ChildrenCache.Clear();
             }
-            
+
             return success;
         }
 
@@ -727,16 +745,16 @@ public class BodyTypeInfo
             {
                 return [];
             }
-            
+
             try
             {
                 var children = await GetChildren(_state.CurrentBody.Id);
                 var destinations = children.Select(c => c.BodyName).ToList();
-                
+
                 // Add special navigation options
                 destinations.Add("..");
                 destinations.Add("/");
-                
+
                 return destinations.ToArray();
             }
             catch (Exception ex)
@@ -746,4 +764,4 @@ public class BodyTypeInfo
             }
         }
     }
-} 
+}

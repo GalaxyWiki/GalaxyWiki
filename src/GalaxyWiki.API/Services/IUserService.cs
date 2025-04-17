@@ -9,4 +9,4 @@ namespace GalaxyWiki.API.Services
         Task<Users> GetUserById(string googleSub);
         Task<Users> CreateUser(string googleSub, string email, string name, UserRole userRole);
     }
-} 
+}

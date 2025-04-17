@@ -14,4 +14,4 @@ namespace GalaxyWiki.API.Services
         Task<StarSystems> UpdateStarSystem(int starSystemId, UpdateStarSystemRequest request, string authorId);
         Task DeleteStarSystem(int starSystemId, string authorId);
     }
-} 
+}

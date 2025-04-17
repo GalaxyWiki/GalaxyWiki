@@ -165,7 +165,15 @@ namespace GalaxyWiki.CLI
         public static async Task<T> GetDeserialized<T>(string endpoint) where T : new()
         {
             string json = await GetJson(endpoint);
-            return JsonSerializer.Deserialize<T>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new T();
+            
+            // Configure JSON options with custom DateTime handling
+            var options = new JsonSerializerOptions 
+            { 
+                PropertyNameCaseInsensitive = true,
+                Converters = { new DateTimeConverterUsingDateTimeParse() }
+            };
+            
+            return JsonSerializer.Deserialize<T>(json, options) ?? new T();
         }
 
         public static async Task<List<CelestialBodies>> GetCelestialBodies()
@@ -194,7 +202,8 @@ namespace GalaxyWiki.CLI
                 string jsonString = await response.Content.ReadAsStringAsync();
 
                 // Configure JSON options with custom DateTime handling
-                var options = new JsonSerializerOptions { 
+                var options = new JsonSerializerOptions
+                {
                     PropertyNameCaseInsensitive = true,
                     Converters = { new DateTimeConverterUsingDateTimeParse() }
                 };
@@ -225,7 +234,8 @@ namespace GalaxyWiki.CLI
                 string jsonString = await response.Content.ReadAsStringAsync();
 
                 // Configure JSON options with custom DateTime handling
-                var options = new JsonSerializerOptions { 
+                var options = new JsonSerializerOptions
+                {
                     PropertyNameCaseInsensitive = true,
                     Converters = { new DateTimeConverterUsingDateTimeParse() }
                 };
@@ -243,60 +253,60 @@ namespace GalaxyWiki.CLI
             }
         }
 
-    // Get comments for a celestial body
-    public static async Task<List<Comment>> GetCommentsByCelestialBodyAsync(int celestialBodyId)
-    {
-        try
+        // Get comments for a celestial body
+        public static async Task<List<Comment>> GetCommentsByCelestialBodyAsync(int celestialBodyId)
         {
-            string endpoint = $"/comment/celestial-body/{celestialBodyId}";
-            return await GetDeserialized<List<Comment>>(endpoint);
-        }
-        catch (Exception ex)
-        {
-            TUI.Err("GET", "Couldn't retrieve comments", ex.Message);
-            return new List<Comment>();
-        }
-    }
-    
-    // Get comments by date range
-    public static async Task<List<Comment>> GetCommentsByDateRangeAsync(DateTime startDate, DateTime endDate, int celestialBodyId)
-    {
-        try
-        {
-            string formattedStart = startDate.ToString("yyyy-MM-dd");
-            string formattedEnd = endDate.ToString("yyyy-MM-dd");
-            string endpoint = $"/comment/date-range?startDate={formattedStart}&endDate={formattedEnd}&celestialBodyId={celestialBodyId}";
-            return await GetDeserialized<List<Comment>>(endpoint);
-        }
-        catch (Exception ex)
-        {
-            TUI.Err("GET", "Couldn't retrieve comments by date range", ex.Message);
-            return new List<Comment>();
-        }
-    }
-    
-    // Create a new comment
-    public static async Task<Comment?> CreateCommentAsync(string commentText, int celestialBodyId)
-    {
-        try
-        {
-            if (JWT == "")
+            try
             {
-                TUI.Err("AUTH", "Please login to post a comment.");
-                return null;
+                string endpoint = $"/comment/celestial-body/{celestialBodyId}";
+                return await GetDeserialized<List<Comment>>(endpoint);
             }
-            
-            var commentRequest = new CreateCommentRequest
+            catch (Exception ex)
             {
-                CommentText = commentText,
-                CelestialBodyId = celestialBodyId
-            };
-            
-            var request = new HttpRequestMessage(HttpMethod.Post, apiUrl + "/api/comment")
+                TUI.Err("GET", "Couldn't retrieve comments", ex.Message);
+                return [];
+            }
+        }
+
+        // Get comments by date range
+        public static async Task<List<Comment>> GetCommentsByDateRangeAsync(DateTime startDate, DateTime endDate, int celestialBodyId)
+        {
+            try
             {
-                Content = JsonContent.Create(commentRequest)
-            };
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", JWT);
+                string formattedStart = startDate.ToString("yyyy-MM-dd");
+                string formattedEnd = endDate.ToString("yyyy-MM-dd");
+                string endpoint = $"/comment/date-range?startDate={formattedStart}&endDate={formattedEnd}&celestialBodyId={celestialBodyId}";
+                return await GetDeserialized<List<Comment>>(endpoint);
+            }
+            catch (Exception ex)
+            {
+                TUI.Err("GET", "Couldn't retrieve comments by date range", ex.Message);
+                return [];
+            }
+        }
+
+        // Create a new comment
+        public static async Task<Comment?> CreateCommentAsync(string commentText, int celestialBodyId)
+        {
+            try
+            {
+                if (JWT == "")
+                {
+                    TUI.Err("AUTH", "Please login to post a comment.");
+                    return null;
+                }
+
+                var commentRequest = new CreateCommentRequest
+                {
+                    CommentText = commentText,
+                    CelestialBodyId = celestialBodyId
+                };
+
+                var request = new HttpRequestMessage(HttpMethod.Post, apiUrl + "/api/comment")
+                {
+                    Content = JsonContent.Create(commentRequest)
+                };
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", JWT);
 
                 var response = await httpClient.SendAsync(request);
 
@@ -305,7 +315,10 @@ namespace GalaxyWiki.CLI
                 string jsonResponse = await response.Content.ReadAsStringAsync();
                 return JsonSerializer.Deserialize<Comment>(
                     jsonResponse,
-                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
+                    new JsonSerializerOptions { 
+                        PropertyNameCaseInsensitive = true,
+                        Converters = { new DateTimeConverterUsingDateTimeParse() }
+                    }
                 );
             }
             catch (Exception ex)
@@ -325,12 +338,12 @@ namespace GalaxyWiki.CLI
                     TUI.Err("AUTH", "Please login to delete a comment.");
                     return false;
                 }
-                
+
                 var request = new HttpRequestMessage(HttpMethod.Delete, apiUrl + $"/api/comment/{commentId}");
                 request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", JWT);
 
                 var response = await httpClient.SendAsync(request);
-                
+
                 response.EnsureSuccessStatusCode();
                 return true;
             }
@@ -340,79 +353,80 @@ namespace GalaxyWiki.CLI
                 return false;
             }
         }
-    
-    // Get user by ID
-    public static async Task<Users?> GetUserByIdAsync(string userId)
-    {
-        try
-        {
-            string endpoint = $"/user/{userId}";
-            return await GetDeserialized<Users>(endpoint);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error retrieving user: {ex.Message}");
-            return null;
-        }
-    }
 
-
-    public static async Task<Comment?> UpdateCommentAsync(int commentId, string commentText)
-    {
-        try
+        // Get user by ID
+        public static async Task<Users?> GetUserByIdAsync(string userId)
         {
-            if (JWT == "")
+            try
             {
-                TUI.Err("AUTH", "Please login to update a comment.");
+                string endpoint = $"/user/{userId}";
+                return await GetDeserialized<Users>(endpoint);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error retrieving user: {ex.Message}");
                 return null;
             }
+        }
 
-            var updateRequest = new UpdateCommentRequest { CommentText = commentText };
-            var request = new HttpRequestMessage(HttpMethod.Put, apiUrl + "/api/comment/" + commentId)
+
+        public static async Task<Comment?> UpdateCommentAsync(int commentId, string commentText)
+        {
+            try
             {
-                Content = JsonContent.Create(updateRequest)
-            };
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", JWT);
+                if (JWT == "")
+                {
+                    TUI.Err("AUTH", "Please login to update a comment.");
+                    return null;
+                }
 
-            var response = await httpClient.SendAsync(request);
-            response.EnsureSuccessStatusCode();
+                var updateRequest = new UpdateCommentRequest { CommentText = commentText };
+                var request = new HttpRequestMessage(HttpMethod.Put, apiUrl + "/api/comment/" + commentId)
+                {
+                    Content = JsonContent.Create(updateRequest)
+                };
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", JWT);
 
-            string jsonResponse = await response.Content.ReadAsStringAsync();
-            return JsonSerializer.Deserialize<Comment>(
-                jsonResponse,
-                new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
-            );
+                var response = await httpClient.SendAsync(request);
+                response.EnsureSuccessStatusCode();
+
+                string jsonResponse = await response.Content.ReadAsStringAsync();
+                return JsonSerializer.Deserialize<Comment>(
+                    jsonResponse,
+                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
+                );
+            }
+            catch (Exception ex)
+            {
+                TUI.Err("PUT", "Couldn't update comment", ex.Message);
+                return null;
+            }
         }
-        catch (Exception ex)
+
+        public static async Task<ContentRevisions?> CreateRevisionAsync(string celestialBodyPath, string newContent)
         {
-            TUI.Err("PUT", "Couldn't update comment", ex.Message);
-            return null;
+            try
+            {
+                if (JWT == "") { TUI.Err("AUTH", "Please login to create a revision."); return null; }
+                var createRequest = new CreateRevisionRequest { CelestialBodyPath = celestialBodyPath, Content = newContent };
+
+                var request = new HttpRequestMessage(HttpMethod.Post, apiUrl + "/api/revision")
+                {
+                    Content = JsonContent.Create(createRequest)
+                };
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", JWT);
+
+                var response = await httpClient.SendAsync(request);
+                response.EnsureSuccessStatusCode();
+
+                string jsonResponse = await response.Content.ReadAsStringAsync();
+                return JsonSerializer.Deserialize<ContentRevisions>(
+                    jsonResponse,
+                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
+                );
+            }
+            catch (Exception ex) { TUI.Err("POST", "Couldn't create revision", ex.Message); return null; }
         }
-    }
-
-    public static async Task<ContentRevisions?> CreateRevisionAsync(string celestialBodyPath, string newContent)
-    {
-        try
-        {
-            if (JWT == "") { TUI.Err("AUTH", "Please login to create a revision."); return null; }
-            var createRequest = new CreateRevisionRequest { CelestialBodyPath = celestialBodyPath, Content = newContent };
-
-            var request = new HttpRequestMessage(HttpMethod.Post, apiUrl + "/api/revision") {
-                Content = JsonContent.Create(createRequest)
-            };
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", JWT);
-
-            var response = await httpClient.SendAsync(request);
-            response.EnsureSuccessStatusCode();
-
-            string jsonResponse = await response.Content.ReadAsStringAsync();
-            return JsonSerializer.Deserialize<ContentRevisions>(
-                jsonResponse,
-                new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
-            );
-        }
-        catch (Exception ex) { TUI.Err("POST", "Couldn't create revision", ex.Message); return null; }
-    }
 
         // Create a new celestial body
         public static async Task<CelestialBodies?> CreateCelestialBodyAsync(string bodyName, int bodyTypeId, int? orbitsId)
@@ -424,14 +438,14 @@ namespace GalaxyWiki.CLI
                     TUI.Err("AUTH", "Please login to create a celestial body.");
                     return null;
                 }
-                
+
                 var bodyRequest = new
                 {
                     BodyName = bodyName,
                     BodyTypeId = bodyTypeId,
                     OrbitsId = orbitsId
                 };
-                
+
                 var request = new HttpRequestMessage(HttpMethod.Post, apiUrl + "/api/celestial-body")
                 {
                     Content = JsonContent.Create(bodyRequest)
@@ -440,10 +454,10 @@ namespace GalaxyWiki.CLI
 
                 var response = await httpClient.SendAsync(request);
                 response.EnsureSuccessStatusCode();
-                
+
                 string jsonResponse = await response.Content.ReadAsStringAsync();
                 return JsonSerializer.Deserialize<CelestialBodies>(
-                    jsonResponse, 
+                    jsonResponse,
                     new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
                 );
             }
@@ -458,23 +472,24 @@ namespace GalaxyWiki.CLI
         {
             try
             {
-                var request = new HttpRequestMessage(HttpMethod.Get, apiUrl + $"/api/celestial-body/{bodyId}") {};
+                var request = new HttpRequestMessage(HttpMethod.Get, apiUrl + $"/api/celestial-body/{bodyId}") { };
 
                 var response = await httpClient.SendAsync(request);
                 response.EnsureSuccessStatusCode();
-                
+
                 string jsonResponse = await response.Content.ReadAsStringAsync();
                 return JsonSerializer.Deserialize<CelestialBodies>(
-                    jsonResponse, 
+                    jsonResponse,
                     new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
                 );
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 TUI.Err("GET", $"Couldn't get celestial body with ID {bodyId}", ex.Message);
                 return null;
             }
         }
-        
+
         // Update an existing celestial body
         public static async Task<CelestialBodies?> UpdateCelestialBodyAsync(int bodyId, string bodyName, int bodyTypeId, int? orbitsId)
         {
@@ -485,14 +500,14 @@ namespace GalaxyWiki.CLI
                     TUI.Err("AUTH", "Please login to update a celestial body.");
                     return null;
                 }
-                
+
                 var bodyRequest = new
                 {
                     BodyName = bodyName,
                     BodyTypeId = bodyTypeId,
                     OrbitsId = orbitsId
                 };
-                
+
                 var request = new HttpRequestMessage(HttpMethod.Put, apiUrl + $"/api/celestial-body/{bodyId}")
                 {
                     Content = JsonContent.Create(bodyRequest)
@@ -501,10 +516,10 @@ namespace GalaxyWiki.CLI
 
                 var response = await httpClient.SendAsync(request);
                 response.EnsureSuccessStatusCode();
-                
+
                 string jsonResponse = await response.Content.ReadAsStringAsync();
                 return JsonSerializer.Deserialize<CelestialBodies>(
-                    jsonResponse, 
+                    jsonResponse,
                     new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
                 );
             }
@@ -514,7 +529,7 @@ namespace GalaxyWiki.CLI
                 return null;
             }
         }
-        
+
         // Delete a celestial body by ID
         public static async Task<bool> DeleteCelestialBodyAsync(int bodyId)
         {
@@ -525,13 +540,13 @@ namespace GalaxyWiki.CLI
                     TUI.Err("AUTH", "Please login to delete a celestial body.");
                     return false;
                 }
-                
+
                 var request = new HttpRequestMessage(HttpMethod.Delete, apiUrl + $"/api/celestial-body/{bodyId}");
                 request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", JWT);
 
                 var response = await httpClient.SendAsync(request);
                 response.EnsureSuccessStatusCode();
-                
+
                 return true;
             }
             catch (Exception ex)
@@ -540,7 +555,7 @@ namespace GalaxyWiki.CLI
                 return false;
             }
         }
-}
+    }
 
     // Simple DTO for comment data
     public class Comment
@@ -561,61 +576,70 @@ namespace GalaxyWiki.CLI
         public int CelestialBodyId { get; set; }
     }
 
-// Simple DTO to hold revision data
-public class Revision
-{
-    public int Id { get; set; }
-    public string? Content { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public string? CelestialBodyName { get; set; }
-    public string? AuthorDisplayName { get; set; }
-}
-
-// Simple DTO to hold user data
-public class Users
-{
-    public string Id { get; set; } = string.Empty;
-    public string Email { get; set; } = string.Empty;
-    public string DisplayName { get; set; } = string.Empty;
-    public int RoleId { get; set; }
-}
-
-public class UpdateCommentRequest { public string CommentText { get; set; } }
-public class CreateRevisionRequest {
-    public string CelestialBodyPath { get; set; }
-    public string Content { get; set; }
-}
-
-// Add this class at the end of the file, after all other class definitions
-public class DateTimeConverterUsingDateTimeParse : JsonConverter<DateTime>
-{
-    public override DateTime Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    // Simple DTO to hold revision data
+    public class Revision
     {
-        string? dateString = reader.GetString();
-        if (string.IsNullOrEmpty(dateString))
-            return DateTime.MinValue;
-            
-        // Try to parse the date, using multiple formats to be safe
-        if (DateTime.TryParse(dateString, out DateTime result))
-            return result;
-            
-        try
-        {
-            // Try ISO 8601 format explicitly
-            return DateTime.ParseExact(dateString, "yyyy-MM-ddTHH:mm:ss.fffZ", null);
-        }
-        catch
-        {
-            // Last resort - return current time
-            return DateTime.Now;
-        }
+        public int Id { get; set; }
+        public string? Content { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public string? CelestialBodyName { get; set; }
+        public string? AuthorDisplayName { get; set; }
     }
 
-    public override void Write(Utf8JsonWriter writer, DateTime value, JsonSerializerOptions options)
+    // Simple DTO to hold user data
+    public class Users
     {
-        writer.WriteStringValue(value.ToString("o"));
+        public string Id { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string DisplayName { get; set; } = string.Empty;
+        public int RoleId { get; set; }
     }
-}
+
+    public class UpdateCommentRequest { public string CommentText { get; set; } }
+    public class CreateRevisionRequest
+    {
+        public string CelestialBodyPath { get; set; }
+        public string Content { get; set; }
+    }
+
+    // Add this class at the end of the file, after all other class definitions
+    public class DateTimeConverterUsingDateTimeParse : JsonConverter<DateTime>
+    {
+        public override DateTime Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            string? dateString = reader.GetString();
+            if (string.IsNullOrEmpty(dateString))
+            {
+                // Return current time with UTC kind instead of MinValue
+                return DateTime.SpecifyKind(DateTime.Now, DateTimeKind.Utc);
+            }
+
+            // Try to parse the date, using multiple formats to be safe
+            if (DateTime.TryParse(dateString, out DateTime result))
+            {
+                // Ensure the DateTime has UTC kind
+                return DateTime.SpecifyKind(result, DateTimeKind.Utc);
+            }
+
+            try
+            {
+                // Try ISO 8601 format explicitly
+                var parsed = DateTime.ParseExact(dateString, "yyyy-MM-ddTHH:mm:ss.fffZ", null);
+                return DateTime.SpecifyKind(parsed, DateTimeKind.Utc);
+            }
+            catch
+            {
+                // Last resort - return current time with UTC kind
+                return DateTime.SpecifyKind(DateTime.Now, DateTimeKind.Utc);
+            }
+        }
+
+        public override void Write(Utf8JsonWriter writer, DateTime value, JsonSerializerOptions options)
+        {
+            // Always format as UTC ISO 8601
+            writer.WriteStringValue(value.ToUniversalTime().ToString("o"));
+        }
+    }
 
     public class ChatMessage
     {
