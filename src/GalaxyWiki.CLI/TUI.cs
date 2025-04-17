@@ -35,8 +35,8 @@ namespace GalaxyWiki.CLI
 
         static string BodyToString(CelestialBodies body)
         {
-            // TODO: Potentially append star-system group as tag
-            return $"{BodyTypeToEmoji(body.BodyType)} ({body.Id}) {body.BodyName}";
+            // Display just the emoji and name without the ID
+            return $"{BodyTypeToEmoji(body.BodyType)} {body.BodyName}";
         }
 
         public static string BodyTypeToEmoji(int bodyType)
