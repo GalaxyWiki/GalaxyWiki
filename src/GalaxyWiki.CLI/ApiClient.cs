@@ -165,7 +165,15 @@ namespace GalaxyWiki.CLI
         public static async Task<T> GetDeserialized<T>(string endpoint) where T : new()
         {
             string json = await GetJson(endpoint);
-            return JsonSerializer.Deserialize<T>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new T();
+            
+            // Configure JSON options with custom DateTime handling
+            var options = new JsonSerializerOptions 
+            { 
+                PropertyNameCaseInsensitive = true,
+                Converters = { new DateTimeConverterUsingDateTimeParse() }
+            };
+            
+            return JsonSerializer.Deserialize<T>(json, options) ?? new T();
         }
 
         public static async Task<List<CelestialBodies>> GetCelestialBodies()
@@ -307,7 +315,10 @@ namespace GalaxyWiki.CLI
                 string jsonResponse = await response.Content.ReadAsStringAsync();
                 return JsonSerializer.Deserialize<Comment>(
                     jsonResponse,
-                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
+                    new JsonSerializerOptions { 
+                        PropertyNameCaseInsensitive = true,
+                        Converters = { new DateTimeConverterUsingDateTimeParse() }
+                    }
                 );
             }
             catch (Exception ex)
@@ -598,27 +609,35 @@ namespace GalaxyWiki.CLI
         {
             string? dateString = reader.GetString();
             if (string.IsNullOrEmpty(dateString))
-                return DateTime.MinValue;
+            {
+                // Return current time with UTC kind instead of MinValue
+                return DateTime.SpecifyKind(DateTime.Now, DateTimeKind.Utc);
+            }
 
             // Try to parse the date, using multiple formats to be safe
             if (DateTime.TryParse(dateString, out DateTime result))
-                return result;
+            {
+                // Ensure the DateTime has UTC kind
+                return DateTime.SpecifyKind(result, DateTimeKind.Utc);
+            }
 
             try
             {
                 // Try ISO 8601 format explicitly
-                return DateTime.ParseExact(dateString, "yyyy-MM-ddTHH:mm:ss.fffZ", null);
+                var parsed = DateTime.ParseExact(dateString, "yyyy-MM-ddTHH:mm:ss.fffZ", null);
+                return DateTime.SpecifyKind(parsed, DateTimeKind.Utc);
             }
             catch
             {
-                // Last resort - return current time
-                return DateTime.Now;
+                // Last resort - return current time with UTC kind
+                return DateTime.SpecifyKind(DateTime.Now, DateTimeKind.Utc);
             }
         }
 
         public override void Write(Utf8JsonWriter writer, DateTime value, JsonSerializerOptions options)
         {
-            writer.WriteStringValue(value.ToString("o"));
+            // Always format as UTC ISO 8601
+            writer.WriteStringValue(value.ToUniversalTime().ToString("o"));
         }
     }
 

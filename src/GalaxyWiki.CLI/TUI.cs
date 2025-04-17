@@ -6,6 +6,7 @@ using Spectre.Console;
 using Spectre.Console.Rendering;
 using System.Text.RegularExpressions;
 using System.Diagnostics;
+using System.Text;
 
 namespace GalaxyWiki.CLI
 {
@@ -92,7 +93,7 @@ namespace GalaxyWiki.CLI
                 formattedParagraph = Regex.Replace(
                     formattedParagraph,
                     @"\b(\d+(?:\.\d+)?(?:\s*(?:billion|million|trillion|light-year|ly|kg|m|km))?)\b",
-                    "[green]$1[/]"
+                    "[green italic]$1[/]"
                 );
 
                 result.Add(formattedParagraph);
@@ -128,11 +129,29 @@ namespace GalaxyWiki.CLI
         //---------- Banner ----------//
         public static void ShowBanner()
         {
-            var banner = new Panel(
+            // Space-themed colors for our text
+            var colors = new[] {
+                Color.Blue,
+                Color.Purple,
+                Color.MediumPurple,
+                Color.DeepSkyBlue1,
+                Color.Aqua,
+                Color.Fuchsia
+            };
+
+            // Get a random color from our space theme
+            Random random = new Random();
+            Color randomColor = colors[random.Next(colors.Length)];
+            
+            // Create the figlet text with the random color
+            var figlet = new FigletText(FigletFont.Load("../../assets/starwars.flf"), "Galaxy Wiki")
+                .Centered()
+                .Color(randomColor);
+            
+            // Create a panel with the figlet
+            var panel = new Panel(
                 Align.Left(
-                    new FigletText(FigletFont.Load("../../assets/starwars.flf"), "Galaxy Wiki")
-                    .Centered()
-                    .Color(Color.Aqua),
+                    figlet,
                     VerticalAlignment.Bottom
                 )
             )
@@ -140,7 +159,7 @@ namespace GalaxyWiki.CLI
             .Expand();
 
             AnsiConsole.WriteLine("\n     Welcome to\n");
-            AnsiConsole.Write(banner);
+            AnsiConsole.Write(panel);
         }
 
         //---------- Error ----------//
@@ -321,7 +340,12 @@ namespace GalaxyWiki.CLI
         //---------- Author Info ----------//
         public static Panel AuthorInfo(string displayName, DateTime date)
         {
-            var formattedDate = date.ToString("MMMM d, yyyy 'at' h:mm tt");
+            // Convert UTC time to local time for display
+            DateTime localDate = date.Kind == DateTimeKind.Utc ? date.ToLocalTime() : date;
+            
+            // Format the date in a clear, readable format
+            var formattedDate = localDate.ToString("MMMM d, yyyy 'at' h:mm tt");
+            
             return new Panel(
                 Align.Right(
                     new Markup($"[italic grey]Last updated by [/][bold]{displayName}[/] [italic grey]on {formattedDate}[/]")
@@ -410,7 +434,11 @@ namespace GalaxyWiki.CLI
         // Format relative time similar to YouTube
         private static string FormatRelativeTime(DateTime date)
         {
-            var span = DateTime.Now - date;
+            // Convert UTC time to local time for comparison
+            DateTime localDate = date.Kind == DateTimeKind.Utc ? date.ToLocalTime() : date;
+            
+            // Calculate time span from local date to now
+            var span = DateTime.Now - localDate;
 
             if (span.TotalDays > 365)
             {

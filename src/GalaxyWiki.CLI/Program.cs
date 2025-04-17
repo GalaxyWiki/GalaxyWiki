@@ -620,6 +620,10 @@ namespace GalaxyWiki.CLI
                 return;
             }
 
+            // Debug: Show the date value received from the API
+            AnsiConsole.MarkupLine($"[grey]Debug: Date value = {rev.CreatedAt}[/]");
+            AnsiConsole.MarkupLine($"[grey]Debug: Date kind = {rev.CreatedAt.Kind}[/]");
+
             List<Comment> comments = [];
             if (rev.CelestialBodyName != null)
             {
