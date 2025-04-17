@@ -552,7 +552,6 @@ namespace GalaxyWiki.CLI
                 var table = new Table();
                 table.AddColumn("Type");
                 table.AddColumn("Name");
-                table.AddColumn("ID");
 
                 foreach (var child in response.Value.Items)
                 {
