@@ -418,7 +418,7 @@ namespace GalaxyWiki.CLI
             // Check for the "-h" or "--here" flag
             bool useCurrentAsRoot = args.Trim().Equals("-h", StringComparison.OrdinalIgnoreCase) ||
                                     args.Trim().Equals("--here", StringComparison.OrdinalIgnoreCase);
-
+            
             await CommandLogic.DisplayTree(useCurrentAsRoot);
         }
 

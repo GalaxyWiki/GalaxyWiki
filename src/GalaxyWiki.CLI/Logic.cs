@@ -224,40 +224,53 @@ namespace GalaxyWiki.CLI
             // Determine root node for the tree
             CelestialBodies rootBody;
 
-            if (useCurrentAsRoot)
-            {
-                // Use current location as root
-                rootBody = _state.CurrentBody;
-
-                if (rootBody == null)
+            // Use a loading spinner while retrieving and building the tree
+            await AnsiConsole.Status()
+                .AutoRefresh(true)
+                .Spinner(Spinner.Known.Dots)
+                .SpinnerStyle(Style.Parse("cyan"))
+                .StartAsync("Loading celestial body tree...", async ctx => 
                 {
-                    TUI.Err("TREE", "No current celestial body to use as root.");
-                    return;
-                }
-            }
-            else
-            {
-                // Find the universe root
-                var bodies = await ApiClient.GetCelestialBodiesMap();
-                var possibleRoot = bodies.Values.FirstOrDefault(b => b.Orbits == null);
+                    if (useCurrentAsRoot)
+                    {
+                        // Use current location as root
+                        rootBody = _state.CurrentBody;
 
-                if (possibleRoot == null)
-                {
-                    TUI.Err("TREE", "Could not find root celestial body (Universe).");
-                    return;
-                }
+                        if (rootBody == null)
+                        {
+                            TUI.Err("TREE", "No current celestial body to use as root.");
+                            return;
+                        }
+                    }
+                    else
+                    {
+                        // Find the universe root
+                        ctx.Status("Retrieving universe data...");
+                        var bodies = await ApiClient.GetCelestialBodiesMap();
+                        var possibleRoot = bodies.Values.FirstOrDefault(b => b.Orbits == null);
 
-                rootBody = possibleRoot;
-            }
+                        if (possibleRoot == null)
+                        {
+                            TUI.Err("TREE", "Could not find root celestial body (Universe).");
+                            return;
+                        }
 
-            // Create tree and build it
-            var tree = new Tree(FormatCelestialBodyLabel(rootBody));
-            await BuildTreeRecursively(rootBody.Id, tree);
+                        rootBody = possibleRoot;
+                    }
 
-            // Display tree with some styling
-            tree.Guide = TreeGuide.BoldLine;
-            tree.Style = Style.Parse("blue");
-            AnsiConsole.Write(tree);
+                    // Create tree and build it
+                    ctx.Status("Building celestial hierarchy...");
+                    var tree = new Tree(FormatCelestialBodyLabel(rootBody));
+                    await BuildTreeRecursively(rootBody.Id, tree);
+
+                    // Update status before displaying
+                    ctx.Status("Rendering tree...");
+                    
+                    // Display tree with some styling
+                    tree.Guide = TreeGuide.BoldLine;
+                    tree.Style = Style.Parse("blue");
+                    AnsiConsole.Write(tree);
+                });
         }
 
         // Helper to recursively build the tree
