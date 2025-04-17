@@ -1125,16 +1125,14 @@ namespace GalaxyWiki.CLI
                 var table = new Table()
                     .Border(TableBorder.Rounded)
                     .BorderColor(Color.Grey)
-                    .AddColumn(new TableColumn("ID").LeftAligned())
-                    .AddColumn(new TableColumn("Created At").LeftAligned())
-                    .AddColumn(new TableColumn("Author").LeftAligned())
-                    .AddColumn(new TableColumn("Preview").LeftAligned());
+                    .AddColumn(new TableColumn("[bold]ID[/]").LeftAligned())
+                    .AddColumn(new TableColumn("[bold]Created At[/]").LeftAligned())
+                    .AddColumn(new TableColumn("[bold]Author[/]").LeftAligned())
+                    .AddColumn(new TableColumn("[bold]Content[/]").LeftAligned());
 
                 foreach (var revision in revisions.OrderByDescending(r => r.CreatedAt))
                 {
-                    var previewContent = revision.Content?.Length > 50
-                        ? revision.Content[..50] + "..."
-                        : revision.Content ?? "";
+                    var previewContent = revision.Content ?? "";
 
                     table.AddRow(
                         revision.Id.ToString(),
