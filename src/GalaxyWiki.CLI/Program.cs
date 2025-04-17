@@ -620,18 +620,12 @@ namespace GalaxyWiki.CLI
                 return;
             }
 
-            // Debug: Show the date value received from the API
-            AnsiConsole.MarkupLine($"[grey]Debug: Date value = {rev.CreatedAt}[/]");
-            AnsiConsole.MarkupLine($"[grey]Debug: Date kind = {rev.CreatedAt.Kind}[/]");
-
             List<Comment> comments = [];
             if (rev.CelestialBodyName != null)
             {
                 comments = await CommandLogic.GetCommentsForNamedBody(rev.CelestialBodyName);
             }
 
-            // AnsiConsole.Write(TUI.Article(revision.CelestialBodyName ?? "Unknown", revision.Content));
-            // AnsiConsole.Write(TUI.AuthorInfo(revision.AuthorDisplayName ?? "Unknown", revision.CreatedAt));
             AnsiConsole.Write(TUI.WikiPage(rev, body.BodyType, comments));
             await TUI.RenderCelestialBody(body.BodyName, body.BodyType);
         }

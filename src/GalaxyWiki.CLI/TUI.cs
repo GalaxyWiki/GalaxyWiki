@@ -139,7 +139,20 @@ namespace GalaxyWiki.CLI
                 Color.Fuchsia
             };
 
-            // Get a random color from our space theme
+            // Clear the console for a fresh start
+            AnsiConsole.Clear();
+            
+            // Display stars in the background
+            DisplayStars();
+
+            // Create a simple welcome header
+            var rule = new Rule("[blue]✨ [/][cyan]Welcome to[/][blue] ✨[/]")
+                .RuleStyle("blue dim")
+                .Centered();
+            AnsiConsole.Write(rule);
+            AnsiConsole.WriteLine();
+
+            // Get a random color from our space theme for figlet
             Random random = new Random();
             Color randomColor = colors[random.Next(colors.Length)];
             
@@ -147,19 +160,83 @@ namespace GalaxyWiki.CLI
             var figlet = new FigletText(FigletFont.Load("../../assets/starwars.flf"), "Galaxy Wiki")
                 .Centered()
                 .Color(randomColor);
-            
-            // Create a panel with the figlet
-            var panel = new Panel(
-                Align.Left(
-                    figlet,
-                    VerticalAlignment.Bottom
-                )
-            )
-            .NoBorder()
-            .Expand();
 
-            AnsiConsole.WriteLine("\n     Welcome to\n");
+            // Create a panel with the figlet (no border)
+            var panel = new Panel(figlet)
+                .NoBorder()
+                .Expand();
+            
             AnsiConsole.Write(panel);
+            
+            // Display a random space fact (more subtle)
+            DisplayRandomSpaceFact();
+            
+            // Bottom rule
+            var bottomRule = new Rule("[blue]✧ [/][cyan]Your journey to the stars begins now[/][blue] ✧[/]")
+                .RuleStyle("blue dim")
+                .Centered();
+            AnsiConsole.WriteLine();
+            AnsiConsole.Write(bottomRule);
+            AnsiConsole.WriteLine("\n");
+        }
+        
+        private static void DisplayStars()
+        {
+            // Get console width
+            int width = Console.WindowWidth;
+            
+            // Characters for stars
+            char[] starChars = { '✦', '✧', '⋆', '˚', '·', '✫', '⊹' };
+            Random random = new Random();
+            
+            // Create star lines that span the full width
+            for (int i = 0; i < 4; i++)
+            {
+                StringBuilder line = new StringBuilder();
+                
+                for (int j = 0; j < width; j++)
+                {
+                    // Add stars or spaces (mostly spaces for a sparse effect)
+                    if (random.Next(12) == 0)
+                    {
+                        line.Append(starChars[random.Next(starChars.Length)]);
+                    }
+                    else
+                    {
+                        line.Append(' ');
+                    }
+                }
+                
+                AnsiConsole.Markup($"[blue dim]{line}[/]");
+                AnsiConsole.WriteLine();
+            }
+        }
+        
+        private static void DisplayRandomSpaceFact()
+        {
+            string[] spaceFacts = {
+                "The universe is estimated to be around 13.8 billion years old.",
+                "There are more stars in the universe than grains of sand on all the beaches on Earth.",
+                "A day on Venus is longer than a year on Venus.",
+                "The largest known star, UY Scuti, is more than 1,700 times the size of our Sun.",
+                "Black holes aren't actually holes, but regions of space where gravity is so strong that nothing can escape.",
+                "The coldest place in the universe is the Boomerang Nebula at -458°F (-272°C).",
+                "Saturn isn't the only planet with rings. Jupiter, Uranus, and Neptune have them too.",
+                "The footprints on the Moon will stay there for at least 100 million years.",
+                "A neutron star can spin at a rate of 600 rotations per second.",
+                "The Milky Way galaxy is on a collision course with Andromeda, expected in about 4 billion years."
+            };
+            
+            Random random = new Random();
+            string fact = spaceFacts[random.Next(spaceFacts.Length)];
+            
+            // More subtle, centered fact with dimmer colors and "Fun fact:" prefix
+            // Using even dimmer cyan and italicizing the whole text
+            var factText = new Markup($"[dim dim cyan italic]Fun fact: {fact}[/]");
+            
+            AnsiConsole.WriteLine();
+            AnsiConsole.Write(Align.Center(factText));
+            AnsiConsole.WriteLine();
         }
 
         //---------- Error ----------//
