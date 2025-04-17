@@ -360,56 +360,51 @@ namespace GalaxyWiki.CLI
 
             var table = new Table()
                 .Border(TableBorder.None)
-                .BorderColor(Color.DarkOrange)
+                .BorderColor(Color.Grey50)
                 .HideHeaders()
                 .Expand();
 
-            // Create a 3-column layout (ID is hidden in author column)
-            // table.AddColumn(new TableColumn("").Width(3)); // Visual spacer/indentation
-            table.AddColumn(new TableColumn("").Width(75)); // Author and content
-            table.AddColumn(new TableColumn("").Width(25)); // Date and controls
+            // Single column for simplified layout
+            table.AddColumn(new TableColumn("").Width(100));
 
             foreach (var comment in comments)
             {
-                // // YouTube-style user icon (first letter of name in colored circle)
-                // string userIcon = string.IsNullOrEmpty(comment.DisplayName) ? 
-                //     "[grey]?[/]" : 
-                //     $"[yellow on blue]{comment.DisplayName[..1].ToUpper()}[/]";
-
-                // Username/display name with ID in small text
-                string author = string.IsNullOrEmpty(comment.DisplayName) ?
-                    $"[grey]Anonymous[/]" :
-                    $"[bold aqua]{comment.DisplayName}[/]";
-                string idText = $"[dim grey](#{comment.CommentId})[/]";
-
-                // Format date like YouTube
-                string formattedDate = FormatRelativeTime(comment.CreatedDate);
-
-                // Format the comment text with indentation for content
+                // Format the comment text - the main focus
                 string formattedComment = FormatCommentWithSpectre(comment.CommentText);
-
-                // Create YouTube-style comment header
-                string headerLine = $"{author} {idText}";
-
-                // Create the main content column that combines username and comment
-                string contentText = $"{headerLine}\n{formattedComment}";
-
-                // Add the row to the table
-                table.AddRow(
-                    // new Markup(userIcon),
-                    new Markup(contentText),
-                    new Markup($"[grey]{formattedDate}[/]")
-                );
-
-                // Add a separator row
-                table.AddRow(
-                    // new Text(""),
-                    new Rule().RuleStyle(Style.Parse("dim grey")),
-                    new Text("")
-                );
+                
+                // Format date in a simple style
+                string formattedDate = FormatRelativeTime(comment.CreatedDate);
+                
+                // Create the author info for the bottom right
+                string author = string.IsNullOrEmpty(comment.DisplayName) ?
+                    "Anonymous" :
+                    comment.DisplayName;
+                
+                // Create footer with author and date
+                string footer = $"— [bold]{author}[/] • [dim]{formattedDate}[/] [grey](#{comment.CommentId})[/]";
+                
+                // Create a layout for the comment with aligned content
+                var commentContent = new Markup(formattedComment);
+                var footerContent = Align.Right(new Markup(footer));
+                
+                // Add the comment to the table with minimal padding for a compact view
+                var panel = new Panel(
+                    new Grid()
+                        .AddColumn(new GridColumn())
+                        .AddRow(commentContent)
+                        .AddRow(footerContent)
+                        .Collapse() // Make grid as compact as possible
+                )
+                .RoundedBorder()
+                .BorderColor(Color.Grey50)
+                .Padding(1, 0, 1, 0); // Horizontal padding only
+                
+                table.AddRow(panel);
+                
+                // No extra space between comments for a more compact view
             }
 
-            return Boxed(table, $"[bold cyan] {title} ({comments.Count}) [/]", Color.DarkOrange);
+            return Boxed(table, $"[bold cyan] {title} ({comments.Count}) [/]", Color.Grey);
         }
 
         // Format relative time similar to YouTube
